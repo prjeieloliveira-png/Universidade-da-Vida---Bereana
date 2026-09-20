@@ -37,22 +37,28 @@ Sistema de gestão da **Universidade da Vida** para uma igreja. O sistema é res
 ## 3. Banco de Dados e Regras de Negócio
 
 1. **Fonte da Verdade:** O banco PostgreSQL é a única fonte da verdade do domínio. Regras de negócio que podem viver no Postgres (constraints, checks, triggers, views, funções PL/pgSQL) **não** devem ser reimplementadas no cliente.
-2. **Row Level Security (RLS) Mandatória:**
+2. **Entidade Central — Pessoa (não Aluno):**
+   - A entidade permanente do sistema é a **Pessoa** (`people`). Uma pessoa é cadastrada uma única vez e pode se inscrever em múltiplas edições ao longo dos anos.
+   - **Presença, pagamentos e vínculo de liderança pertencem estritamente à Inscrição** (`registrations`), **nunca à pessoa**.
+3. **Dados de Saúde e Sensíveis em Tabela Separada:**
+   - Comorbidades, medicações e restrições médicas devem residir em tabela própria (ex.: `medical_records` / `health_info`), **nunca como colunas da tabela de pessoas**.
+   - A tabela de saúde possui **RLS restritiva exclusiva**, com acesso concedido apenas para a **coordenação** e a **secretaria** (líderes e usuários comuns não têm visibilidade nem permissão de leitura).
+4. **Row Level Security (RLS) Mandatória:**
    - Toda tabela nasce com RLS habilitada (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`).
    - Tabela sem policy definida é tratada como **bug crítico de segurança**, nunca como "ainda não configurado".
-3. **Gestão de Chaves e Credenciais:**
+5. **Gestão de Chaves e Credenciais:**
    - O cliente web consome **exclusivamente** a chave pública `anon`.
    - A `service_role` **nunca** entra no bundle do frontend, em arquivos `.env` do client, nem em Edge Functions expostas sem autenticação/autorização rigorosa.
-4. **Tipagem Automática:**
+6. **Tipagem Automática:**
    - Todo acesso a dados deve passar pelo cliente Supabase tipado estritamente com os tipos gerados via `supabase gen types typescript`.
    - **É terminantemente proibido tipar respostas de query na mão** (ex.: `as MyCustomType`).
-5. **Versionamento de Schema:**
+7. **Versionamento de Schema:**
    - Todo e qualquer schema, função, view ou alteração de tabela deve ser versionado via arquivos de migração em `supabase/migrations/`.
    - Nenhuma alteração estrutural pode ser feita direto pelo painel/dashboard web do Supabase.
-6. **Valores Monetários:**
+8. **Valores Monetários:**
    - Dinheiro é **sempre em centavos (`integer` / `bigint`)**.
    - Nunca utilizar `float`, `double` ou `numeric`/`decimal` para valores monetários.
-7. **Dados Derivados:**
+9. **Dados Derivados:**
    - Proibido salvar valores deriváveis em colunas normais (exemplo: idade é derivada de `birth_date`; status de quitação de inscrição é derivado da soma dos pagamentos registrados).
    - Utilizar SQL Views ou Generated Columns (`STORED` ou `VIRTUAL`).
 
@@ -70,7 +76,12 @@ Sistema de gestão da **Universidade da Vida** para uma igreja. O sistema é res
    - **Tabelas e colunas no banco:** Inglês (`snake_case`).
 3. **Mobile-First Obrigatório:**
    - O desenvolvimento e a validação de layout devem ser feitos primeiramente no viewport de **390px** (largura típica de smartphones modernos) antes de considerar a tarefa finalizada.
-4. **Resiliência:**
+4. **Resiliência e Chamada Offline:**
+   - **A tela de chamada (frequência/presença) deve funcionar 100% offline.**
+   - Mutações de presença efetuadas offline devem ser mantidas em uma **fila persistida no navegador** (ex.: IndexedDB / local storage estruturado) e sincronizadas automaticamente quando a conexão for restabelecida.
+   - Deve haver um **indicador visual em tempo real** mostrando o status de sincronização e a quantidade de registros pendentes na fila.
+   - O restante da aplicação pode exigir conectividade ativa.
+5. **Tratamento de Estados:**
    - Tratamento explícito de estados de carregamento (skeletons/spinners), estados vazios (empty states) e mensagens de erro compreensíveis em falhas de rede.
 
 ---
