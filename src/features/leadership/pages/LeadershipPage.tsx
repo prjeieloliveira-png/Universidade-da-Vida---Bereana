@@ -70,7 +70,7 @@ export function LeadershipPage() {
         id: l.id,
         name: l.name,
         role: 'LEADER',
-        roleLabel: 'Líder de Célula',
+        roleLabel: 'Líder',
         g12Id: l.g12Id,
         g12Name: l.g12Name,
         pastorName: l.pastorName,
@@ -158,7 +158,7 @@ export function LeadershipPage() {
           Gestão de Lideranças & Organizadores
         </h2>
         <p className="text-xs text-slate-500 mt-0.5">
-          Pastores, Líderes G12 e Células que compõem as redes da Universidade da Vida
+          Pastores, Líderes G12 e Líderes que compõem as redes da Universidade da Vida
         </p>
       </div>
 
@@ -192,7 +192,7 @@ export function LeadershipPage() {
                 { key: 'ALL', label: `Todos (${allItems.length})` },
                 { key: 'PASTOR', label: `Pastores (${pastors.length})` },
                 { key: 'G12', label: `G12 (${g12s.length})` },
-                { key: 'LEADER', label: `Células (${leaders.length})` },
+                { key: 'LEADER', label: `Líder (${leaders.length})` },
               ] as const
             ).map((tab) => (
               <button
