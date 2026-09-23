@@ -30,14 +30,23 @@ async function deploy() {
 
     console.log(`🚀 Fazendo upload direto dos arquivos de ${distDir} para public_html...`);
     await client.ensureDir('public_html');
-    await client.clearWorkingDir();
     await client.uploadFromDir(distDir);
 
-    console.log('📁 Listagem de arquivos em public_html após upload:');
     const uploadedList = await client.list();
-    uploadedList.forEach(item => console.log(`  - ${item.name} (${item.isDirectory ? 'dir' : 'file'})`));
+    let summaryMd = `### 📊 Diagnóstico do Deploy FTP na Hostinger\n\n`;
+    summaryMd += `- **Servidor:** \`${host}\`\n`;
+    summaryMd += `- **Usuário:** \`${user}\`\n`;
+    summaryMd += `- **Diretório FTP atual:** \`${await client.pwd()}\`\n\n`;
+    summaryMd += `#### 📁 Arquivos encontrados em public_html:\n`;
+    uploadedList.forEach(item => {
+      summaryMd += `- \`${item.name}\` (${item.isDirectory ? 'pasta' : item.size + ' bytes'})\n`;
+    });
 
-    console.log('🎉 Deploy concluído com 100% de sucesso!');
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      import('fs').then(fs => fs.writeFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMd));
+    }
+
+    console.log('🎉 Deploy concluído!');
   } catch (err) {
     console.error('❌ Erro durante o deploy FTP:', err);
     process.exit(1);
