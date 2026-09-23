@@ -1,71 +1,105 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useStudentStore } from '../store/studentStore';
 import { useCohortStore } from '@/features/cohorts/store/cohortStore';
 import { StudentCard } from '../components/StudentCard';
 import { RegistrationEditModal } from '../components/RegistrationEditModal';
-import { HierarchicalLeaderFilter } from '../components/HierarchicalLeaderFilter';
-import { StudentRecord } from '../types';
-import { Search, UserPlus, Users } from 'lucide-react';
+import { RegistrationFilterBar } from '../components/RegistrationFilterBar';
+import { RegistrationReportModal } from '../components/RegistrationReportModal';
+import { StudentRecord, RegistrationFilterState, initialRegistrationFilterState } from '../types';
+import { UserPlus, Users } from 'lucide-react';
 
 export function RegistrationsPage() {
   const { activeCohortId, getActiveCohort } = useCohortStore();
   const activeCohort = getActiveCohort();
 
-  const {
-    students,
-    searchQuery,
-    setSearchQuery,
-    filterStatus,
-    setFilterStatus,
-    updateStudent,
-    addStudent,
-  } = useStudentStore();
+  const { students, updateStudent, addStudent } = useStudentStore();
 
   const cohortStudents = useMemo(() => {
     return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
   }, [students, activeCohortId]);
 
   const [editingStudent, setEditingStudent] = useState<StudentRecord | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
-  // Hierarchical filter state: Pastor -> G12 -> Cell Leader
-  const [selectedPastor, setSelectedPastor] = useState<string>('ALL');
-  const [selectedG12, setSelectedG12] = useState<string>('ALL');
-  const [selectedLeader, setSelectedLeader] = useState<string>('ALL');
+  // Unified Filter State
+  const [filters, setFilters] = useState<RegistrationFilterState>(initialRegistrationFilterState);
 
-  // Filter logic
+  const handleFilterChange = useCallback(
+    <K extends keyof RegistrationFilterState>(key: K, value: RegistrationFilterState[K]) => {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+    },
+    []
+  );
+
+  const handleResetFilters = useCallback(() => {
+    setFilters(initialRegistrationFilterState);
+  }, []);
+
+  // Filter application
   const filteredStudents = useMemo(() => {
     return cohortStudents.filter((s) => {
-      // 1. Text Search filter
-      const matchesSearch =
-        searchQuery.trim() === '' ||
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.pastor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.g12.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.leader.toLowerCase().includes(searchQuery.toLowerCase());
+      // 1. Text Search
+      if (filters.searchQuery.trim()) {
+        const query = filters.searchQuery.toLowerCase();
+        const matchesSearch =
+          s.name.toLowerCase().includes(query) ||
+          s.phone.toLowerCase().includes(query) ||
+          s.pastor.toLowerCase().includes(query) ||
+          s.g12.toLowerCase().includes(query) ||
+          s.leader.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
 
-      // 2. Status filter
-      const matchesStatus = filterStatus === 'ALL' || s.status === filterStatus;
+      // 2. Status
+      if (filters.status !== 'ALL' && s.status !== filters.status) return false;
 
-      // 3. Hierarchical leadership filters
-      const matchesPastor = selectedPastor === 'ALL' || s.pastor === selectedPastor;
-      const matchesG12 = selectedG12 === 'ALL' || s.g12 === selectedG12;
-      const matchesLeader = selectedLeader === 'ALL' || s.leader === selectedLeader;
+      // 3. Payment Method
+      if (filters.paymentMethod !== 'ALL' && s.paymentMethod !== filters.paymentMethod) return false;
 
-      return matchesSearch && matchesStatus && matchesPastor && matchesG12 && matchesLeader;
+      // 4. Gender
+      if (filters.gender !== 'ALL' && s.gender !== filters.gender) return false;
+
+      // 5. Age Range
+      if (filters.ageRange !== 'ALL') {
+        if (filters.ageRange === 'under18' && s.age >= 18) return false;
+        if (filters.ageRange === '18-29' && (s.age < 18 || s.age > 29)) return false;
+        if (filters.ageRange === '30-49' && (s.age < 30 || s.age > 49)) return false;
+        if (filters.ageRange === '50+' && s.age < 50) return false;
+      }
+
+      // 6. Marital Status
+      if (filters.maritalStatus !== 'ALL' && s.maritalStatus !== filters.maritalStatus) return false;
+
+      // 7. Shirt Size
+      if (filters.shirtSize !== 'ALL' && s.shirtSize !== filters.shirtSize) return false;
+
+      // 8. Comorbidity
+      if (filters.comorbidity !== 'ALL') {
+        const hasComorbidity =
+          s.comorbidity &&
+          s.comorbidity.toLowerCase() !== 'não' &&
+          s.comorbidity.toLowerCase() !== 'nao' &&
+          s.comorbidity !== '—';
+        if (filters.comorbidity === 'SIM' && !hasComorbidity) return false;
+        if (filters.comorbidity === 'NAO' && hasComorbidity) return false;
+      }
+
+      // 9. Leadership Hierarchy
+      if (filters.pastor !== 'ALL' && s.pastor !== filters.pastor) return false;
+      if (filters.g12 !== 'ALL' && s.g12 !== filters.g12) return false;
+      if (filters.leader !== 'ALL' && s.leader !== filters.leader) return false;
+
+      return true;
     });
-  }, [cohortStudents, searchQuery, filterStatus, selectedPastor, selectedG12, selectedLeader]);
+  }, [cohortStudents, filters]);
 
   const paidCount = useMemo(() => cohortStudents.filter((s) => s.status === 'Pago').length, [cohortStudents]);
-  const pendingCount = useMemo(
-    () => cohortStudents.filter((s) => s.status === 'Pendente').length,
-    [cohortStudents]
-  );
+  const pendingCount = cohortStudents.length - paidCount;
 
   const handleOpenEdit = (student: StudentRecord) => {
     setEditingStudent(student);
-    setIsModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
   const handleOpenCreate = () => {
@@ -82,9 +116,9 @@ export function RegistrationsPage() {
       phone: '',
       address: '',
       shirtSize: '—',
-      pastor: selectedPastor !== 'ALL' ? selectedPastor : 'Pra. Socorro Paiva',
-      g12: selectedG12 !== 'ALL' ? selectedG12 : '',
-      leader: selectedLeader !== 'ALL' ? selectedLeader : '',
+      pastor: filters.pastor !== 'ALL' ? filters.pastor : 'Pra. Socorro Paiva',
+      g12: filters.g12 !== 'ALL' ? filters.g12 : '',
+      leader: filters.leader !== 'ALL' ? filters.leader : '',
       status: 'Pendente',
       paymentMethod: '—',
       amountCents: activeCohort.registrationFeeCents || 20000,
@@ -94,13 +128,10 @@ export function RegistrationsPage() {
     };
 
     setEditingStudent(blankStudent);
-    setIsModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
   const handleSaveStudent = (s: StudentRecord) => (!s.id ? addStudent(s) : updateStudent(s));
-  const handleResetHierarchy = () => {
-    setSelectedPastor('ALL'); setSelectedG12('ALL'); setSelectedLeader('ALL');
-  };
 
   return (
     <div className="space-y-6">
@@ -118,9 +149,6 @@ export function RegistrationsPage() {
           <p className="text-xs text-slate-500 mt-0.5">
             Gerenciamento de alunos e inscrições da {activeCohort.name}
           </p>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Universidade da Vida 2026 • 53 Participantes Cadastrados
-          </p>
         </div>
 
         <button
@@ -132,81 +160,23 @@ export function RegistrationsPage() {
         </button>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white border border-slate-200/80 rounded-[28px] p-4 shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row items-center gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por nome, celular, pastor ou líder..."
-              className="w-full pl-11 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200/80 rounded-full focus:outline-none focus:ring-2 focus:ring-[#58bc75] focus:bg-white transition-all text-slate-900 placeholder:text-slate-400"
-            />
-          </div>
-
-          {/* Status Filter Pills */}
-          <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-            <button
-              onClick={() => setFilterStatus('ALL')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                filterStatus === 'ALL'
-                  ? 'bg-[#163242] text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Todos ({cohortStudents.length})
-            </button>
-            <button
-              onClick={() => setFilterStatus('Pago')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                filterStatus === 'Pago'
-                  ? 'bg-[#58bc75] text-white shadow-xs'
-                  : 'bg-[#e8f8ee] text-[#2c814b] hover:bg-[#d6f4df]'
-              }`}
-            >
-              Pagos ({paidCount})
-            </button>
-            <button
-              onClick={() => setFilterStatus('Pendente')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                filterStatus === 'Pendente'
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-              }`}
-            >
-              Pendentes ({pendingCount})
-            </button>
-          </div>
-        </div>
-
-        {/* Hierarchical Cascading Leader Filter: Pastor -> G12 -> Leader */}
-        <HierarchicalLeaderFilter
-          students={cohortStudents}
-          selectedPastor={selectedPastor}
-          selectedG12={selectedG12}
-          selectedLeader={selectedLeader}
-          onSelectPastor={setSelectedPastor}
-          onSelectG12={setSelectedG12}
-          onSelectLeader={setSelectedLeader}
-          onResetHierarchy={handleResetHierarchy}
-        />
-      </div>
+      {/* Advanced Filter Bar with Export PDF */}
+      <RegistrationFilterBar
+        students={cohortStudents}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onResetFilters={handleResetFilters}
+        onOpenReportModal={() => setIsReportModalOpen(true)}
+        totalCohortCount={cohortStudents.length}
+        paidCount={paidCount}
+        pendingCount={pendingCount}
+      />
 
       {/* Result Count Status */}
       <div className="flex items-center justify-between px-2 text-xs text-slate-500 font-medium">
         <span>
           Exibindo <strong>{filteredStudents.length}</strong> de {cohortStudents.length} alunos na {activeCohort.name}
         </span>
-        {(selectedPastor !== 'ALL' || selectedG12 !== 'ALL' || selectedLeader !== 'ALL') && (
-          <span className="text-[#2e844b] font-semibold">
-            Filtro: {selectedPastor}
-            {selectedG12 !== 'ALL' && ` › ${selectedG12}`}
-            {selectedLeader !== 'ALL' && ` › ${selectedLeader}`}
-          </span>
-        )}
       </div>
 
       {/* Cards List */}
@@ -239,9 +209,18 @@ export function RegistrationsPage() {
       {/* Edit Modal */}
       <RegistrationEditModal
         student={editingStudent}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
         onSave={handleSaveStudent}
+      />
+
+      {/* PDF / A4 Print Report Modal */}
+      <RegistrationReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        students={filteredStudents}
+        cohortName={activeCohort.name}
+        filters={filters}
       />
     </div>
   );

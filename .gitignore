@@ -6,10 +6,11 @@ node_modules/
 # Testing
 coverage/
 
-# Next.js / Build
+# Build output
 .next/
 out/
 build/
+dist/
 
 # Misc
 .DS_Store

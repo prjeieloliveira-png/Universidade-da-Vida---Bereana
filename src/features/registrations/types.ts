@@ -30,3 +30,31 @@ export interface StudentRecord {
   s9: boolean;
 }
 
+export interface RegistrationFilterState {
+  searchQuery: string;
+  status: 'ALL' | 'Pago' | 'Pendente';
+  paymentMethod: string;
+  gender: string;
+  ageRange: 'ALL' | 'under18' | '18-29' | '30-49' | '50+';
+  maritalStatus: string;
+  shirtSize: string;
+  comorbidity: 'ALL' | 'SIM' | 'NAO';
+  pastor: string;
+  g12: string;
+  leader: string;
+}
+
+export const initialRegistrationFilterState: RegistrationFilterState = {
+  searchQuery: '',
+  status: 'ALL',
+  paymentMethod: 'ALL',
+  gender: 'ALL',
+  ageRange: 'ALL',
+  maritalStatus: 'ALL',
+  shirtSize: 'ALL',
+  comorbidity: 'ALL',
+  pastor: 'ALL',
+  g12: 'ALL',
+  leader: 'ALL',
+};
+
