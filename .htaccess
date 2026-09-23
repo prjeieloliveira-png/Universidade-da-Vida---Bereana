@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Se o arquivo existir diretamente dentro de dist/ (ex: assets/index-xxx.js, css, imagens)
+  RewriteCond %{DOCUMENT_ROOT}/dist/$1 -f
+  RewriteRule ^(.*)$ dist/$1 [L]
+
+  # 2. Se for a raiz do site, redireciona internamente para dist/index.html
+  RewriteRule ^$ dist/index.html [L]
+
+  # 3. Fallback de Single Page Application: rotas como /presenca, /inscricoes, /lideranca
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . dist/index.html [L]
+</IfModule>
