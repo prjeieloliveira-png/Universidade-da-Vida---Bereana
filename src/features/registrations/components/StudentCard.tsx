@@ -2,18 +2,20 @@ import { useState } from 'react';
 import { StudentRecord } from '../types';
 import { StudentAttendanceChips } from './StudentAttendanceChips';
 import { PillBadge } from '@/shared/components/ui/PillBadge';
-import { Pencil, ChevronDown } from 'lucide-react';
+import { Pencil, ChevronDown, Printer } from 'lucide-react';
 import { formatCentsToBRL } from '@/shared/utils/currency';
 
 interface StudentCardProps {
   student: StudentRecord;
   onEdit: (student: StudentRecord) => void;
+  onPrint: (student: StudentRecord) => void;
   defaultExpanded?: boolean;
 }
 
 export function StudentCard({
   student,
   onEdit,
+  onPrint,
   defaultExpanded = false,
 }: StudentCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
@@ -90,6 +92,14 @@ export function StudentCard({
               />
 
               <button
+                onClick={() => onPrint(student)}
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#163242] active:bg-[#1f4358] flex items-center justify-center text-slate-600 hover:text-[#58bc75] transition-colors cursor-pointer"
+                title="Imprimir ficha"
+              >
+                <Printer className="w-3 h-3" />
+              </button>
+
+              <button
                 onClick={() => onEdit(student)}
                 className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 active:bg-slate-300 flex items-center justify-center text-slate-600 transition-colors cursor-pointer"
                 title="Editar cadastro"
@@ -149,6 +159,14 @@ export function StudentCard({
               s8={student.s8}
               s9={student.s9}
             />
+
+            <button
+              onClick={() => onPrint(student)}
+              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#163242] active:bg-[#1f4358] flex items-center justify-center text-slate-600 hover:text-[#58bc75] transition-colors cursor-pointer"
+              title="Imprimir ficha"
+            >
+              <Printer className="w-3.5 h-3.5" />
+            </button>
 
             <button
               onClick={() => onEdit(student)}

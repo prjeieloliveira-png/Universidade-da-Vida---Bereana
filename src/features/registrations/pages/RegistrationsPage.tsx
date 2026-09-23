@@ -5,6 +5,8 @@ import { StudentCard } from '../components/StudentCard';
 import { RegistrationEditModal } from '../components/RegistrationEditModal';
 import { RegistrationFilterBar } from '../components/RegistrationFilterBar';
 import { RegistrationReportModal } from '../components/RegistrationReportModal';
+import { StudentIndividualPrintModal } from '../components/StudentIndividualPrintModal';
+import { StudentBatchPrintModal } from '../components/StudentBatchPrintModal';
 import { StudentRecord, RegistrationFilterState, initialRegistrationFilterState } from '../types';
 import { UserPlus, Users } from 'lucide-react';
 
@@ -21,6 +23,9 @@ export function RegistrationsPage() {
   const [editingStudent, setEditingStudent] = useState<StudentRecord | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
+  const [printingStudent, setPrintingStudent] = useState<StudentRecord | null>(null);
 
   // Unified Filter State
   const [filters, setFilters] = useState<RegistrationFilterState>(initialRegistrationFilterState);
@@ -102,6 +107,15 @@ export function RegistrationsPage() {
     setIsEditModalOpen(true);
   };
 
+  const handleOpenPrint = (student: StudentRecord) => {
+    setPrintingStudent(student);
+    setIsPrintModalOpen(true);
+  };
+
+  const handleOpenPrintAll = () => {
+    setIsPrintAllModalOpen(true);
+  };
+
   const handleOpenCreate = () => {
     const blankStudent: StudentRecord = {
       id: '',
@@ -167,6 +181,7 @@ export function RegistrationsPage() {
         onFilterChange={handleFilterChange}
         onResetFilters={handleResetFilters}
         onOpenReportModal={() => setIsReportModalOpen(true)}
+        onPrintAll={handleOpenPrintAll}
         totalCohortCount={cohortStudents.length}
         paidCount={paidCount}
         pendingCount={pendingCount}
@@ -201,6 +216,7 @@ export function RegistrationsPage() {
               key={student.id}
               student={student}
               onEdit={handleOpenEdit}
+              onPrint={handleOpenPrint}
             />
           ))
         )}
@@ -221,6 +237,25 @@ export function RegistrationsPage() {
         students={filteredStudents}
         cohortName={activeCohort.name}
         filters={filters}
+      />
+
+      {/* Individual Print Modal */}
+      <StudentIndividualPrintModal
+        student={printingStudent}
+        cohortName={activeCohort.name}
+        isOpen={isPrintModalOpen}
+        onClose={() => {
+          setIsPrintModalOpen(false);
+          setPrintingStudent(null);
+        }}
+      />
+
+      {/* Batch Print Modal */}
+      <StudentBatchPrintModal
+        students={filteredStudents}
+        cohortName={activeCohort.name}
+        isOpen={isPrintAllModalOpen}
+        onClose={() => setIsPrintAllModalOpen(false)}
       />
     </div>
   );

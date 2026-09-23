@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, SlidersHorizontal, FileDown, X } from 'lucide-react';
+import { Search, SlidersHorizontal, FileDown, Printer, X } from 'lucide-react';
 import { StudentRecord, RegistrationFilterState, initialRegistrationFilterState } from '../types';
 import { RegistrationAdvancedFiltersDrawer } from './RegistrationAdvancedFiltersDrawer';
 
@@ -9,6 +9,7 @@ interface RegistrationFilterBarProps {
   onFilterChange: <K extends keyof RegistrationFilterState>(key: K, value: RegistrationFilterState[K]) => void;
   onResetFilters: () => void;
   onOpenReportModal: () => void;
+  onPrintAll: () => void;
   totalCohortCount: number;
   paidCount: number;
   pendingCount: number;
@@ -23,6 +24,7 @@ export function RegistrationFilterBar({
   onFilterChange,
   onResetFilters,
   onOpenReportModal,
+  onPrintAll,
   totalCohortCount,
   paidCount,
   pendingCount,
@@ -146,6 +148,15 @@ export function RegistrationFilterBar({
           >
             <FileDown className="w-3.5 h-3.5 text-[#2c814b]" />
             <span className="hidden sm:inline">Exportar PDF</span>
+          </button>
+
+          <button
+            onClick={onPrintAll}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold bg-[#163242]/10 hover:bg-[#163242]/20 text-[#163242] border border-[#163242]/20 transition-all cursor-pointer"
+            title="Imprimir fichas individuais de todos os alunos filtrados"
+          >
+            <Printer className="w-3.5 h-3.5 text-[#163242]" />
+            <span className="hidden sm:inline">Imprimir Fichas</span>
           </button>
         </div>
       </div>
