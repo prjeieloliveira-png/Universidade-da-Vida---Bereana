@@ -28,39 +28,47 @@ async function deploy() {
     });
     console.log('✅ Conexão FTP estabelecida com sucesso!');
 
-    const rootList = await client.list();
-    console.log('📁 Estrutura da raiz do FTP:');
-    rootList.forEach(item => console.log(`  - ${item.name} (${item.isDirectory ? 'pasta' : 'arquivo'})`));
+    const currentPwd = await client.pwd();
+    console.log('📍 Diretório atual (PWD):', currentPwd);
 
-    const targets = ['public_html'];
-    
-    const hasDomains = rootList.some(item => item.name === 'domains' && item.isDirectory);
-    if (hasDomains) {
+    const list = await client.list();
+    console.log('📁 Itens no diretório atual:');
+    list.forEach(item => console.log(`  - ${item.name} (${item.isDirectory ? 'dir' : 'file'})`));
+
+    // Se estiver na raiz e tiver public_html
+    if (list.some(i => i.name === 'public_html')) {
+      console.log('🚀 Enviando para public_html...');
+      await client.cd('public_html');
+      await client.uploadFromDir(distDir);
+      console.log('✅ Upload concluído em public_html');
+      await client.cd(currentPwd);
+    }
+
+    // Se tiver a pasta domains
+    if (list.some(i => i.name === 'domains')) {
+      console.log('🚀 Verificando pasta domains...');
       await client.cd('domains');
       const domainsList = await client.list();
-      console.log('📁 Domínios encontrados:', domainsList.map(d => d.name).join(', '));
       for (const d of domainsList) {
         if (d.isDirectory) {
-          targets.push(`domains/${d.name}/public_html`);
+          console.log(`🚀 Enviando para domains/${d.name}/public_html...`);
+          await client.cd(d.name);
+          const domainSub = await client.list();
+          if (domainSub.some(i => i.name === 'public_html')) {
+            await client.cd('public_html');
+            await client.uploadFromDir(distDir);
+            await client.cd('..');
+          } else {
+            await client.uploadFromDir(distDir);
+          }
+          console.log(`✅ Upload concluído em domains/${d.name}`);
+          await client.cd('..');
         }
       }
-      await client.cd('/');
+      await client.cd(currentPwd);
     }
 
-    console.log('🎯 Diretórios alvos para sincronização:', targets);
-
-    for (const target of targets) {
-      try {
-        console.log(`🚀 Sincronizando para /${target}...`);
-        await client.ensureDir(`/${target}`);
-        await client.uploadFromDir(distDir);
-        console.log(`✅ Sincronizado com sucesso em /${target}`);
-      } catch (uploadErr) {
-        console.warn(`⚠️ Não foi possível sincronizar em /${target}:`, uploadErr.message);
-      }
-    }
-
-    console.log('🎉 Upload finalizado com sucesso em todos os destinos!');
+    console.log('🎉 Deploy concluído com 100% de sucesso!');
   } catch (err) {
     console.error('❌ Erro durante o deploy FTP:', err);
     process.exit(1);
