@@ -12,6 +12,7 @@ import {
   Bell,
 } from 'lucide-react';
 import { supabase } from '@/shared/lib/supabase';
+import { CohortSelector } from '@/features/cohorts/components/CohortSelector';
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -69,8 +70,11 @@ export function AppShell() {
             </nav>
           </div>
 
-          {/* Right Section: Search & Actions */}
-          <div className="flex items-center gap-2.5">
+          {/* Right Section: Cohort & Actions */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Global Cohort Switcher */}
+            <CohortSelector />
+
             {/* Desktop Search Pill */}
             <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 bg-white border border-slate-200/70 rounded-full text-xs text-slate-400 shadow-xs w-48">
               <Search className="w-3.5 h-3.5" />

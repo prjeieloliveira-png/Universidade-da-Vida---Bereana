@@ -58,5 +58,12 @@ describe('useStudentStore', () => {
     const students = useStudentStore.getState().students;
     expect(students.length).toBe(initialCount + 1);
     expect(students[0]!.name).toBe('Novo Aluno Teste');
+    expect(students[0]!.cohortId).toBe('turma-01');
+  });
+
+  it('all 53 initial students belong to turma-01', () => {
+    const students = useStudentStore.getState().students;
+    const allBelongToTurma01 = students.every((s) => s.cohortId === 'turma-01');
+    expect(allBelongToTurma01).toBe(true);
   });
 });

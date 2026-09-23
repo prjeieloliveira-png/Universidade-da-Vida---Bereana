@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { studentsList } from '../data/mockStudents';
+import { useCohortStore } from '@/features/cohorts/store/cohortStore';
 import type { StudentRecord } from '../types';
 import type { WeekNumber, WeekKey } from '@/features/attendance/types';
 
@@ -20,9 +21,10 @@ function calculateAge(birthDateStr: string): number {
   return Math.max(0, age);
 }
 
-function mapRawToRecord(raw: (typeof studentsList)[0]): StudentRecord {
+function mapRawToRecord(raw: (typeof studentsList)[0] & { cohortId?: string }): StudentRecord {
   return {
     id: `reg-${raw.num}`,
+    cohortId: raw.cohortId || 'turma-01',
     personId: `person-${raw.num}`,
     num: raw.num,
     name: raw.name,
@@ -97,9 +99,14 @@ export const useStudentStore = create<StudentStoreState>()(
       addStudent: (newStudent) =>
         set((state) => {
           const nextNum = state.students.length + 1;
+          const targetCohortId =
+            newStudent.cohortId ||
+            useCohortStore.getState().activeCohortId ||
+            'turma-01';
           const created: StudentRecord = {
             ...newStudent,
             id: `reg-${nextNum}`,
+            cohortId: targetCohortId,
             personId: `person-${nextNum}`,
             num: nextNum,
             age: calculateAge(newStudent.birthDate),
@@ -134,7 +141,7 @@ export const useStudentStore = create<StudentStoreState>()(
     }),
     {
       name: 'bereana_students_store_v1',
-      version: 2,
+      version: 3,
       migrate: (persistedState: unknown) => {
         const state = persistedState as { students?: StudentRecord[] };
         if (state && Array.isArray(state.students)) {
@@ -142,6 +149,7 @@ export const useStudentStore = create<StudentStoreState>()(
             ...state,
             students: state.students.map((s) => ({
               ...s,
+              cohortId: s.cohortId || 'turma-01',
               s5: s.s5 ?? false,
               s6: s.s6 ?? false,
               s7: s.s7 ?? false,

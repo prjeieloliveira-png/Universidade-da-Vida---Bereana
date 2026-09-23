@@ -1,12 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useStudentStore } from '../store/studentStore';
+import { useCohortStore } from '@/features/cohorts/store/cohortStore';
 import { StudentCard } from '../components/StudentCard';
 import { RegistrationEditModal } from '../components/RegistrationEditModal';
 import { HierarchicalLeaderFilter } from '../components/HierarchicalLeaderFilter';
 import { StudentRecord } from '../types';
-import { Search, UserPlus } from 'lucide-react';
+import { Search, UserPlus, Users } from 'lucide-react';
 
 export function RegistrationsPage() {
+  const { activeCohortId, getActiveCohort } = useCohortStore();
+  const activeCohort = getActiveCohort();
+
   const {
     students,
     searchQuery,
@@ -16,6 +20,10 @@ export function RegistrationsPage() {
     updateStudent,
     addStudent,
   } = useStudentStore();
+
+  const cohortStudents = useMemo(() => {
+    return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
+  }, [students, activeCohortId]);
 
   const [editingStudent, setEditingStudent] = useState<StudentRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,7 +35,7 @@ export function RegistrationsPage() {
 
   // Filter logic
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
+    return cohortStudents.filter((s) => {
       // 1. Text Search filter
       const matchesSearch =
         searchQuery.trim() === '' ||
@@ -47,12 +55,12 @@ export function RegistrationsPage() {
 
       return matchesSearch && matchesStatus && matchesPastor && matchesG12 && matchesLeader;
     });
-  }, [students, searchQuery, filterStatus, selectedPastor, selectedG12, selectedLeader]);
+  }, [cohortStudents, searchQuery, filterStatus, selectedPastor, selectedG12, selectedLeader]);
 
-  const paidCount = useMemo(() => students.filter((s) => s.status === 'Pago').length, [students]);
+  const paidCount = useMemo(() => cohortStudents.filter((s) => s.status === 'Pago').length, [cohortStudents]);
   const pendingCount = useMemo(
-    () => students.filter((s) => s.status === 'Pendente').length,
-    [students]
+    () => cohortStudents.filter((s) => s.status === 'Pendente').length,
+    [cohortStudents]
   );
 
   const handleOpenEdit = (student: StudentRecord) => {
@@ -63,6 +71,7 @@ export function RegistrationsPage() {
   const handleOpenCreate = () => {
     const blankStudent: StudentRecord = {
       id: '',
+      cohortId: activeCohortId,
       personId: '',
       num: students.length + 1,
       name: '',
@@ -78,36 +87,19 @@ export function RegistrationsPage() {
       leader: selectedLeader !== 'ALL' ? selectedLeader : '',
       status: 'Pendente',
       paymentMethod: '—',
-      amountCents: 20000,
+      amountCents: activeCohort.registrationFeeCents || 20000,
       comorbidity: 'Não',
       medSchedule: 'Não',
-      s1: false,
-      s2: false,
-      s3: false,
-      s4: false,
-      s5: false,
-      s6: false,
-      s7: false,
-      s8: false,
-      s9: false,
+      s1: false, s2: false, s3: false, s4: false, s5: false, s6: false, s7: false, s8: false, s9: false,
     };
 
     setEditingStudent(blankStudent);
     setIsModalOpen(true);
   };
 
-  const handleSaveStudent = (saved: StudentRecord) => {
-    if (!saved.id) {
-      addStudent(saved);
-    } else {
-      updateStudent(saved);
-    }
-  };
-
+  const handleSaveStudent = (s: StudentRecord) => (!s.id ? addStudent(s) : updateStudent(s));
   const handleResetHierarchy = () => {
-    setSelectedPastor('ALL');
-    setSelectedG12('ALL');
-    setSelectedLeader('ALL');
+    setSelectedPastor('ALL'); setSelectedG12('ALL'); setSelectedLeader('ALL');
   };
 
   return (
@@ -121,8 +113,11 @@ export function RegistrationsPage() {
             <span className="text-slate-600 font-semibold">Inscrições</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Lista de Alunos ({students.length})
+            Lista de Alunos ({cohortStudents.length})
           </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Gerenciamento de alunos e inscrições da {activeCohort.name}
+          </p>
           <p className="text-xs text-slate-500 mt-0.5">
             Universidade da Vida 2026 • 53 Participantes Cadastrados
           </p>
@@ -162,7 +157,7 @@ export function RegistrationsPage() {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              Todos ({students.length})
+              Todos ({cohortStudents.length})
             </button>
             <button
               onClick={() => setFilterStatus('Pago')}
@@ -189,7 +184,7 @@ export function RegistrationsPage() {
 
         {/* Hierarchical Cascading Leader Filter: Pastor -> G12 -> Leader */}
         <HierarchicalLeaderFilter
-          students={students}
+          students={cohortStudents}
           selectedPastor={selectedPastor}
           selectedG12={selectedG12}
           selectedLeader={selectedLeader}
@@ -203,7 +198,7 @@ export function RegistrationsPage() {
       {/* Result Count Status */}
       <div className="flex items-center justify-between px-2 text-xs text-slate-500 font-medium">
         <span>
-          Exibindo <strong>{filteredStudents.length}</strong> de {students.length} alunos
+          Exibindo <strong>{filteredStudents.length}</strong> de {cohortStudents.length} alunos na {activeCohort.name}
         </span>
         {(selectedPastor !== 'ALL' || selectedG12 !== 'ALL' || selectedLeader !== 'ALL') && (
           <span className="text-[#2e844b] font-semibold">
@@ -214,9 +209,19 @@ export function RegistrationsPage() {
         )}
       </div>
 
-      {/* Cards List (53 Students - Collapsed by default, expandable) */}
+      {/* Cards List */}
       <div className="space-y-3">
-        {filteredStudents.length === 0 ? (
+        {cohortStudents.length === 0 ? (
+          <div className="p-8 text-center bg-white rounded-[28px] border border-slate-200 text-slate-500 space-y-2">
+            <div className="w-10 h-10 rounded-full bg-[#58bc75]/15 text-[#20693a] flex items-center justify-center mx-auto">
+              <Users className="w-5 h-5" />
+            </div>
+            <div className="font-bold text-slate-800 text-sm">Nenhum aluno inscrito na {activeCohort.name}</div>
+            <p className="text-xs text-slate-400 max-w-xs mx-auto">
+              Turma iniciada do zero. Clique em "Novo Aluno" para cadastrar a primeira inscrição.
+            </p>
+          </div>
+        ) : filteredStudents.length === 0 ? (
           <div className="p-12 text-center bg-white rounded-[28px] border border-slate-200 text-slate-400">
             Nenhum aluno encontrado para os filtros selecionados.
           </div>

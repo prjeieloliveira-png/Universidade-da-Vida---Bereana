@@ -1,5 +1,6 @@
 export interface StudentRecord {
   id: string;
+  cohortId?: string;
   personId: string;
   num: number;
   name: string;

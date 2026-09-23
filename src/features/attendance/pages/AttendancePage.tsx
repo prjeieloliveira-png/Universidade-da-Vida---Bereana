@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useStudentStore } from '@/features/registrations/store/studentStore';
+import { useCohortStore } from '@/features/cohorts/store/cohortStore';
 import { WeekSelectorPills } from '../components/WeekSelectorPills';
 import { AttendanceStatsBar } from '../components/AttendanceStatsBar';
 import { AttendanceStudentRow } from '../components/AttendanceStudentRow';
@@ -10,6 +11,13 @@ import { Search, FileSpreadsheet } from 'lucide-react';
 
 export function AttendancePage() {
   const { students, toggleAttendance, setBulkAttendance } = useStudentStore();
+  const { activeCohortId, getActiveCohort } = useCohortStore();
+  const activeCohort = getActiveCohort();
+
+  const cohortStudents = useMemo(() => {
+    return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
+  }, [students, activeCohortId]);
+
   const [activeWeek, setActiveWeek] = useState<WeekNumber>(2); // Default to Week 2 which was in progress in PDF
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PRESENTE' | 'FALTA'>('ALL');
@@ -24,7 +32,7 @@ export function AttendancePage() {
 
   // Filter logic
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
+    return cohortStudents.filter((s) => {
       // 1. Text Search
       const matchesSearch =
         searchQuery.trim() === '' ||
@@ -48,7 +56,7 @@ export function AttendancePage() {
 
       return matchesSearch && matchesStatus && matchesPastor && matchesG12 && matchesLeader;
     });
-  }, [students, searchQuery, statusFilter, currentKey, selectedPastor, selectedG12, selectedLeader]);
+  }, [cohortStudents, searchQuery, statusFilter, currentKey, selectedPastor, selectedG12, selectedLeader]);
 
   // Metrics for active week based on filtered scope
   const presentCount = useMemo(
@@ -172,7 +180,7 @@ export function AttendancePage() {
 
         {/* Hierarchical Leadership Filter */}
         <HierarchicalLeaderFilter
-          students={students}
+          students={cohortStudents}
           selectedPastor={selectedPastor}
           selectedG12={selectedG12}
           selectedLeader={selectedLeader}
@@ -185,7 +193,11 @@ export function AttendancePage() {
 
       {/* Student Rows List */}
       <div className="space-y-2.5">
-        {filteredStudents.length === 0 ? (
+        {cohortStudents.length === 0 ? (
+          <div className="p-8 text-center bg-white rounded-[28px] border border-slate-200 text-slate-500">
+            Nenhum aluno inscrito na {activeCohort.name} para chamada.
+          </div>
+        ) : filteredStudents.length === 0 ? (
           <div className="p-12 text-center bg-white rounded-[28px] border border-slate-200 text-slate-400">
             Nenhum aluno encontrado para os filtros selecionados.
           </div>

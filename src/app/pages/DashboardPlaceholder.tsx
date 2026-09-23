@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Calendar, CheckSquare } from 'lucide-react';
 import { useStudentStore } from '@/features/registrations/store/studentStore';
+import { useCohortStore } from '@/features/cohorts/store/cohortStore';
 import { CoordinatorHeroCard } from '@/features/dashboard/components/CoordinatorHeroCard';
 import { AttendanceMatrixCard } from '@/features/dashboard/components/AttendanceMatrixCard';
 import { NetworkDistributionCard } from '@/features/dashboard/components/NetworkDistributionCard';
@@ -12,32 +13,38 @@ import { FinancialSummaryCard } from '@/features/dashboard/components/FinancialS
 
 export function DashboardPlaceholder() {
   const navigate = useNavigate();
-  const [activeDate] = useState('Edição 2026 — 1º Semestre');
   const { students } = useStudentStore();
+  const { activeCohortId, getActiveCohort } = useCohortStore();
+  const activeCohort = getActiveCohort();
 
-  // Dynamic calculations based on the 53 students
+  const cohortStudents = useMemo(() => {
+    return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
+  }, [students, activeCohortId]);
+
+  // Dynamic calculations based on cohort students
   const metrics = useMemo(() => {
-    const total = students.length;
-    const paid = students.filter((s) => s.status === 'Pago').length;
+    const total = cohortStudents.length;
+    const paid = cohortStudents.filter((s) => s.status === 'Pago').length;
     const pending = total - paid;
-    const family = students.filter((s) => s.pastor.includes('Socorro')).length;
+    const family = cohortStudents.filter((s) => s.pastor.includes('Socorro')).length;
     const youth = total - family;
 
-    const collectedCents = paid * 20000;
-    const pendingCents = pending * 20000;
+    const feeCents = activeCohort.registrationFeeCents || 20000;
+    const collectedCents = paid * feeCents;
+    const pendingCents = pending * feeCents;
     const paymentRate = total > 0 ? Math.round((paid / total) * 100) : 0;
 
     const familyPct = total > 0 ? Math.round((family / total) * 100) : 50;
     const youthPct = 100 - familyPct;
 
     // Recent 5 participants
-    const recent: ParticipantItem[] = students.slice(0, 5).map((s) => ({
+    const recent: ParticipantItem[] = cohortStudents.slice(0, 5).map((s) => ({
       id: s.id,
       name: s.name,
       network: `${s.pastor} • ${s.g12}`,
       statusLabel: s.status,
       statusVariant: s.status === 'Pago' ? 'success' : 'warning',
-      amountFormatted: 'R$ 200,00',
+      amountFormatted: `R$ ${(feeCents / 100).toFixed(2).replace('.', ',')}`,
     }));
 
     return {
@@ -53,7 +60,7 @@ export function DashboardPlaceholder() {
       youthPct,
       recent,
     };
-  }, [students]);
+  }, [cohortStudents, activeCohort]);
 
   return (
     <div className="space-y-6">
@@ -82,7 +89,7 @@ export function DashboardPlaceholder() {
 
           <div className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white border border-slate-200/80 text-slate-600 shadow-xs">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>{activeDate}</span>
+            <span>{activeCohort.name}</span>
           </div>
 
           <button
@@ -126,11 +133,11 @@ export function DashboardPlaceholder() {
             </div>
           </div>
 
-          {/* Bottom Row: Gauge Card + Lessons Schedule Card */}
+          {/* Bottom Row: Goal Gauge + Lessons Progress */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <RegistrationGaugeCard
               totalRegistered={metrics.total}
-              maxCapacity={60}
+              maxCapacity={activeCohort.targetStudents || 70}
               familyCount={metrics.family}
               youthCount={metrics.youth}
               onViewAll={() => navigate('/inscricoes')}
