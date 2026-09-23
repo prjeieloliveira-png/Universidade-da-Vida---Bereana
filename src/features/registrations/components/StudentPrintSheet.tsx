@@ -91,6 +91,45 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
         >
           {student.status}
         </div>
+
+        {/* Foto 3×4 */}
+        {student.photoUrl && (
+          <img
+            src={student.photoUrl}
+            alt={student.name}
+            style={{
+              width: 54,
+              height: 72,
+              objectFit: 'cover',
+              borderRadius: 6,
+              border: '1px solid #e2e8f0',
+              flexShrink: 0,
+            }}
+          />
+        )}
+        {!student.photoUrl && (
+          <div
+            style={{
+              width: 54,
+              height: 72,
+              borderRadius: 6,
+              border: '1.5px dashed #cbd5e1',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              color: '#cbd5e1',
+              fontSize: '8px',
+              fontWeight: 700,
+              textAlign: 'center',
+              lineHeight: 1.3,
+            }}
+          >
+            Foto
+            <br />
+            3×4
+          </div>
+        )}
       </div>
 
       {/* ── Grid Principal ── */}

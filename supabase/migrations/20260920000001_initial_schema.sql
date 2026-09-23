@@ -3,14 +3,17 @@
 -- ============================================================================
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE user_role AS ENUM ('coordinator', 'secretary', 'network_leader', 'viewer');
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('coordinator', 'secretary', 'network_leader', 'viewer');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================================
 -- 2. TABELAS DE DOMÍNIO
 -- ============================================================================
 
 -- Redes da igreja
-CREATE TABLE networks (
+CREATE TABLE IF NOT EXISTS networks (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL,
     pastor_id uuid,
@@ -19,7 +22,7 @@ CREATE TABLE networks (
 );
 
 -- Perfis de usuários vinculados ao auth.users
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
     id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email text NOT NULL,
     full_name text NOT NULL,
@@ -29,12 +32,17 @@ CREATE TABLE profiles (
     created_at timestamptz DEFAULT now()
 );
 
-ALTER TABLE networks 
-    ADD CONSTRAINT fk_networks_pastor 
-    FOREIGN KEY (pastor_id) REFERENCES profiles(id) ON DELETE SET NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'fk_networks_pastor'
+    ) THEN
+        ALTER TABLE networks ADD CONSTRAINT fk_networks_pastor FOREIGN KEY (pastor_id) REFERENCES profiles(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- Pessoas (entidade cadastral permanente)
-CREATE TABLE people (
+CREATE TABLE IF NOT EXISTS people (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name text NOT NULL,
     birth_date date NOT NULL,
@@ -47,7 +55,7 @@ CREATE TABLE people (
 );
 
 -- Dados sensíveis de saúde (1:1 com people, RLS estrita)
-CREATE TABLE health_records (
+CREATE TABLE IF NOT EXISTS health_records (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     person_id uuid NOT NULL UNIQUE REFERENCES people(id) ON DELETE CASCADE,
     has_condition boolean NOT NULL DEFAULT false,
@@ -60,7 +68,7 @@ CREATE TABLE health_records (
 );
 
 -- Edições anuais
-CREATE TABLE editions (
+CREATE TABLE IF NOT EXISTS editions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL,
     year int NOT NULL,
@@ -73,7 +81,7 @@ CREATE TABLE editions (
 );
 
 -- Aulas / Encontros da edição
-CREATE TABLE lessons (
+CREATE TABLE IF NOT EXISTS lessons (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     edition_id uuid NOT NULL REFERENCES editions(id) ON DELETE CASCADE,
     session_number int NOT NULL,
@@ -84,7 +92,7 @@ CREATE TABLE lessons (
 );
 
 -- Inscrições de participantes na edição
-CREATE TABLE registrations (
+CREATE TABLE IF NOT EXISTS registrations (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     person_id uuid NOT NULL REFERENCES people(id) ON DELETE CASCADE,
     edition_id uuid NOT NULL REFERENCES editions(id) ON DELETE CASCADE,
@@ -97,7 +105,7 @@ CREATE TABLE registrations (
 );
 
 -- Presenças nas aulas
-CREATE TABLE attendances (
+CREATE TABLE IF NOT EXISTS attendances (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     registration_id uuid NOT NULL REFERENCES registrations(id) ON DELETE CASCADE,
     lesson_id uuid NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
@@ -108,7 +116,7 @@ CREATE TABLE attendances (
 );
 
 -- Pagamentos de inscrição (centavos)
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     registration_id uuid NOT NULL REFERENCES registrations(id) ON DELETE CASCADE,
     amount_cents bigint NOT NULL CHECK (amount_cents > 0),
@@ -121,7 +129,7 @@ CREATE TABLE payments (
 );
 
 -- Livro caixa / transações gerais do evento
-CREATE TABLE financial_transactions (
+CREATE TABLE IF NOT EXISTS financial_transactions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     edition_id uuid NOT NULL REFERENCES editions(id) ON DELETE CASCADE,
     type text NOT NULL CHECK (type IN ('revenue', 'expense')),
@@ -137,7 +145,7 @@ CREATE TABLE financial_transactions (
 );
 
 -- Tabela de auditoria
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     table_name text NOT NULL,
     record_id uuid NOT NULL,
@@ -200,88 +208,222 @@ ALTER TABLE financial_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Policies: profiles
-CREATE POLICY "profiles_select_all_authenticated" ON profiles
-    FOR SELECT TO authenticated USING (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid
+        WHERE p.polname = 'profiles_select_all_authenticated' AND c.relname = 'profiles'
+    ) THEN
+        CREATE POLICY "profiles_select_all_authenticated" ON profiles
+            FOR SELECT TO authenticated USING (true);
+    END IF;
+END $$;
 
-CREATE POLICY "profiles_update_coordinator" ON profiles
-    FOR ALL TO authenticated USING (is_coord_or_sec());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'profiles_update_coordinator' AND c.relname = 'profiles'
+    ) THEN
+        CREATE POLICY "profiles_update_coordinator" ON profiles
+            FOR ALL TO authenticated USING (is_coord_or_sec());
+    END IF;
+END $$;
 
 -- Policies: networks
-CREATE POLICY "networks_select" ON networks
-    FOR SELECT TO authenticated USING (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy WHERE polname = 'networks_select' AND polrelid = 'networks'::regclass
+    ) THEN
+        CREATE POLICY "networks_select" ON networks
+            FOR SELECT TO authenticated USING (true);
+    END IF;
+END $$;
 
-CREATE POLICY "networks_manage" ON networks
-    FOR ALL TO authenticated USING (is_coord_or_sec());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'networks_manage' AND c.relname = 'networks'
+    ) THEN
+        CREATE POLICY "networks_manage" ON networks
+            FOR ALL TO authenticated USING (is_coord_or_sec());
+    END IF;
+END $$;
 
 -- Policies: people
-CREATE POLICY "people_select" ON people
-    FOR SELECT TO authenticated USING (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'people_select' AND c.relname = 'people'
+    ) THEN
+        CREATE POLICY "people_select" ON people
+            FOR SELECT TO authenticated USING (true);
+    END IF;
+END $$;
 
-CREATE POLICY "people_manage" ON people
-    FOR ALL TO authenticated USING (is_coord_or_sec() OR auth_user_role() = 'network_leader');
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'people_manage' AND c.relname = 'people'
+    ) THEN
+        CREATE POLICY "people_manage" ON people
+            FOR ALL TO authenticated USING (is_coord_or_sec() OR auth_user_role() = 'network_leader');
+    END IF;
+END $$;
 
 -- Policies: health_records (ESTRITA: Apenas coordenação e secretaria!)
-CREATE POLICY "health_records_coord_sec_only" ON health_records
-    FOR ALL TO authenticated USING (is_coord_or_sec());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'health_records_coord_sec_only' AND c.relname = 'health_records'
+    ) THEN
+        CREATE POLICY "health_records_coord_sec_only" ON health_records
+            FOR ALL TO authenticated USING (is_coord_or_sec());
+    END IF;
+END $$;
 
 -- Policies: editions & lessons
-CREATE POLICY "editions_select" ON editions FOR SELECT TO authenticated USING (true);
-CREATE POLICY "editions_manage" ON editions FOR ALL TO authenticated USING (is_coord_or_sec());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'editions_select' AND c.relname = 'editions'
+    ) THEN
+        CREATE POLICY "editions_select" ON editions FOR SELECT TO authenticated USING (true);
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'editions_manage' AND c.relname = 'editions'
+    ) THEN
+        CREATE POLICY "editions_manage" ON editions FOR ALL TO authenticated USING (is_coord_or_sec());
+    END IF;
+END $$;
 
-CREATE POLICY "lessons_select" ON lessons FOR SELECT TO authenticated USING (true);
-CREATE POLICY "lessons_manage" ON lessons FOR ALL TO authenticated USING (is_coord_or_sec());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'lessons_select' AND c.relname = 'lessons'
+    ) THEN
+        CREATE POLICY "lessons_select" ON lessons FOR SELECT TO authenticated USING (true);
+    END IF;
+END $$;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'lessons_manage' AND c.relname = 'lessons'
+    ) THEN
+        CREATE POLICY "lessons_manage" ON lessons FOR ALL TO authenticated USING (is_coord_or_sec());
+    END IF;
+END $$;
 
 -- Policies: registrations
-CREATE POLICY "registrations_select" ON registrations
-    FOR SELECT TO authenticated
-    USING (is_coord_or_sec() OR network_id = auth_user_network_id());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'registrations_select' AND c.relname = 'registrations'
+    ) THEN
+        CREATE POLICY "registrations_select" ON registrations
+            FOR SELECT TO authenticated
+            USING (is_coord_or_sec() OR network_id = auth_user_network_id());
+    END IF;
+END $$;
 
-CREATE POLICY "registrations_manage" ON registrations
-    FOR ALL TO authenticated
-    USING (is_coord_or_sec() OR network_id = auth_user_network_id());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'registrations_manage' AND c.relname = 'registrations'
+    ) THEN
+        CREATE POLICY "registrations_manage" ON registrations
+            FOR ALL TO authenticated
+            USING (is_coord_or_sec() OR network_id = auth_user_network_id());
+    END IF;
+END $$;
 
 -- Policies: attendances
-CREATE POLICY "attendances_select" ON attendances
-    FOR SELECT TO authenticated
-    USING (
-        is_coord_or_sec() OR 
-        EXISTS (
-            SELECT 1 FROM registrations r 
-            WHERE r.id = attendances.registration_id AND r.network_id = auth_user_network_id()
-        )
-    );
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'attendances_select' AND c.relname = 'attendances'
+    ) THEN
+        CREATE POLICY "attendances_select" ON attendances
+            FOR SELECT TO authenticated
+            USING (
+                is_coord_or_sec() OR 
+                EXISTS (
+                    SELECT 1 FROM registrations r 
+                    WHERE r.id = attendances.registration_id AND r.network_id = auth_user_network_id()
+                )
+            );
+    END IF;
+END $$;
 
-CREATE POLICY "attendances_manage" ON attendances
-    FOR ALL TO authenticated
-    USING (
-        is_coord_or_sec() OR 
-        EXISTS (
-            SELECT 1 FROM registrations r 
-            WHERE r.id = attendances.registration_id AND r.network_id = auth_user_network_id()
-        )
-    );
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'attendances_manage' AND c.relname = 'attendances'
+    ) THEN
+        CREATE POLICY "attendances_manage" ON attendances
+            FOR ALL TO authenticated
+            USING (
+                is_coord_or_sec() OR 
+                EXISTS (
+                    SELECT 1 FROM registrations r 
+                    WHERE r.id = attendances.registration_id AND r.network_id = auth_user_network_id()
+                )
+            );
+    END IF;
+END $$;
 
 -- Policies: payments
-CREATE POLICY "payments_select" ON payments
-    FOR SELECT TO authenticated
-    USING (
-        is_coord_or_sec() OR 
-        EXISTS (
-            SELECT 1 FROM registrations r 
-            WHERE r.id = payments.registration_id AND r.network_id = auth_user_network_id()
-        )
-    );
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'payments_select' AND c.relname = 'payments'
+    ) THEN
+        CREATE POLICY "payments_select" ON payments
+            FOR SELECT TO authenticated
+            USING (
+                is_coord_or_sec() OR 
+                EXISTS (
+                    SELECT 1 FROM registrations r 
+                    WHERE r.id = payments.registration_id AND r.network_id = auth_user_network_id()
+                )
+            );
+    END IF;
+END $$;
 
-CREATE POLICY "payments_manage" ON payments
-    FOR ALL TO authenticated USING (is_coord_or_sec());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'payments_manage' AND c.relname = 'payments'
+    ) THEN
+        CREATE POLICY "payments_manage" ON payments
+            FOR ALL TO authenticated USING (is_coord_or_sec());
+    END IF;
+END $$;
 
 -- Policies: financial_transactions
-CREATE POLICY "financial_transactions_coord_only" ON financial_transactions
-    FOR ALL TO authenticated USING (is_coord_or_sec());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'financial_transactions_coord_only' AND c.relname = 'financial_transactions'
+    ) THEN
+        CREATE POLICY "financial_transactions_coord_only" ON financial_transactions
+            FOR ALL TO authenticated USING (is_coord_or_sec());
+    END IF;
+END $$;
 
 -- Policies: audit_logs
-CREATE POLICY "audit_logs_coord_only" ON audit_logs
-    FOR SELECT TO authenticated USING (is_coord_or_sec());
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policy p JOIN pg_class c ON p.polrelid = c.oid WHERE p.polname = 'audit_logs_coord_only' AND c.relname = 'audit_logs'
+    ) THEN
+        CREATE POLICY "audit_logs_coord_only" ON audit_logs
+            FOR SELECT TO authenticated USING (is_coord_or_sec());
+    END IF;
+END $$;
 
 -- ============================================================================
 -- 5. VIEWS DE CÁLCULO DERIVADO

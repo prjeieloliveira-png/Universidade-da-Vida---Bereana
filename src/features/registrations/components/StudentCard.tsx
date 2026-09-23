@@ -53,9 +53,22 @@ export function StudentCard({
           {/* Top Row: Number, Name & Status Badge */}
           <div className="flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <span className="w-7 h-7 rounded-full bg-[#163242] text-white flex items-center justify-center text-xs font-extrabold shrink-0 shadow-2xs">
-                {student.num}
-              </span>
+              {student.photoUrl ? (
+                <div className="relative shrink-0">
+                  <img
+                    src={student.photoUrl}
+                    alt={student.name}
+                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                  />
+                  <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#163242] text-white flex items-center justify-center text-[8px] font-extrabold shadow-xs">
+                    {student.num}
+                  </span>
+                </div>
+              ) : (
+                <span className="w-7 h-7 rounded-full bg-[#163242] text-white flex items-center justify-center text-xs font-extrabold shrink-0 shadow-2xs">
+                  {student.num}
+                </span>
+              )}
               <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-1 flex-1">
                 {student.name}
               </h3>
@@ -124,9 +137,22 @@ export function StudentCard({
         <div className="hidden sm:flex items-center justify-between gap-3">
           {/* Left Side: Number, Name & Quick Subtitle */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <span className="w-7 h-7 rounded-full bg-[#163242] text-white flex items-center justify-center text-xs font-extrabold shrink-0 shadow-2xs">
-              {student.num}
-            </span>
+            {student.photoUrl ? (
+              <div className="relative shrink-0">
+                <img
+                  src={student.photoUrl}
+                  alt={student.name}
+                  className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
+                />
+                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#163242] text-white flex items-center justify-center text-[8px] font-extrabold shadow-xs">
+                  {student.num}
+                </span>
+              </div>
+            ) : (
+              <span className="w-7 h-7 rounded-full bg-[#163242] text-white flex items-center justify-center text-xs font-extrabold shrink-0 shadow-2xs">
+                {student.num}
+              </span>
+            )}
             <div className="min-w-0">
               <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
                 {student.name}

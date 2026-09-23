@@ -43,6 +43,7 @@ function mapRawToRecord(raw: (typeof studentsList)[0] & { cohortId?: string }): 
     amountCents: 20000,
     comorbidity: raw.comorbidity || 'Não',
     medSchedule: raw.medSchedule || 'Não',
+    photoUrl: undefined,
     s1: raw.s1 ?? false,
     s2: raw.s2 ?? false,
     s3: raw.s3 ?? false,
@@ -54,6 +55,7 @@ function mapRawToRecord(raw: (typeof studentsList)[0] & { cohortId?: string }): 
     s9: false,
   };
 }
+
 
 interface StudentStoreState {
   students: StudentRecord[];
@@ -141,7 +143,7 @@ export const useStudentStore = create<StudentStoreState>()(
     }),
     {
       name: 'bereana_students_store_v1',
-      version: 3,
+      version: 4,
       migrate: (persistedState: unknown) => {
         const state = persistedState as { students?: StudentRecord[] };
         if (state && Array.isArray(state.students)) {
@@ -150,6 +152,7 @@ export const useStudentStore = create<StudentStoreState>()(
             students: state.students.map((s) => ({
               ...s,
               cohortId: s.cohortId || 'turma-01',
+              photoUrl: s.photoUrl ?? undefined,
               s5: s.s5 ?? false,
               s6: s.s6 ?? false,
               s7: s.s7 ?? false,

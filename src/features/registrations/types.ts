@@ -19,6 +19,7 @@ export interface StudentRecord {
   amountCents: number;
   comorbidity: string;
   medSchedule: string;
+  photoUrl?: string;
   s1: boolean;
   s2: boolean;
   s3: boolean;

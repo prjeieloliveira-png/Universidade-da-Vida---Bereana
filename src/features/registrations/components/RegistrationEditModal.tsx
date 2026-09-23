@@ -3,6 +3,7 @@ import { X, Save, CheckCircle2 } from 'lucide-react';
 import type { StudentRecord } from '../types';
 import { RegistrationLeadershipFields } from './RegistrationLeadershipFields';
 import { RegistrationHealthAndAttendanceFields } from './RegistrationHealthAndAttendanceFields';
+import { PhotoUpload } from './PhotoUpload';
 
 interface RegistrationEditModalProps {
   student: StudentRecord | null;
@@ -65,6 +66,16 @@ export function RegistrationEditModal({
               <span>Dados atualizados com sucesso!</span>
             </div>
           )}
+
+          {/* Foto de Perfil */}
+          <div className="flex justify-center sm:justify-start">
+            <PhotoUpload
+              personId={formData.personId}
+              currentUrl={formData.photoUrl}
+              gender={formData.gender}
+              onUploaded={(url) => handleChange('photoUrl', url || undefined)}
+            />
+          </div>
 
           {/* Grupo 1: Dados Pessoais */}
           <div>
