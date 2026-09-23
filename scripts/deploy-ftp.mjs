@@ -28,45 +28,14 @@ async function deploy() {
     });
     console.log('✅ Conexão FTP estabelecida com sucesso!');
 
-    const currentPwd = await client.pwd();
-    console.log('📍 Diretório atual (PWD):', currentPwd);
+    console.log(`🚀 Fazendo upload direto dos arquivos de ${distDir} para public_html...`);
+    await client.ensureDir('public_html');
+    await client.clearWorkingDir();
+    await client.uploadFromDir(distDir);
 
-    const list = await client.list();
-    console.log('📁 Itens no diretório atual:');
-    list.forEach(item => console.log(`  - ${item.name} (${item.isDirectory ? 'dir' : 'file'})`));
-
-    // Se estiver na raiz e tiver public_html
-    if (list.some(i => i.name === 'public_html')) {
-      console.log('🚀 Enviando para public_html...');
-      await client.cd('public_html');
-      await client.uploadFromDir(distDir);
-      console.log('✅ Upload concluído em public_html');
-      await client.cd(currentPwd);
-    }
-
-    // Se tiver a pasta domains
-    if (list.some(i => i.name === 'domains')) {
-      console.log('🚀 Verificando pasta domains...');
-      await client.cd('domains');
-      const domainsList = await client.list();
-      for (const d of domainsList) {
-        if (d.isDirectory) {
-          console.log(`🚀 Enviando para domains/${d.name}/public_html...`);
-          await client.cd(d.name);
-          const domainSub = await client.list();
-          if (domainSub.some(i => i.name === 'public_html')) {
-            await client.cd('public_html');
-            await client.uploadFromDir(distDir);
-            await client.cd('..');
-          } else {
-            await client.uploadFromDir(distDir);
-          }
-          console.log(`✅ Upload concluído em domains/${d.name}`);
-          await client.cd('..');
-        }
-      }
-      await client.cd(currentPwd);
-    }
+    console.log('📁 Listagem de arquivos em public_html após upload:');
+    const uploadedList = await client.list();
+    uploadedList.forEach(item => console.log(`  - ${item.name} (${item.isDirectory ? 'dir' : 'file'})`));
 
     console.log('🎉 Deploy concluído com 100% de sucesso!');
   } catch (err) {
