@@ -28,25 +28,26 @@ async function deploy() {
     });
     console.log('✅ Conexão FTP estabelecida com sucesso!');
 
-    console.log(`🚀 Fazendo upload direto dos arquivos de ${distDir} para public_html...`);
-    await client.ensureDir('public_html');
-    await client.uploadFromDir(distDir);
+    const currentPwd = await client.pwd();
+    console.log('📍 Diretório FTP atual (PWD):', currentPwd);
 
-    const uploadedList = await client.list();
-    let summaryMd = `### 📊 Diagnóstico do Deploy FTP na Hostinger\n\n`;
-    summaryMd += `- **Servidor:** \`${host}\`\n`;
-    summaryMd += `- **Usuário:** \`${user}\`\n`;
-    summaryMd += `- **Diretório FTP atual:** \`${await client.pwd()}\`\n\n`;
-    summaryMd += `#### 📁 Arquivos encontrados em public_html:\n`;
-    uploadedList.forEach(item => {
-      summaryMd += `- \`${item.name}\` (${item.isDirectory ? 'pasta' : item.size + ' bytes'})\n`;
-    });
+    const list = await client.list();
+    console.log('📁 Itens no diretório:', list.map(i => `${i.name} (${i.isDirectory ? 'dir' : 'file'})`).join(', '));
 
-    if (process.env.GITHUB_STEP_SUMMARY) {
-      import('fs').then(fs => fs.writeFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMd));
+    const hasPublicHtml = list.some(item => item.name === 'public_html' && item.isDirectory);
+
+    if (hasPublicHtml) {
+      console.log('🚀 Entrando em public_html...');
+      await client.cd('public_html');
+    } else {
+      console.log('🚀 Já no diretório raiz de publicação!');
     }
 
-    console.log('🎉 Deploy concluído!');
+    console.log(`🚀 Fazendo upload dos arquivos compilados de ${distDir}...`);
+    await client.uploadFromDir(distDir);
+
+    const finalFiles = await client.list();
+    console.log('🎉 Arquivos publicados:', finalFiles.map(f => f.name).join(', '));
   } catch (err) {
     console.error('❌ Erro durante o deploy FTP:', err);
     process.exit(1);
