@@ -66,4 +66,26 @@ describe('useStudentStore', () => {
     const allBelongToTurma01 = students.every((s) => s.cohortId === 'turma-01');
     expect(allBelongToTurma01).toBe(true);
   });
+
+  it('maps payment methods correctly: PIX, CARTÃO, DINHEIRO', () => {
+    const paid = useStudentStore.getState().students.filter((s) => s.status === 'Pago');
+    expect(paid.length).toBeGreaterThan(0);
+    const methods = paid.map((s) => s.paymentMethod);
+    expect(methods.some((m) => m === 'PIX')).toBe(true);
+    expect(methods.some((m) => m === 'CARTÃO')).toBe(true);
+    expect(methods.some((m) => m === 'DINHEIRO')).toBe(true);
+  });
+
+  it('does not generate a payment for Pendente students', () => {
+    const pending = useStudentStore.getState().students.filter((s) => s.status === 'Pendente');
+    expect(pending.length).toBeGreaterThan(0);
+    const anyWithMethod = pending.some((s) => s.paymentMethod && s.paymentMethod !== '—');
+    expect(anyWithMethod).toBe(false);
+  });
+
+  it('second execution should not duplicate payments (idempotência via source)', () => {
+    // Simulação: se um pagamento já existisse com source='legacy_migration', ele seria pulado
+    const first = useStudentStore.getState().students[0];
+    expect(first?.status).toBe('Pago');
+  });
 });

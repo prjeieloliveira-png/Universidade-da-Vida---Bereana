@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { StudentRecord } from '../types';
 import { StudentAttendanceChips } from './StudentAttendanceChips';
-import { PillBadge } from '@/shared/components/ui/PillBadge';
+import { StudentCardDetails } from './StudentCardDetails';
+import { PillBadge, type PillVariant } from '@/shared/components/ui/PillBadge';
 import { Pencil, ChevronDown, Printer } from 'lucide-react';
-import { formatCentsToBRL } from '@/shared/utils/currency';
+import type { RegistrationPaymentStatusRow } from '@/features/financial/types';
 
 interface StudentCardProps {
   student: StudentRecord;
+  paymentStatus?: RegistrationPaymentStatusRow;
   onEdit: (student: StudentRecord) => void;
   onPrint: (student: StudentRecord) => void;
   defaultExpanded?: boolean;
@@ -14,17 +16,29 @@ interface StudentCardProps {
 
 export function StudentCard({
   student,
+  paymentStatus,
   onEdit,
   onPrint,
   defaultExpanded = false,
 }: StudentCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const isPaid = student.status === 'Pago';
 
-  // Format birth date to pt-BR (DD/MM/YYYY)
-  const formattedBirthDate = student.birthDate
-    ? student.birthDate.split('-').reverse().join('/')
-    : '—';
+  // Derivar status do badge
+  let badgeLabel: string = student.status;
+  let badgeVariant: PillVariant = student.status === 'Pago' ? 'success' : 'warning';
+
+  if (paymentStatus) {
+    if (paymentStatus.status === 'paid') {
+      badgeLabel = 'Pago';
+      badgeVariant = 'success';
+    } else if (paymentStatus.status === 'partial') {
+      badgeLabel = 'Parcial';
+      badgeVariant = 'info';
+    } else {
+      badgeLabel = 'Pendente';
+      badgeVariant = 'warning';
+    }
+  }
 
   return (
     <article
@@ -75,8 +89,8 @@ export function StudentCard({
             </div>
             <div onClick={(e) => e.stopPropagation()} className="shrink-0">
               <PillBadge
-                label={student.status}
-                variant={isPaid ? 'success' : 'warning'}
+                label={badgeLabel}
+                variant={badgeVariant}
                 size="sm"
               />
             </div>
@@ -169,8 +183,8 @@ export function StudentCard({
             onClick={(e) => e.stopPropagation()}
           >
             <PillBadge
-              label={student.status}
-              variant={isPaid ? 'success' : 'warning'}
+              label={badgeLabel}
+              variant={badgeVariant}
               size="sm"
             />
 
@@ -215,121 +229,9 @@ export function StudentCard({
         </div>
       </div>
 
-
       {/* Expandable Full Details Section */}
       {isExpanded && (
-        <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/40 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs animate-in fade-in duration-150">
-          {/* Row 1 */}
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Sexo
-            </span>
-            <span className="font-semibold text-slate-800">{student.gender}</span>
-          </div>
-
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Data Nasc.
-            </span>
-            <span className="font-semibold text-slate-800">{formattedBirthDate}</span>
-          </div>
-
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Idade
-            </span>
-            <span className="font-semibold text-slate-800">{student.age} anos</span>
-          </div>
-
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Estado Civil
-            </span>
-            <span className="font-semibold text-slate-800">{student.maritalStatus}</span>
-          </div>
-
-          {/* Row 2 */}
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Celular
-            </span>
-            <span className="font-semibold text-slate-800">{student.phone}</span>
-          </div>
-
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs col-span-2">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Endereço
-            </span>
-            <span className="font-semibold text-slate-800 truncate block">
-              {student.address}
-            </span>
-          </div>
-
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Camisa
-            </span>
-            <span className="font-semibold text-slate-800">{student.shirtSize}</span>
-          </div>
-
-          {/* Row 3 */}
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Pastor
-            </span>
-            <span className="font-semibold text-slate-800">{student.pastor}</span>
-          </div>
-
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              G12
-            </span>
-            <span className="font-semibold text-slate-800">{student.g12}</span>
-          </div>
-
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Líder
-            </span>
-            <span className="font-semibold text-slate-800">{student.leader}</span>
-          </div>
-
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Inscrição / Pagamento
-            </span>
-            <span className="font-semibold text-slate-800 block">
-              {formatCentsToBRL(student.amountCents)} • {student.paymentMethod}
-            </span>
-          </div>
-
-          {/* Row 4: Health Records */}
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs col-span-2">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Comorbidade / Alergias
-            </span>
-            <span
-              className={`font-semibold block truncate ${
-                student.comorbidity !== 'Não' ? 'text-rose-700 font-bold' : 'text-slate-700'
-              }`}
-            >
-              {student.comorbidity}
-            </span>
-          </div>
-
-          <div className="bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-2xs col-span-2">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-              Horário das Medicações
-            </span>
-            <span
-              className={`font-semibold block truncate ${
-                student.medSchedule !== 'Não' ? 'text-amber-800 font-bold' : 'text-slate-700'
-              }`}
-            >
-              {student.medSchedule}
-            </span>
-          </div>
-        </div>
+        <StudentCardDetails student={student} paymentStatus={paymentStatus} />
       )}
     </article>
   );

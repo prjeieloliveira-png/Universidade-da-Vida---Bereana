@@ -6,6 +6,7 @@ import { RegistrationsPage } from '@/features/registrations/pages/RegistrationsP
 import { AttendancePage } from '@/features/attendance/pages/AttendancePage';
 import { LeadershipPage } from '@/features/leadership/pages/LeadershipPage';
 import { DashboardPlaceholder } from './pages/DashboardPlaceholder';
+import { FinancialPage } from '@/features/financial/pages/FinancialPage';
 
 export function AppRoutes() {
   return (
@@ -25,15 +26,7 @@ export function AppRoutes() {
         <Route path="inscricoes" element={<RegistrationsPage />} />
         <Route path="chamada" element={<AttendancePage />} />
         <Route path="liderancas" element={<LeadershipPage />} />
-        <Route
-          path="financeiro"
-          element={
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 text-center py-12">
-              <h3 className="text-base font-bold text-slate-800">Módulo de Caixa & Pagamentos</h3>
-              <p className="text-xs text-slate-500 mt-1">Será implementado na Fase 6.</p>
-            </div>
-          }
-        />
+        <Route path="financeiro" element={<FinancialPage />} />
       </Route>
 
       {/* Fallback */}

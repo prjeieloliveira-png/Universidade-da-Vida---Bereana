@@ -1,6 +1,10 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useStudentStore } from '../store/studentStore';
 import { useCohortStore } from '@/features/cohorts/store/cohortStore';
+import { useActiveEdition } from '@/shared/hooks/useActiveEdition';
+import { fetchCashSummary, fetchRegistrationPaymentStatuses } from '@/features/financial/data/financialData';
+import { filterStudents } from '../utils/studentFilter';
 import { StudentCard } from '../components/StudentCard';
 import { RegistrationEditModal } from '../components/RegistrationEditModal';
 import { RegistrationFilterBar } from '../components/RegistrationFilterBar';
@@ -8,6 +12,7 @@ import { RegistrationReportModal } from '../components/RegistrationReportModal';
 import { StudentIndividualPrintModal } from '../components/StudentIndividualPrintModal';
 import { StudentBatchPrintModal } from '../components/StudentBatchPrintModal';
 import { StudentRecord, RegistrationFilterState, initialRegistrationFilterState } from '../types';
+import type { RegistrationPaymentStatusRow } from '@/features/financial/types';
 import { UserPlus, Users } from 'lucide-react';
 
 export function RegistrationsPage() {
@@ -15,6 +20,34 @@ export function RegistrationsPage() {
   const activeCohort = getActiveCohort();
 
   const { students, updateStudent, addStudent } = useStudentStore();
+  const { data: activeEdition } = useActiveEdition();
+  const editionId = activeEdition?.id ?? '';
+
+  // 1. Dados financeiros do Supabase
+  const { data: cashSummary } = useQuery({
+    queryKey: ['cash-summary', editionId],
+    queryFn: () => fetchCashSummary(editionId),
+    enabled: !!editionId,
+    staleTime: 30_000,
+  });
+
+  const { data: paymentStatuses } = useQuery({
+    queryKey: ['registration-payment-statuses', editionId],
+    queryFn: () => fetchRegistrationPaymentStatuses(editionId),
+    enabled: !!editionId,
+    staleTime: 30_000,
+  });
+
+  const paymentStatusMap = useMemo(() => {
+    const map = new Map<string, RegistrationPaymentStatusRow>();
+    paymentStatuses?.forEach((status) => {
+      map.set(status.registration_id, status);
+      if (status.person_id) {
+        map.set(status.person_id, status);
+      }
+    });
+    return map;
+  }, [paymentStatuses]);
 
   const cohortStudents = useMemo(() => {
     return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
@@ -41,66 +74,21 @@ export function RegistrationsPage() {
     setFilters(initialRegistrationFilterState);
   }, []);
 
-  // Filter application
   const filteredStudents = useMemo(() => {
-    return cohortStudents.filter((s) => {
-      // 1. Text Search
-      if (filters.searchQuery.trim()) {
-        const query = filters.searchQuery.toLowerCase();
-        const matchesSearch =
-          s.name.toLowerCase().includes(query) ||
-          s.phone.toLowerCase().includes(query) ||
-          s.pastor.toLowerCase().includes(query) ||
-          s.g12.toLowerCase().includes(query) ||
-          s.leader.toLowerCase().includes(query);
-        if (!matchesSearch) return false;
-      }
-
-      // 2. Status
-      if (filters.status !== 'ALL' && s.status !== filters.status) return false;
-
-      // 3. Payment Method
-      if (filters.paymentMethod !== 'ALL' && s.paymentMethod !== filters.paymentMethod) return false;
-
-      // 4. Gender
-      if (filters.gender !== 'ALL' && s.gender !== filters.gender) return false;
-
-      // 5. Age Range
-      if (filters.ageRange !== 'ALL') {
-        if (filters.ageRange === 'under18' && s.age >= 18) return false;
-        if (filters.ageRange === '18-29' && (s.age < 18 || s.age > 29)) return false;
-        if (filters.ageRange === '30-49' && (s.age < 30 || s.age > 49)) return false;
-        if (filters.ageRange === '50+' && s.age < 50) return false;
-      }
-
-      // 6. Marital Status
-      if (filters.maritalStatus !== 'ALL' && s.maritalStatus !== filters.maritalStatus) return false;
-
-      // 7. Shirt Size
-      if (filters.shirtSize !== 'ALL' && s.shirtSize !== filters.shirtSize) return false;
-
-      // 8. Comorbidity
-      if (filters.comorbidity !== 'ALL') {
-        const hasComorbidity =
-          s.comorbidity &&
-          s.comorbidity.toLowerCase() !== 'não' &&
-          s.comorbidity.toLowerCase() !== 'nao' &&
-          s.comorbidity !== '—';
-        if (filters.comorbidity === 'SIM' && !hasComorbidity) return false;
-        if (filters.comorbidity === 'NAO' && hasComorbidity) return false;
-      }
-
-      // 9. Leadership Hierarchy
-      if (filters.pastor !== 'ALL' && s.pastor !== filters.pastor) return false;
-      if (filters.g12 !== 'ALL' && s.g12 !== filters.g12) return false;
-      if (filters.leader !== 'ALL' && s.leader !== filters.leader) return false;
-
-      return true;
-    });
+    return filterStudents(cohortStudents, filters);
   }, [cohortStudents, filters]);
 
-  const paidCount = useMemo(() => cohortStudents.filter((s) => s.status === 'Pago').length, [cohortStudents]);
-  const pendingCount = cohortStudents.length - paidCount;
+  // Contadores com fallback resiliente
+  const localPaid = useMemo(() => cohortStudents.filter((s) => s.status === 'Pago').length, [cohortStudents]);
+  const localPending = cohortStudents.length - localPaid;
+
+  const paidCount = cashSummary && cashSummary.total_registrations > 0
+    ? cashSummary.paid_count
+    : localPaid;
+
+  const pendingCount = cashSummary && cashSummary.total_registrations > 0
+    ? (cashSummary.pending_count + cashSummary.partial_count)
+    : localPending;
 
   const handleOpenEdit = (student: StudentRecord) => {
     setEditingStudent(student);
@@ -211,52 +199,61 @@ export function RegistrationsPage() {
             Nenhum aluno encontrado para os filtros selecionados.
           </div>
         ) : (
-          filteredStudents.map((student) => (
-            <StudentCard
-              key={student.id}
-              student={student}
-              onEdit={handleOpenEdit}
-              onPrint={handleOpenPrint}
-            />
-          ))
+          filteredStudents.map((student) => {
+            const pStatus = paymentStatusMap.get(student.id) || paymentStatusMap.get(student.personId);
+            return (
+              <StudentCard
+                key={student.id}
+                student={student}
+                paymentStatus={pStatus}
+                onEdit={handleOpenEdit}
+                onPrint={handleOpenPrint}
+              />
+            );
+          })
         )}
       </div>
 
-      {/* Edit Modal */}
-      <RegistrationEditModal
-        student={editingStudent}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSave={handleSaveStudent}
-      />
+      {/* Modals */}
+      {isEditModalOpen && (
+        <RegistrationEditModal
+          student={editingStudent}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={handleSaveStudent}
+        />
+      )}
 
-      {/* PDF / A4 Print Report Modal */}
-      <RegistrationReportModal
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        students={filteredStudents}
-        cohortName={activeCohort.name}
-        filters={filters}
-      />
+      {isReportModalOpen && (
+        <RegistrationReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          students={filteredStudents}
+          cohortName={activeCohort.name}
+          filters={filters}
+        />
+      )}
 
-      {/* Individual Print Modal */}
-      <StudentIndividualPrintModal
-        student={printingStudent}
-        cohortName={activeCohort.name}
-        isOpen={isPrintModalOpen}
-        onClose={() => {
-          setIsPrintModalOpen(false);
-          setPrintingStudent(null);
-        }}
-      />
+      {isPrintModalOpen && printingStudent && (
+        <StudentIndividualPrintModal
+          isOpen={isPrintModalOpen}
+          onClose={() => {
+            setIsPrintModalOpen(false);
+            setPrintingStudent(null);
+          }}
+          student={printingStudent}
+          cohortName={activeCohort.name}
+        />
+      )}
 
-      {/* Batch Print Modal */}
-      <StudentBatchPrintModal
-        students={filteredStudents}
-        cohortName={activeCohort.name}
-        isOpen={isPrintAllModalOpen}
-        onClose={() => setIsPrintAllModalOpen(false)}
-      />
+      {isPrintAllModalOpen && (
+        <StudentBatchPrintModal
+          isOpen={isPrintAllModalOpen}
+          onClose={() => setIsPrintAllModalOpen(false)}
+          students={filteredStudents}
+          cohortName={activeCohort.name}
+        />
+      )}
     </div>
   );
 }

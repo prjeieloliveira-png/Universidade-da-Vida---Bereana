@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Calendar, CheckSquare } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Plus, CheckSquare } from 'lucide-react';
 import { useStudentStore } from '@/features/registrations/store/studentStore';
 import { useCohortStore } from '@/features/cohorts/store/cohortStore';
+import { useActiveEdition } from '@/shared/hooks/useActiveEdition';
+import { fetchCashSummary } from '@/features/financial/data/financialData';
 import { CoordinatorHeroCard } from '@/features/dashboard/components/CoordinatorHeroCard';
 import { AttendanceMatrixCard } from '@/features/dashboard/components/AttendanceMatrixCard';
 import { NetworkDistributionCard } from '@/features/dashboard/components/NetworkDistributionCard';
@@ -16,6 +19,16 @@ export function DashboardPlaceholder() {
   const { students } = useStudentStore();
   const { activeCohortId, getActiveCohort } = useCohortStore();
   const activeCohort = getActiveCohort();
+
+  const { data: activeEdition } = useActiveEdition();
+  const editionId = activeEdition?.id ?? '';
+
+  const { data: cashSummary } = useQuery({
+    queryKey: ['cash-summary', editionId],
+    queryFn: () => fetchCashSummary(editionId),
+    enabled: !!editionId,
+    staleTime: 30_000,
+  });
 
   const cohortStudents = useMemo(() => {
     return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
@@ -62,9 +75,17 @@ export function DashboardPlaceholder() {
     };
   }, [cohortStudents, activeCohort]);
 
+  // Indicadores consolidados do financeiro (Supabase ou fallback)
+  const hasRemoteCash = cashSummary && (cashSummary.total_in_cents > 0 || cashSummary.total_registrations > 0);
+  const totalCollectedCents = hasRemoteCash ? cashSummary.total_in_cents : metrics.collectedCents;
+  const totalPendingCents = hasRemoteCash ? cashSummary.total_receivable_cents : metrics.pendingCents;
+  const paymentRatePercentage = hasRemoteCash && cashSummary.total_registrations > 0
+    ? Math.round((cashSummary.paid_count / cashSummary.total_registrations) * 100)
+    : metrics.paymentRate;
+
   return (
     <div className="space-y-6">
-      {/* Top Breadcrumb & Page Greeting */}
+      {/* Header & Quick Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mb-1">
@@ -73,40 +94,37 @@ export function DashboardPlaceholder() {
             <span className="text-slate-600 font-semibold">Dashboard</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Bom dia, Coordenação
+            Visão Geral — {activeCohort.name}
           </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Acompanhamento em tempo real da turma, presenças e finanças
+          </p>
         </div>
 
-        {/* Action Pills */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => navigate('/inscricoes')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-700 transition-colors shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#419a5c] text-white transition-colors shadow-sm cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5 text-slate-500" />
-            <span>Nova Inscrição</span>
+            <Plus className="w-4 h-4" />
+            <span>Novo Aluno</span>
           </button>
-
-          <div className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-white border border-slate-200/80 text-slate-600 shadow-xs">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>{activeCohort.name}</span>
-          </div>
 
           <button
             onClick={() => navigate('/chamada')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-[#58bc75] hover:bg-[#4eaa69] text-white transition-colors shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold bg-[#163242] hover:bg-[#20445a] active:bg-[#122835] text-white transition-colors shadow-sm cursor-pointer"
           >
-            <CheckSquare className="w-3.5 h-3.5 text-white" />
+            <CheckSquare className="w-4 h-4" />
             <span>Fazer Chamada</span>
           </button>
         </div>
       </div>
 
-      {/* Main Responsive Grid: 2 Columns on Desktop */}
+      {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left / Center Main Area (8 cols on lg) */}
+        {/* Left Side Column (8 cols on lg) */}
         <div className="lg:col-span-8 space-y-5">
-          {/* Top Row: Profile Card + Presence Matrix + Network Card */}
+          {/* Top Row: Coordinator Hero + Attendance Matrix + Network Distribution */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
             <div className="md:col-span-4">
               <CoordinatorHeroCard
@@ -122,7 +140,6 @@ export function DashboardPlaceholder() {
                 completedLessons={2}
                 totalLessons={9}
               />
-
             </div>
 
             <div className="md:col-span-4">
@@ -157,9 +174,9 @@ export function DashboardPlaceholder() {
           />
 
           <FinancialSummaryCard
-            totalCollectedCents={metrics.collectedCents}
-            totalPendingCents={metrics.pendingCents}
-            paymentRatePercentage={metrics.paymentRate}
+            totalCollectedCents={totalCollectedCents}
+            totalPendingCents={totalPendingCents}
+            paymentRatePercentage={paymentRatePercentage}
             onOpenCashflow={() => navigate('/financeiro')}
           />
         </div>

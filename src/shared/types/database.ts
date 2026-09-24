@@ -90,13 +90,6 @@ export type Database = {
             foreignKeyName: "attendances_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
-            referencedRelation: "v_registration_list"
-            referencedColumns: ["registration_id"]
-          },
-          {
-            foreignKeyName: "attendances_registration_id_fkey"
-            columns: ["registration_id"]
-            isOneToOne: false
             referencedRelation: "v_registration_payment_status"
             referencedColumns: ["registration_id"]
           },
@@ -135,6 +128,24 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_categories: {
+        Row: {
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          type: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          type?: string
+        }
+        Relationships: []
+      }
       cell_leaders: {
         Row: {
           active: boolean
@@ -167,13 +178,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "g12_leaders"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cell_leaders_g12_id_fkey"
-            columns: ["g12_id"]
-            isOneToOne: false
-            referencedRelation: "v_registration_list"
-            referencedColumns: ["g12_id"]
           },
         ]
       }
@@ -210,6 +214,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "editions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edition_leaders_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
           },
           {
             foreignKeyName: "edition_leaders_edition_id_fkey"
@@ -282,6 +293,9 @@ export type Database = {
           registration_id: string | null
           transaction_date: string
           type: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           amount_cents: number
@@ -296,6 +310,9 @@ export type Database = {
           registration_id?: string | null
           transaction_date?: string
           type: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           amount_cents?: number
@@ -310,6 +327,9 @@ export type Database = {
           registration_id?: string | null
           transaction_date?: string
           type?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -318,6 +338,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "editions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
           },
           {
             foreignKeyName: "financial_transactions_edition_id_fkey"
@@ -338,13 +365,6 @@ export type Database = {
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "v_registration_attendance_summary"
-            referencedColumns: ["registration_id"]
-          },
-          {
-            foreignKeyName: "financial_transactions_registration_id_fkey"
-            columns: ["registration_id"]
-            isOneToOne: false
-            referencedRelation: "v_registration_list"
             referencedColumns: ["registration_id"]
           },
           {
@@ -388,13 +408,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pastors"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "g12_leaders_pastor_id_fkey"
-            columns: ["pastor_id"]
-            isOneToOne: false
-            referencedRelation: "v_registration_list"
-            referencedColumns: ["pastor_id"]
           },
         ]
       }
@@ -482,6 +495,13 @@ export type Database = {
             foreignKeyName: "lessons_edition_id_fkey"
             columns: ["edition_id"]
             isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "lessons_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
             referencedRelation: "v_edition_financial_summary"
             referencedColumns: ["edition_id"]
           },
@@ -557,6 +577,9 @@ export type Database = {
           receipt_url: string | null
           recorded_by: string | null
           registration_id: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           amount_cents: number
@@ -568,6 +591,9 @@ export type Database = {
           receipt_url?: string | null
           recorded_by?: string | null
           registration_id: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           amount_cents?: number
@@ -579,6 +605,9 @@ export type Database = {
           receipt_url?: string | null
           recorded_by?: string | null
           registration_id?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -593,13 +622,6 @@ export type Database = {
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "v_registration_attendance_summary"
-            referencedColumns: ["registration_id"]
-          },
-          {
-            foreignKeyName: "payments_registration_id_fkey"
-            columns: ["registration_id"]
-            isOneToOne: false
-            referencedRelation: "v_registration_list"
             referencedColumns: ["registration_id"]
           },
           {
@@ -621,6 +643,7 @@ export type Database = {
           id: string
           marital_status: string
           phone: string
+          photo_url: string | null
           updated_at: string | null
         }
         Insert: {
@@ -632,6 +655,7 @@ export type Database = {
           id?: string
           marital_status: string
           phone: string
+          photo_url?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -643,6 +667,7 @@ export type Database = {
           id?: string
           marital_status?: string
           phone?: string
+          photo_url?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -750,6 +775,13 @@ export type Database = {
             foreignKeyName: "registrations_edition_id_fkey"
             columns: ["edition_id"]
             isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "registrations_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
             referencedRelation: "v_edition_financial_summary"
             referencedColumns: ["edition_id"]
           },
@@ -778,6 +810,38 @@ export type Database = {
       }
     }
     Views: {
+      v_cash_flow: {
+        Row: {
+          amount_cents: number | null
+          category: string | null
+          date: string | null
+          edition_id: string | null
+          flow_type: string | null
+          payment_method: string | null
+          person_name: string | null
+          registration_id: string | null
+          source: string | null
+          transaction_id: string | null
+        }
+        Relationships: []
+      }
+      v_cash_summary: {
+        Row: {
+          edition_id: string | null
+          net_balance_cents: number | null
+          paid_count: number | null
+          partial_count: number | null
+          pending_count: number | null
+          total_in_cents: number | null
+          total_manual_in_cents: number | null
+          total_manual_out_cents: number | null
+          total_out_cents: number | null
+          total_payment_in_cents: number | null
+          total_receivable_cents: number | null
+          total_registrations: number | null
+        }
+        Relationships: []
+      }
       v_edition_financial_summary: {
         Row: {
           confirmed_registrations_count: number | null
@@ -809,73 +873,8 @@ export type Database = {
             foreignKeyName: "registrations_edition_id_fkey"
             columns: ["edition_id"]
             isOneToOne: false
-            referencedRelation: "v_edition_financial_summary"
+            referencedRelation: "v_cash_summary"
             referencedColumns: ["edition_id"]
-          },
-          {
-            foreignKeyName: "registrations_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: false
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      v_registration_list: {
-        Row: {
-          address: string | null
-          age: number | null
-          balance_due_cents: number | null
-          birth_date: string | null
-          cell_leader_id: string | null
-          cell_leader_name: string | null
-          cell_leader_name_legacy: string | null
-          created_at: string | null
-          edition_id: string | null
-          full_name: string | null
-          g12_id: string | null
-          g12_name: string | null
-          g12_name_legacy: string | null
-          gender: string | null
-          last_payment_method: string | null
-          marital_status: string | null
-          pastor_category: string | null
-          pastor_id: string | null
-          pastor_name: string | null
-          pastor_name_legacy: string | null
-          payment_status: string | null
-          person_id: string | null
-          phone: string | null
-          reg_number: number | null
-          registration_fee_cents: number | null
-          registration_id: string | null
-          s1: boolean | null
-          s2: boolean | null
-          s3: boolean | null
-          s4: boolean | null
-          s5: boolean | null
-          s6: boolean | null
-          s7: boolean | null
-          s8: boolean | null
-          s9: boolean | null
-          shirt_size: string | null
-          total_paid_cents: number | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "registrations_cell_leader_id_fkey"
-            columns: ["cell_leader_id"]
-            isOneToOne: false
-            referencedRelation: "cell_leaders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "registrations_edition_id_fkey"
-            columns: ["edition_id"]
-            isOneToOne: false
-            referencedRelation: "editions"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "registrations_edition_id_fkey"
@@ -895,12 +894,14 @@ export type Database = {
       }
       v_registration_payment_status: {
         Row: {
-          balance_due_cents: number | null
           edition_id: string | null
-          payment_status: string | null
+          last_payment_at: string | null
+          outstanding_cents: number | null
+          payment_count: number | null
           person_id: string | null
           registration_fee_cents: number | null
           registration_id: string | null
+          status: string | null
           total_paid_cents: number | null
         }
         Relationships: [
@@ -910,6 +911,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "editions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
           },
           {
             foreignKeyName: "registrations_edition_id_fkey"
@@ -937,9 +945,25 @@ export type Database = {
       import_local_data: { Args: { p_snapshot: Json }; Returns: Json }
       is_coord_or_sec: { Args: never; Returns: boolean }
       mark_attendance_batch: { Args: { p_records: Json }; Returns: undefined }
+      normalize_payment_method: { Args: { raw: string }; Returns: string }
+      register_payment: {
+        Args: {
+          amt: number
+          meth: Database["public"]["Enums"]["payment_method"]
+          pay_date?: string
+          pay_notes?: string
+          reg_id: string
+        }
+        Returns: string
+      }
       upsert_registration: { Args: { p_data: Json }; Returns: string }
+      void_payment: {
+        Args: { payment_id: string; reason: string }
+        Returns: undefined
+      }
     }
     Enums: {
+      payment_method: "pix" | "debit" | "credit" | "cash"
       user_role: "coordinator" | "secretary" | "network_leader" | "viewer"
     }
     CompositeTypes: {
@@ -1570,6 +1594,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      payment_method: ["pix", "debit", "credit", "cash"],
       user_role: ["coordinator", "secretary", "network_leader", "viewer"],
     },
   },
