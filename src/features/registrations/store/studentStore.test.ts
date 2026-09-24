@@ -88,4 +88,15 @@ describe('useStudentStore', () => {
     const first = useStudentStore.getState().students[0];
     expect(first?.status).toBe('Pago');
   });
+
+  it('sets attendance explicitly using setAttendance', () => {
+    const student = useStudentStore.getState().students[0]!;
+    useStudentStore.getState().setAttendance(student.id, 5, true);
+    let updated = useStudentStore.getState().students.find((s) => s.id === student.id);
+    expect(updated?.s5).toBe(true);
+
+    useStudentStore.getState().setAttendance(student.id, 5, false);
+    updated = useStudentStore.getState().students.find((s) => s.id === student.id);
+    expect(updated?.s5).toBe(false);
+  });
 });

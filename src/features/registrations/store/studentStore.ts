@@ -68,6 +68,7 @@ interface StudentStoreState {
   updateStudent: (student: StudentRecord) => void;
   addStudent: (student: Omit<StudentRecord, 'id' | 'personId' | 'num' | 'age'>) => void;
   toggleAttendance: (studentId: string, week: WeekNumber) => void;
+  setAttendance: (studentId: string, week: WeekNumber, present: boolean) => void;
   setBulkAttendance: (studentIds: string[], week: WeekNumber, present: boolean) => void;
   resetToDefault: () => void;
 }
@@ -126,6 +127,15 @@ export const useStudentStore = create<StudentStoreState>()(
           return {
             students: state.students.map((s) =>
               s.id === studentId ? { ...s, [key]: !s[key] } : s
+            ),
+          };
+        }),
+      setAttendance: (studentId, week, present) =>
+        set((state) => {
+          const key = `s${week}` as WeekKey;
+          return {
+            students: state.students.map((s) =>
+              s.id === studentId ? { ...s, [key]: present } : s
             ),
           };
         }),

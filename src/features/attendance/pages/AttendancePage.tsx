@@ -5,9 +5,10 @@ import { WeekSelectorPills } from '../components/WeekSelectorPills';
 import { AttendanceStatsBar } from '../components/AttendanceStatsBar';
 import { AttendanceStudentRow } from '../components/AttendanceStudentRow';
 import { AttendanceReportModal } from '../components/AttendanceReportModal';
+import { ShareDoorLinkModal } from '../components/ShareDoorLinkModal';
 import { HierarchicalLeaderFilter } from '@/features/registrations/components/HierarchicalLeaderFilter';
 import { WeekNumber, WeekKey } from '../types';
-import { Search, FileSpreadsheet } from 'lucide-react';
+import { Search, FileSpreadsheet, Smartphone } from 'lucide-react';
 
 export function AttendancePage() {
   const { students, toggleAttendance, setBulkAttendance } = useStudentStore();
@@ -22,6 +23,7 @@ export function AttendancePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PRESENTE' | 'FALTA'>('ALL');
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   // Hierarchical leadership filter
   const [selectedPastor, setSelectedPastor] = useState<string>('ALL');
@@ -103,17 +105,28 @@ export function AttendancePage() {
           <p className="text-xs text-slate-500 mt-0.5">
             Universidade da Vida 2026 • 9 Semanas de Encontros
           </p>
-
         </div>
 
-        {/* Quick Report Trigger */}
-        <button
-          onClick={() => setIsReportOpen(true)}
-          className="self-start sm:self-auto px-4 py-2.5 rounded-full text-xs font-black bg-[#163242] hover:bg-[#1f4358] active:bg-[#122835] text-white flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
-        >
-          <FileSpreadsheet className="w-4 h-4 text-[#58bc75]" />
-          <span>Relatório de Chamadas</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsShareModalOpen(true)}
+            className="px-4 py-2.5 rounded-full text-xs font-black bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#409a5b] text-white flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>Link da Porta</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsReportOpen(true)}
+            className="px-4 py-2.5 rounded-full text-xs font-black bg-[#163242] hover:bg-[#1f4358] active:bg-[#122835] text-white flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-[#58bc75]" />
+            <span>Relatório</span>
+          </button>
+        </div>
       </div>
 
       {/* Week Selector Pills */}
@@ -219,6 +232,13 @@ export function AttendancePage() {
         onClose={() => setIsReportOpen(false)}
         students={filteredStudents}
         activeFiltersDesc={activeFiltersDesc}
+      />
+
+      {/* Share Door Link Modal */}
+      <ShareDoorLinkModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        activeWeek={activeWeek}
       />
     </div>
   );

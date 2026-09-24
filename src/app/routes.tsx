@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { AppShell } from './AppShell';
 import { RegistrationsPage } from '@/features/registrations/pages/RegistrationsPage';
 import { AttendancePage } from '@/features/attendance/pages/AttendancePage';
+import { DoorAttendancePage } from '@/features/attendance/pages/DoorAttendancePage';
 import { LeadershipPage } from '@/features/leadership/pages/LeadershipPage';
 import { DashboardPlaceholder } from './pages/DashboardPlaceholder';
 import { FinancialPage } from '@/features/financial/pages/FinancialPage';
@@ -12,6 +13,9 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Rota pública mobile para os colaboradores na porta da igreja */}
+      <Route path="/chamada/porta" element={<DoorAttendancePage />} />
 
       <Route
         path="/"
