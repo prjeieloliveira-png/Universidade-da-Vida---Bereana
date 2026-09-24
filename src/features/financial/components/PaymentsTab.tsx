@@ -25,6 +25,12 @@ export function PaymentsTab({ editionId }: PaymentsTabProps) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['payments', editionId] });
       void queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+      void queryClient.invalidateQueries({ queryKey: ['cash-flow', editionId] });
+      void queryClient.invalidateQueries({ queryKey: ['reg-payment-statuses', editionId] });
+      setVoidingId(null);
+    },
+    onError: (err: Error) => {
+      alert(`Erro ao estornar pagamento: ${err.message}`);
       setVoidingId(null);
     },
   });
