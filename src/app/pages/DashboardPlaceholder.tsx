@@ -75,6 +75,10 @@ export function DashboardPlaceholder() {
   const paymentRatePercentage = hasRemoteCash && cashSummary.total_registrations > 0
     ? Math.round((cashSummary.paid_count / cashSummary.total_registrations) * 100)
     : metrics.paymentRate;
+  const paidCount = hasRemoteCash ? cashSummary.paid_count : metrics.paid;
+  const partialCount = hasRemoteCash ? cashSummary.partial_count : 0;
+  const pendingCount = hasRemoteCash ? cashSummary.pending_count : metrics.pending;
+  const totalRegistrations = hasRemoteCash ? cashSummary.total_registrations : metrics.total;
 
   return (
     <div className="space-y-6">
@@ -119,12 +123,16 @@ export function DashboardPlaceholder() {
 
       {/* Quixotic Main 3-Column Top Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-5">
-        {/* Column 1: Financial Goal / Quixotic Green Credit Card */}
+        {/* Column 1: Financial Goal / Quixotic Meta & Quitação Panel */}
         <div className="xl:col-span-4 flex flex-col">
           <FinancialSummaryCard
             totalCollectedCents={totalCollectedCents}
             totalPendingCents={totalPendingCents}
             paymentRatePercentage={paymentRatePercentage}
+            paidCount={paidCount}
+            partialCount={partialCount}
+            pendingCount={pendingCount}
+            totalRegistrations={totalRegistrations}
             onOpenCashflow={() => navigate('/financeiro')}
           />
         </div>
