@@ -29,3 +29,6 @@ file_size_limit = "50MiB"
 
 [realtime]
 enabled = true
+
+[analytics]
+enabled = false

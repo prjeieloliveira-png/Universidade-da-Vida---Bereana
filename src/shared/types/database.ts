@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -577,6 +572,7 @@ export type Database = {
           receipt_url: string | null
           recorded_by: string | null
           registration_id: string
+          source: string | null
           void_reason: string | null
           voided_at: string | null
           voided_by: string | null
@@ -591,6 +587,7 @@ export type Database = {
           receipt_url?: string | null
           recorded_by?: string | null
           registration_id: string
+          source?: string | null
           void_reason?: string | null
           voided_at?: string | null
           voided_by?: string | null
@@ -605,6 +602,7 @@ export type Database = {
           receipt_url?: string | null
           recorded_by?: string | null
           registration_id?: string
+          source?: string | null
           void_reason?: string | null
           voided_at?: string | null
           voided_by?: string | null
@@ -636,36 +634,36 @@ export type Database = {
       people: {
         Row: {
           address: string | null
-          birth_date: string
+          birth_date: string | null
           created_at: string | null
           full_name: string
-          gender: string
+          gender: string | null
           id: string
-          marital_status: string
+          marital_status: string | null
           phone: string
           photo_url: string | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
-          birth_date: string
+          birth_date?: string | null
           created_at?: string | null
           full_name: string
-          gender: string
+          gender?: string | null
           id?: string
-          marital_status: string
+          marital_status?: string | null
           phone: string
           photo_url?: string | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
-          birth_date?: string
+          birth_date?: string | null
           created_at?: string | null
           full_name?: string
-          gender?: string
+          gender?: string | null
           id?: string
-          marital_status?: string
+          marital_status?: string | null
           phone?: string
           photo_url?: string | null
           updated_at?: string | null
@@ -808,6 +806,230 @@ export type Database = {
           },
         ]
       }
+      team_meeting_attendances: {
+        Row: {
+          id: string
+          marked_at: string | null
+          marked_by: string | null
+          meeting_id: string
+          present: boolean
+          team_member_id: string
+        }
+        Insert: {
+          id?: string
+          marked_at?: string | null
+          marked_by?: string | null
+          meeting_id: string
+          present?: boolean
+          team_member_id: string
+        }
+        Update: {
+          id?: string
+          marked_at?: string | null
+          marked_by?: string | null
+          meeting_id?: string
+          present?: boolean
+          team_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_meeting_attendances_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "team_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_meeting_attendances_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_meeting_attendances_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_team_member_attendance"
+            referencedColumns: ["team_member_id"]
+          },
+        ]
+      }
+      team_meeting_roles: {
+        Row: {
+          meeting_id: string
+          team_role_id: string
+        }
+        Insert: {
+          meeting_id: string
+          team_role_id: string
+        }
+        Update: {
+          meeting_id?: string
+          team_role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_meeting_roles_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "team_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_meeting_roles_team_role_id_fkey"
+            columns: ["team_role_id"]
+            isOneToOne: false
+            referencedRelation: "team_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_meetings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          edition_id: string
+          id: string
+          meeting_date: string
+          notes: string | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          edition_id: string
+          id?: string
+          meeting_date: string
+          notes?: string | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          edition_id?: string
+          id?: string
+          meeting_date?: string
+          notes?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_meetings_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_meetings_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "team_meetings_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_financial_summary"
+            referencedColumns: ["edition_id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          active: boolean
+          created_at: string
+          edition_id: string
+          id: string
+          notes: string | null
+          person_id: string
+          team_role_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          edition_id: string
+          id?: string
+          notes?: string | null
+          person_id: string
+          team_role_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          edition_id?: string
+          id?: string
+          notes?: string | null
+          person_id?: string
+          team_role_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "team_members_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_financial_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "team_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_team_role_id_fkey"
+            columns: ["team_role_id"]
+            isOneToOne: false
+            referencedRelation: "team_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_roles: {
+        Row: {
+          active: boolean
+          created_at: string | null
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string | null
+          id?: string
+          name: string
+          sort_order: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       v_cash_flow: {
@@ -935,6 +1157,56 @@ export type Database = {
           },
         ]
       }
+      v_team_member_attendance: {
+        Row: {
+          active: boolean | null
+          attendance_fraction: string | null
+          attendance_percentage: number | null
+          attended_meetings: number | null
+          edition_id: string | null
+          person_id: string | null
+          team_member_id: string | null
+          team_role_id: string | null
+          total_called_meetings: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "team_members_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_financial_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "team_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_team_role_id_fkey"
+            columns: ["team_role_id"]
+            isOneToOne: false
+            referencedRelation: "team_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       auth_user_network_id: { Args: never; Returns: string }
@@ -942,23 +1214,43 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      import_legacy_payments: { Args: { p_data: Json }; Returns: Json }
       import_local_data: { Args: { p_snapshot: Json }; Returns: Json }
       is_coord_or_sec: { Args: never; Returns: boolean }
       mark_attendance_batch: { Args: { p_records: Json }; Returns: undefined }
+      mark_team_attendance_batch: {
+        Args: { p_meeting_id: string; p_records: Json }
+        Returns: undefined
+      }
       normalize_payment_method: { Args: { raw: string }; Returns: string }
-      register_payment: {
-        Args: {
-          amt: number
-          meth: Database["public"]["Enums"]["payment_method"]
-          pay_date?: string
-          pay_notes?: string
-          reg_id: string
-        }
-        Returns: string
+      register_payment:
+        | {
+            Args: {
+              amt: number
+              meth: Database["public"]["Enums"]["payment_method"]
+              pay_date?: string
+              pay_notes?: string
+              reg_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              amt: number
+              meth: string
+              pay_date: string
+              pay_notes?: string
+              reg_id: string
+            }
+            Returns: string
+          }
+      sync_students_from_local: {
+        Args: { p_data: Json; p_edition_id: string }
+        Returns: Json
       }
       upsert_registration: { Args: { p_data: Json }; Returns: string }
       void_payment: {
-        Args: { payment_id: string; reason: string }
+        Args: { payment_id: string; reason?: string }
         Returns: undefined
       }
     }
@@ -1073,6 +1365,101 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      iceberg_namespaces: {
+        Row: {
+          bucket_name: string
+          catalog_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          bucket_name: string
+          catalog_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          bucket_name?: string
+          catalog_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iceberg_namespaces_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_analytics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iceberg_tables: {
+        Row: {
+          bucket_name: string
+          catalog_id: string
+          created_at: string
+          id: string
+          location: string
+          name: string
+          namespace_id: string
+          remote_table_id: string | null
+          shard_id: string | null
+          shard_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          bucket_name: string
+          catalog_id: string
+          created_at?: string
+          id?: string
+          location: string
+          name: string
+          namespace_id: string
+          remote_table_id?: string | null
+          shard_id?: string | null
+          shard_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bucket_name?: string
+          catalog_id?: string
+          created_at?: string
+          id?: string
+          location?: string
+          name?: string
+          namespace_id?: string
+          remote_table_id?: string | null
+          shard_id?: string | null
+          shard_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iceberg_tables_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_analytics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iceberg_tables_namespace_id_fkey"
+            columns: ["namespace_id"]
+            isOneToOne: false
+            referencedRelation: "iceberg_namespaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       migrations: {
         Row: {
@@ -1604,3 +1991,4 @@ export const Constants = {
     },
   },
 } as const
+

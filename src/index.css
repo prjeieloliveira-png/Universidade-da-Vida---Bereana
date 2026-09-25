@@ -10,17 +10,32 @@
     'Segoe UI',
     Roboto,
     sans-serif;
-  --brand-mint: #58bc75;
-  --brand-mint-dark: #46a362;
-  --brand-mint-light: #e8f8ee;
+  --brand-primary: #0d7647;
+  --brand-primary-hover: #095a36;
+  --brand-primary-light: #e8f7ee;
+  --brand-primary-border: #b6e3c9;
+  --brand-mint: #0d7647;
+  --brand-mint-dark: #095a36;
+  --brand-mint-light: #e8f7ee;
   --brand-petrol: #163242;
   --brand-petrol-light: #1d3b4e;
-  --brand-canvas: #f4f6f8;
+  --brand-canvas: #e9edf0;
 }
 
 body {
-  background-color: #f4f6f8;
+  background-color: #e9edf0;
   color: #111827;
+}
+
+/* Diagonal stripe pattern for Quixotic chart bars */
+.striped-sage-bar {
+  background: repeating-linear-gradient(
+    -45deg,
+    #93cbb0,
+    #93cbb0 3px,
+    #bfe3d1 3px,
+    #bfe3d1 7px
+  );
 }
 
 /* Custom scrollbar */

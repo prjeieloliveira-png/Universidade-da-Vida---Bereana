@@ -8,6 +8,7 @@ import { DoorAttendancePage } from '@/features/attendance/pages/DoorAttendancePa
 import { LeadershipPage } from '@/features/leadership/pages/LeadershipPage';
 import { DashboardPlaceholder } from './pages/DashboardPlaceholder';
 import { FinancialPage } from '@/features/financial/pages/FinancialPage';
+import { TeamsPage } from '@/features/teams/pages/TeamsPage';
 
 export function AppRoutes() {
   return (
@@ -30,6 +31,7 @@ export function AppRoutes() {
         <Route path="inscricoes" element={<RegistrationsPage />} />
         <Route path="chamada" element={<AttendancePage />} />
         <Route path="liderancas" element={<LeadershipPage />} />
+        <Route path="equipes" element={<TeamsPage />} />
         <Route path="financeiro" element={<FinancialPage />} />
       </Route>
 
