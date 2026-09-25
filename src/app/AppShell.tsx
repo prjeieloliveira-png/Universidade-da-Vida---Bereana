@@ -140,8 +140,9 @@ export function AppShell() {
 
               <button
                 type="button"
+                onClick={() => navigate('/financeiro?config=categorias')}
                 className="w-9 h-9 rounded-full bg-white border border-slate-200/80 hover:bg-slate-50 active:bg-slate-100 flex items-center justify-center text-slate-600 transition-colors shadow-2xs cursor-pointer"
-                title="Configurações"
+                title="Configurações (Categorias)"
                 aria-label="Configurações"
               >
                 <Settings className="w-4 h-4" />

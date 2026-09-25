@@ -88,8 +88,13 @@ describe('phone utilities', () => {
   describe('getWhatsAppLink e getTelLink', () => {
     it('deve gerar link correto para WhatsApp', () => {
       expect(getWhatsAppLink('(11) 98765-4321')).toBe('https://wa.me/5511987654321');
+      expect(getWhatsAppLink('+55 (11) 98765-4321')).toBe('https://wa.me/5511987654321');
+      expect(
+        getWhatsAppLink('(11) 98765-4321', 'Olá, Maria! Tudo bem?')
+      ).toBe('https://wa.me/5511987654321?text=Ol%C3%A1%2C%20Maria!%20Tudo%20bem%3F');
       expect(getWhatsAppLink('')).toBeNull();
       expect(getWhatsAppLink(null)).toBeNull();
+      expect(getWhatsAppLink('12345')).toBeNull();
     });
 
     it('deve gerar link correto para tel:', () => {

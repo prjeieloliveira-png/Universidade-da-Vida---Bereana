@@ -67,7 +67,7 @@ describe('AttendanceStudentRow', () => {
     expect(handleToggle).toHaveBeenCalledWith('reg-1', 3);
   });
 
-  it('allows clicking direct week pill S4 to toggle week 4 attendance individually', () => {
+  it('renders week pills S1 to S9 as read-only indicators and not clickable buttons', () => {
     const handleToggle = vi.fn();
     render(
       <AttendanceStudentRow
@@ -77,10 +77,14 @@ describe('AttendanceStudentRow', () => {
       />
     );
 
-    const s4Button = screen.getByRole('button', { name: 'S4' });
-    fireEvent.click(s4Button);
-    expect(handleToggle).toHaveBeenCalledWith('reg-1', 4);
-    expect(handleToggle).toHaveBeenCalledTimes(1);
+    // S1..S9 são elementos de leitura (spans), não botões interativos
+    expect(screen.queryByRole('button', { name: 'S4' })).not.toBeInTheDocument();
+    expect(screen.getByText('S4')).toBeInTheDocument();
+    expect(screen.getByText('S1')).toBeInTheDocument();
+
+    // Clicar no texto da pílula não deve disparar o callback onToggle
+    fireEvent.click(screen.getByText('S4'));
+    expect(handleToggle).not.toHaveBeenCalled();
   });
 });
 

@@ -36,6 +36,26 @@ export interface CashFlowEntry {
   registration_id: string | null;
   edition_id: string;
   person_name: string | null;
+  description?: string | null;
+}
+
+// Categoria de fluxo de caixa
+export interface CashCategory {
+  id: string;
+  name: string;
+  type: 'in' | 'out';
+}
+
+// Entrada para criação de transação manual
+export interface CreateTransactionInput {
+  edition_id: string;
+  type: 'revenue' | 'expense';
+  category: string;
+  amount_cents: number;
+  payment_method: string;
+  description: string;
+  transaction_date: string;
+  receipt_url?: string;
 }
 
 // Tipo do resumo financeiro (v_cash_summary)

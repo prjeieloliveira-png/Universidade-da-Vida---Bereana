@@ -72,12 +72,24 @@ export function formatPhone(phone: string | null | undefined): string {
 
 /**
  * Gera URL de mensagem no WhatsApp (wa.me/55...)
+ * Aceita opcionalmente uma mensagem pré-formatada.
  */
-export function getWhatsAppLink(phone: string | null | undefined): string | null {
+export function getWhatsAppLink(
+  phone: string | null | undefined,
+  text?: string
+): string | null {
   if (!phone) return null;
-  const digits = unmaskPhone(phone);
-  if (digits.length < 10) return null;
-  return `https://wa.me/55${digits}`;
+  let digits = unmaskPhone(phone);
+  if ((digits.length === 12 || digits.length === 13) && digits.startsWith('55')) {
+    digits = digits.slice(2);
+  }
+  if (digits.length < 10 || digits.length > 11) return null;
+
+  const baseUrl = `https://wa.me/55${digits}`;
+  if (text && text.trim()) {
+    return `${baseUrl}?text=${encodeURIComponent(text.trim())}`;
+  }
+  return baseUrl;
 }
 
 /**

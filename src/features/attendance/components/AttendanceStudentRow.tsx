@@ -72,32 +72,30 @@ export function AttendanceStudentRow({
 
       {/* Right: 9-Weeks Pills & Active Week Toggle Button */}
       <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-        {/* 9-Weeks Micro Pills (S1 to S9) with smooth touch scroll on mobile */}
-        <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 overflow-x-auto max-w-[210px] sm:max-w-none scrollbar-none">
+        {/* 9-Weeks Micro Pills (S1 to S9) - Indicadores visuais somente leitura */}
+        <div
+          className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 overflow-x-auto max-w-[210px] sm:max-w-none scrollbar-none select-none"
+          aria-label="Histórico de presença nas 9 semanas"
+        >
           {WEEKS.map((w) => {
             const isWeekPresent = Boolean(student[`s${w}`]);
             const isCurrentWeek = w === activeWeek;
             return (
-              <button
+              <span
                 key={w}
-                type="button"
-                title={`Semana ${w}: ${isWeekPresent ? 'Presente' : 'Falta'} (clique para alternar)`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggle(student.id, w);
-                }}
-                className={`w-7 h-7 rounded-lg text-[10px] font-black flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                title={`Semana ${w}: ${isWeekPresent ? 'Presente' : 'Falta'}`}
+                className={`w-7 h-7 rounded-lg text-[10px] font-black flex items-center justify-center transition-all shrink-0 select-none ${
                   isWeekPresent
                     ? isCurrentWeek
                       ? 'bg-[#58bc75] text-white shadow-xs ring-1 ring-[#163242]'
-                      : 'bg-[#58bc75] text-white shadow-2xs hover:bg-[#4caa68]'
+                      : 'bg-[#58bc75] text-white shadow-2xs'
                     : isCurrentWeek
                     ? 'bg-white text-slate-700 border-2 border-[#163242]'
-                    : 'bg-white text-slate-400 hover:text-slate-600 border border-slate-200/80 hover:border-slate-300'
+                    : 'bg-white text-slate-400 border border-slate-200/80'
                 }`}
               >
                 S{w}
-              </button>
+              </span>
             );
           })}
         </div>

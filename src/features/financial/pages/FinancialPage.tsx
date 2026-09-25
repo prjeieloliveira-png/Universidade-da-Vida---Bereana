@@ -1,132 +1,221 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActiveEdition } from '@/shared/hooks/useActiveEdition';
-import { fetchCashSummary } from '../data/financialData';
-import { FinancialSummaryCard } from '../components/FinancialSummaryCard';
-import { PaymentsTab } from '../components/PaymentsTab';
-import { CashFlowTab } from '../components/CashFlowTab';
-import { AddPaymentModal } from '../components/AddPaymentModal';
-import { LegacyImportBanner } from '../components/LegacyImportBanner';
-import { SyncStudentsButton } from '../components/SyncStudentsButton';
-import { Loader2, Plus, LayoutDashboard, CreditCard, ArrowLeftRight } from 'lucide-react';
-
-type TabId = 'resumo' | 'pagamentos' | 'fluxo';
-
-const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: 'resumo', label: 'Resumo', icon: LayoutDashboard },
-  { id: 'pagamentos', label: 'Pagamentos', icon: CreditCard },
-  { id: 'fluxo', label: 'Fluxo', icon: ArrowLeftRight },
-];
+import { useCohortStore } from '@/features/cohorts/store/cohortStore';
+import {
+  fetchCashFlow,
+  fetchCategories,
+  createTransaction,
+  voidTransaction,
+  createCategory,
+  deleteCategory,
+} from '../data/financialData';
+import { FinancialHeader } from '../components/FinancialHeader';
+import { FinancialMetricCards } from '../components/FinancialMetricCards';
+import { FinancialFilterBar, FlowTypeFilter } from '../components/FinancialFilterBar';
+import { TransactionGroupedList } from '../components/TransactionGroupedList';
+import { AddTransactionModal } from '../components/AddTransactionModal';
+import { CategoryManagementModal } from '../components/CategoryManagementModal';
+import type { CashFlowEntry, CreateTransactionInput } from '../types';
 
 export function FinancialPage() {
-  const { data: edition, isLoading: editionLoading } = useActiveEdition();
-  const editionId = edition?.id ?? '';
+  const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { data: edition } = useActiveEdition();
+  const editionId = edition?.id ?? 'edition-2026';
+  const { activeCohortId, cohorts, setActiveCohort, getActiveCohort } = useCohortStore();
+  const activeCohort = getActiveCohort();
 
-  const [tab, setTab] = useState<TabId>('resumo');
-  const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
+  // Modais
+  const [modalType, setModalType] = useState<'revenue' | 'expense' | null>(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
-  const { data: summary, isLoading: summaryLoading, isError } = useQuery({
-    queryKey: ['cash-summary', editionId],
-    queryFn: () => fetchCashSummary(editionId),
-    enabled: !!editionId,
-    staleTime: 30_000,
+  // Sincronizar abertura do modal de categorias via URL query param (?config=categorias)
+  useEffect(() => {
+    if (searchParams.get('config') === 'categorias') {
+      setIsCategoryModalOpen(true);
+    }
+  }, [searchParams]);
+
+  // Filtros
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [flowType, setFlowType] = useState<FlowTypeFilter>('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // Queries
+  const { data: rawEntries = [], isLoading } = useQuery({
+    queryKey: ['cash-flow', editionId],
+    queryFn: () => fetchCashFlow(editionId),
+    staleTime: 15_000,
   });
 
-  if (editionLoading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-5 h-5 animate-spin text-[#58bc75]" />
-      </div>
-    );
-  }
+  const { data: categories = [] } = useQuery({
+    queryKey: ['cash-categories'],
+    queryFn: fetchCategories,
+    staleTime: 60_000,
+  });
 
-  if (!edition) {
-    return (
-      <div className="text-center py-16 text-slate-400 text-sm">
-        Nenhuma edição ativa encontrada. Configure uma edição no Supabase.
-      </div>
-    );
-  }
+  // Mutações
+  const addTxMutation = useMutation({
+    mutationFn: (input: CreateTransactionInput) => createTransaction(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-flow', editionId] });
+      queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+    },
+  });
+
+  const voidTxMutation = useMutation({
+    mutationFn: (entry: CashFlowEntry) => voidTransaction(entry.transaction_id, 'Estorno manual via painel'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-flow', editionId] });
+      queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+    },
+  });
+
+  const addCatMutation = useMutation({
+    mutationFn: ({ name, type }: { name: string; type: 'in' | 'out' }) => createCategory(name, type),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cash-categories'] }),
+  });
+
+  const deleteCatMutation = useMutation({
+    mutationFn: (id: string) => deleteCategory(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cash-categories'] }),
+  });
+
+  // Navegar entre turmas
+  const handlePrevCohort = () => {
+    const idx = cohorts.findIndex((c) => c.id === activeCohortId);
+    if (idx > 0) {
+      const prev = cohorts[idx - 1];
+      if (prev) setActiveCohort(prev.id);
+    }
+  };
+
+  const handleNextCohort = () => {
+    const idx = cohorts.findIndex((c) => c.id === activeCohortId);
+    if (idx < cohorts.length - 1) {
+      const next = cohorts[idx + 1];
+      if (next) setActiveCohort(next.id);
+    }
+  };
+
+  // Filtragem
+  const filteredEntries = useMemo(() => {
+    return rawEntries.filter((e) => {
+      if (flowType !== 'all' && e.flow_type !== flowType) return false;
+      if (selectedCategory !== 'ALL' && e.category !== selectedCategory) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const descMatch = (e.description || '').toLowerCase().includes(q);
+        const nameMatch = (e.person_name || '').toLowerCase().includes(q);
+        const catMatch = e.category.toLowerCase().includes(q);
+        if (!descMatch && !nameMatch && !catMatch) return false;
+      }
+
+      const dateStr = e.date.slice(0, 10);
+      if (startDate && dateStr < startDate) return false;
+      if (endDate && dateStr > endDate) return false;
+
+      return true;
+    });
+  }, [rawEntries, flowType, selectedCategory, searchQuery, startDate, endDate]);
+
+  // Cálculos consolidados para os 3 cards
+  const metrics = useMemo(() => {
+    const inEntries = rawEntries.filter((e) => e.flow_type === 'in');
+    const outEntries = rawEntries.filter((e) => e.flow_type === 'out');
+    const totalInCents = inEntries.reduce((acc, e) => acc + e.amount_cents, 0);
+    const totalOutCents = outEntries.reduce((acc, e) => acc + e.amount_cents, 0);
+    return {
+      totalInCents,
+      countIn: inEntries.length,
+      totalOutCents,
+      countOut: outEntries.length,
+      netBalanceCents: totalInCents - totalOutCents,
+    };
+  }, [rawEntries]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mb-1">
-            <span>Portal</span>
-            <span>&gt;</span>
-            <span className="text-slate-600 font-semibold">Financeiro</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Financeiro
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Gestão financeira da {edition.name}
-          </p>
-        </div>
+      <FinancialHeader
+        cohortName={activeCohort.name}
+        onPrevCohort={handlePrevCohort}
+        onNextCohort={handleNextCohort}
+        onOpenCategories={() => setIsCategoryModalOpen(true)}
+        onOpenAddRevenue={() => setModalType('revenue')}
+        onOpenAddExpense={() => setModalType('expense')}
+      />
 
-        <button
-          id="add-payment-btn"
-          onClick={() => setIsAddPaymentOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#419a5c] text-white transition-colors shadow-sm cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Novo Pagamento</span>
-        </button>
-      </div>
+      {/* 3 Metric Cards: RECEITAS | DESPESAS | SALDO */}
+      <FinancialMetricCards
+        totalInCents={metrics.totalInCents}
+        countIn={metrics.countIn}
+        totalOutCents={metrics.totalOutCents}
+        countOut={metrics.countOut}
+        netBalanceCents={metrics.netBalanceCents}
+      />
 
-      {/* Tab navigation */}
-      <div className="flex gap-1 bg-slate-100 rounded-2xl p-1">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            id={`tab-${id}`}
-            onClick={() => setTab(id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              tab === id
-                ? 'bg-white shadow-sm text-slate-900'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Barra de Busca e Filtros */}
+      <FinancialFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        flowType={flowType}
+        onFlowTypeChange={setFlowType}
+        startDate={startDate}
+        onStartDateChange={setStartDate}
+        endDate={endDate}
+        onEndDateChange={setEndDate}
+        categories={categories}
+      />
 
-      {/* Sync students from local → Supabase (shown when DB is empty) */}
-      {editionId && <SyncStudentsButton editionId={editionId} />}
+      {/* Feed de Transações Agrupado por Data */}
+      <TransactionGroupedList
+        entries={filteredEntries}
+        isLoading={isLoading}
+        onVoid={(entry) => {
+          if (window.confirm(`Deseja realmente estornar este lançamento de ${entry.category}?`)) {
+            voidTxMutation.mutate(entry);
+          }
+        }}
+      />
 
-      {/* Legacy Import Banner: import payments for already-synced students */}
-      {editionId && <LegacyImportBanner editionId={editionId} />}
-
-      {/* Content */}
-      {tab === 'resumo' ? (
-        summaryLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-5 h-5 animate-spin text-[#58bc75]" />
-          </div>
-        ) : isError || !summary ? (
-          <div className="text-center py-12 text-slate-400 text-sm">
-            {isError
-              ? 'Falha ao carregar dados. Tente novamente.'
-              : 'Nenhum dado financeiro encontrado para esta edição.'}
-          </div>
-        ) : (
-          <FinancialSummaryCard summary={summary} />
-        )
-      ) : tab === 'pagamentos' ? (
-        <PaymentsTab editionId={editionId} />
-      ) : (
-        <CashFlowTab editionId={editionId} />
+      {/* Modais */}
+      {modalType && (
+        <AddTransactionModal
+          isOpen={true}
+          type={modalType}
+          editionId={editionId}
+          categories={categories}
+          onClose={() => setModalType(null)}
+          onSuccess={async (input) => {
+            await addTxMutation.mutateAsync(input);
+          }}
+        />
       )}
 
-      {/* Add Payment Modal */}
-      <AddPaymentModal
-        isOpen={isAddPaymentOpen}
-        editionId={editionId}
-        onClose={() => setIsAddPaymentOpen(false)}
+      <CategoryManagementModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => {
+          setIsCategoryModalOpen(false);
+          if (searchParams.get('config')) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete('config');
+            setSearchParams(nextParams, { replace: true });
+          }
+        }}
+        categories={categories}
+        onAddCategory={async (name, type) => {
+          await addCatMutation.mutateAsync({ name, type });
+        }}
+        onDeleteCategory={async (id) => {
+          await deleteCatMutation.mutateAsync(id);
+        }}
       />
     </div>
   );

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StudentRecord } from '../types';
 import { StudentAttendanceChips } from './StudentAttendanceChips';
 import { StudentCardDetails } from './StudentCardDetails';
+import { StudentWhatsAppButton } from './StudentWhatsAppButton';
 import { PillBadge, type PillVariant } from '@/shared/components/ui/PillBadge';
 import { Pencil, ChevronDown, Printer } from 'lucide-react';
 import type { RegistrationPaymentStatusRow } from '@/features/financial/types';
@@ -24,21 +25,16 @@ export function StudentCard({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   // Derivar status do badge
-  let badgeLabel: string = student.status;
-  let badgeVariant: PillVariant = student.status === 'Pago' ? 'success' : 'warning';
+  const badgeLabel: string = paymentStatus
+    ? paymentStatus.status === 'paid'
+      ? 'Pago'
+      : paymentStatus.status === 'partial'
+        ? 'Parcial'
+        : 'Pendente'
+    : student.status;
 
-  if (paymentStatus) {
-    if (paymentStatus.status === 'paid') {
-      badgeLabel = 'Pago';
-      badgeVariant = 'success';
-    } else if (paymentStatus.status === 'partial') {
-      badgeLabel = 'Parcial';
-      badgeVariant = 'info';
-    } else {
-      badgeLabel = 'Pendente';
-      badgeVariant = 'warning';
-    }
-  }
+  const badgeVariant: PillVariant =
+    badgeLabel === 'Pago' ? 'success' : badgeLabel === 'Parcial' ? 'info' : 'warning';
 
   return (
     <article
@@ -116,6 +112,12 @@ export function StudentCard({
                 s7={student.s7}
                 s8={student.s8}
                 s9={student.s9}
+              />
+
+              <StudentWhatsAppButton
+                name={student.name}
+                phone={student.phone}
+                size="sm"
               />
 
               <button
@@ -198,6 +200,12 @@ export function StudentCard({
               s7={student.s7}
               s8={student.s8}
               s9={student.s9}
+            />
+
+            <StudentWhatsAppButton
+              name={student.name}
+              phone={student.phone}
+              size="md"
             />
 
             <button
