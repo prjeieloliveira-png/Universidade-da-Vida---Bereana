@@ -1,10 +1,13 @@
 import { Check, X } from 'lucide-react';
 import type { StudentRecord } from '@/features/registrations/types';
 import type { WeekNumber, WeekKey } from '../types';
+import { getAbsenceTintClasses } from '../utils/absenceTint';
 
 interface AttendanceStudentRowProps {
   student: StudentRecord;
   activeWeek: WeekNumber;
+  /** Faltas registradas (real, do Supabase). 2 = amarelo, 3 = laranja, 4+ = vermelho. */
+  absenceCount?: number;
   onToggle: (studentId: string, week: WeekNumber) => void;
 }
 
@@ -13,10 +16,12 @@ const WEEKS: WeekNumber[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 export function AttendanceStudentRow({
   student,
   activeWeek,
+  absenceCount = 0,
   onToggle,
 }: AttendanceStudentRowProps) {
   const currentKey = `s${activeWeek}` as WeekKey;
   const isPresentInActiveWeek = Boolean(student[currentKey]);
+  const absenceTintClasses = getAbsenceTintClasses(absenceCount);
 
   // Calculate total attended out of 9
   const totalAttended = [
@@ -33,10 +38,12 @@ export function AttendanceStudentRow({
 
   return (
     <div
+      title={absenceCount >= 2 ? `${absenceCount} faltas registradas` : undefined}
       className={`border rounded-[22px] p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 transition-all ${
-        isPresentInActiveWeek
+        absenceTintClasses ||
+        (isPresentInActiveWeek
           ? 'bg-[#f4fbf6] border-[#bde7cb] hover:border-[#96dcad]'
-          : 'bg-white border-slate-200/90 hover:border-slate-300'
+          : 'bg-white border-slate-200/90 hover:border-slate-300')
       }`}
     >
       {/* Left: Number, Name, Phone & Leadership */}

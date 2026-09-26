@@ -96,7 +96,7 @@ export function AppShell() {
                 />
                 <div className="hidden sm:block">
                   <h1 className="font-black text-sm text-slate-900 leading-tight tracking-tight">
-                    Univ. da Vida
+                    Universidade da Vida
                   </h1>
                   <p className="text-[11px] font-semibold text-slate-400">Bereana</p>
                 </div>

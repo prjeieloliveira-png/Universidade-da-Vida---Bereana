@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useStudentStore } from '@/features/registrations/store/studentStore';
 import { useCohortStore } from '@/features/cohorts/store/cohortStore';
+import { useActiveEdition } from '@/shared/hooks/useActiveEdition';
 import { WeekSelectorPills } from '../components/WeekSelectorPills';
 import { AttendanceStatsBar } from '../components/AttendanceStatsBar';
 import { AttendanceStudentRow } from '../components/AttendanceStudentRow';
@@ -8,6 +10,7 @@ import { AttendanceReportModal } from '../components/AttendanceReportModal';
 import { ShareDoorLinkModal } from '../components/ShareDoorLinkModal';
 import { AttendanceSyncBadge } from '../components/AttendanceSyncBadge';
 import { useAttendanceSync } from '../hooks/useAttendanceSync';
+import { fetchAbsenceCounts } from '../api/attendanceApi';
 import { HierarchicalLeaderFilter } from '@/features/registrations/components/HierarchicalLeaderFilter';
 import { WeekNumber, WeekKey } from '../types';
 import { Search, FileSpreadsheet, Smartphone } from 'lucide-react';
@@ -27,6 +30,22 @@ export function AttendancePage() {
   const cohortStudents = useMemo(() => {
     return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
   }, [students, activeCohortId]);
+
+  // Faltas: contagem real do Supabase, só usada aqui (Chamada), não em Inscrições
+  const { data: activeEdition } = useActiveEdition();
+  const editionId = activeEdition?.id ?? '';
+  const { data: absenceCounts } = useQuery({
+    queryKey: ['registration-absence-counts', editionId],
+    queryFn: () => fetchAbsenceCounts(editionId),
+    enabled: !!editionId,
+    staleTime: 30_000,
+  });
+
+  const absenceCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    absenceCounts?.forEach((row) => map.set(row.registration_id, row.absence_count));
+    return map;
+  }, [absenceCounts]);
 
   const [activeWeek, setActiveWeek] = useState<WeekNumber>(2);
   const [searchQuery, setSearchQuery] = useState('');
@@ -224,6 +243,7 @@ export function AttendancePage() {
               key={student.id}
               student={student}
               activeWeek={activeWeek}
+              absenceCount={absenceCountMap.get(student.id) ?? 0}
               onToggle={() => toggleStudentAttendance(student, activeWeek)}
             />
           ))

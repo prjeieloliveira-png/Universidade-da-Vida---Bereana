@@ -70,14 +70,14 @@ export function StudentCard({
                   <img
                     src={photoSrc}
                     alt={student.name}
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                    className="w-8 h-8 rounded-lg object-cover border-2 border-white shadow-sm"
                   />
                   <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#163242] text-white flex items-center justify-center text-[8px] font-extrabold shadow-xs">
                     {student.num}
                   </span>
                 </div>
               ) : (
-                <span className="w-7 h-7 rounded-full bg-[#163242] text-white flex items-center justify-center text-xs font-extrabold shrink-0 shadow-2xs">
+                <span className="w-7 h-7 rounded-lg bg-[#163242] text-white flex items-center justify-center text-xs font-extrabold shrink-0 shadow-2xs">
                   {student.num}
                 </span>
               )}
@@ -160,14 +160,14 @@ export function StudentCard({
                 <img
                   src={photoSrc}
                   alt={student.name}
-                  className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
+                  className="w-9 h-9 rounded-lg object-cover border-2 border-white shadow-sm"
                 />
                 <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#163242] text-white flex items-center justify-center text-[8px] font-extrabold shadow-xs">
                   {student.num}
                 </span>
               </div>
             ) : (
-              <span className="w-7 h-7 rounded-full bg-[#163242] text-white flex items-center justify-center text-xs font-extrabold shrink-0 shadow-2xs">
+              <span className="w-7 h-7 rounded-lg bg-[#163242] text-white flex items-center justify-center text-xs font-extrabold shrink-0 shadow-2xs">
                 {student.num}
               </span>
             )}
