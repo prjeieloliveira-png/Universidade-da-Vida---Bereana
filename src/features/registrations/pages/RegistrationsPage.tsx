@@ -13,7 +13,7 @@ import { StudentIndividualPrintModal } from '../components/StudentIndividualPrin
 import { StudentBatchPrintModal } from '../components/StudentBatchPrintModal';
 import { StudentRecord, RegistrationFilterState, initialRegistrationFilterState } from '../types';
 import type { RegistrationPaymentStatusRow } from '@/features/financial/types';
-import { UserPlus, Users, CloudUpload, CheckCircle2, Loader2 } from 'lucide-react';
+import { UserPlus, Users, CloudUpload, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 
 export function RegistrationsPage() {
   const { activeCohortId, getActiveCohort } = useCohortStore();
@@ -24,6 +24,9 @@ export function RegistrationsPage() {
 
   const {
     students,
+    isLoadingStudents,
+    isRefetchingStudents,
+    refetchStudents,
     isSaving,
     saveStudent,
     isSyncing,
@@ -175,6 +178,16 @@ export function RegistrationsPage() {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => void refetchStudents()}
+            disabled={isLoadingStudents || isRefetchingStudents}
+            className="w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 flex items-center justify-center transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+            title="Atualizar lista com dados em tempo real do Supabase"
+            aria-label="Atualizar lista com dados do Supabase"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoadingStudents || isRefetchingStudents ? 'animate-spin text-[#0d7647]' : ''}`} />
+          </button>
+
           <button
             onClick={handleSyncCloud}
             disabled={isSyncing || cohortStudents.length === 0}

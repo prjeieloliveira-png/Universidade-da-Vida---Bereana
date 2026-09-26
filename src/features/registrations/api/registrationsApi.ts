@@ -1,16 +1,39 @@
 import { supabase } from '@/shared/lib/supabase';
 import type { StudentRecord } from '../types';
 
+export const DEFAULT_EDITION_ID = '33333333-3333-3333-3333-333333333333';
+
 export interface SyncRpcResult {
   synced: number;
   skipped: number;
 }
 
+function calculateAge(birthDateStr: string | null): number {
+  if (!birthDateStr) return 0;
+  const parts = birthDateStr.split('-');
+  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return 0;
+  const birthYear = parseInt(parts[0], 10);
+  const birthMonth = parseInt(parts[1], 10) - 1;
+  const birthDay = parseInt(parts[2], 10);
+  const today = new Date(2026, 8, 20);
+  let age = today.getFullYear() - birthYear;
+  const m = today.getMonth() - birthMonth;
+  if (m < 0 || (m === 0 && today.getDate() < birthDay)) {
+    age--;
+  }
+  return Math.max(0, age);
+}
+
 export function formatStudentForSync(s: StudentRecord) {
+  let birthDate = s.birthDate?.trim();
+  if (!birthDate || birthDate === '' || isNaN(Date.parse(birthDate))) {
+    birthDate = '2000-01-01';
+  }
+
   return {
     full_name: s.name.trim(),
-    birth_date: s.birthDate,
-    gender: s.gender,
+    birth_date: birthDate,
+    gender: s.gender || 'Feminino',
     marital_status: s.maritalStatus || 'Solteiro',
     phone: s.phone && s.phone !== '—' ? s.phone.trim() : '—',
     address: s.address && s.address !== '—' ? s.address.trim() : null,
@@ -18,20 +41,130 @@ export function formatStudentForSync(s: StudentRecord) {
     pastor: s.pastor && s.pastor !== 'ALL' ? s.pastor : null,
     g12: s.g12 && s.g12 !== 'ALL' ? s.g12 : null,
     leader: s.leader && s.leader !== 'ALL' ? s.leader : null,
+    photo_url: s.photoUrl || null,
+    comorbidity: s.comorbidity && s.comorbidity !== 'Não' ? s.comorbidity : null,
+    med_schedule: s.medSchedule && s.medSchedule !== 'Não' ? s.medSchedule : null,
   };
+}
+
+/**
+ * Busca todos os inscritos da edição ativa no Supabase, trazendo dados de pessoas e saúde
+ */
+export async function fetchStudentsFromSupabase(
+  editionId?: string
+): Promise<StudentRecord[]> {
+  const targetEditionId = editionId || DEFAULT_EDITION_ID;
+
+  const { data, error } = await supabase
+    .from('registrations')
+    .select(`
+      id,
+      person_id,
+      edition_id,
+      status,
+      shirt_size,
+      pastor_name,
+      g12_leader,
+      cell_leader,
+      created_at,
+      people!inner (
+        id,
+        full_name,
+        birth_date,
+        gender,
+        marital_status,
+        phone,
+        address,
+        photo_url,
+        health_records (
+          has_condition,
+          condition_description,
+          medication_schedule
+        )
+      )
+    `)
+    .eq('edition_id', targetEditionId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Erro ao buscar inscritos no Supabase:', error);
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Busca status de pagamento para cada inscrição
+  const { data: paymentStatuses } = await supabase
+    .from('v_registration_payment_status')
+    .select('registration_id, status, total_paid_cents')
+    .eq('edition_id', targetEditionId);
+
+  const paymentMap = new Map<string, { status: string; totalPaid: number }>();
+  paymentStatuses?.forEach((p) => {
+    if (p.registration_id) {
+      paymentMap.set(p.registration_id, {
+        status: p.status || 'PENDING',
+        totalPaid: p.total_paid_cents || 0,
+      });
+    }
+  });
+
+  return data.map((row, index) => {
+    const person = Array.isArray(row.people) ? row.people[0] : row.people;
+    const health = person?.health_records
+      ? Array.isArray(person.health_records)
+        ? person.health_records[0]
+        : person.health_records
+      : null;
+
+    const payment = paymentMap.get(row.id);
+    const isPaid = payment?.status === 'PAID' || payment?.status === 'OVERPAID';
+
+    return {
+      id: row.id,
+      cohortId: 'turma-01',
+      personId: row.person_id,
+      num: index + 1,
+      name: person?.full_name || 'Sem Nome',
+      gender: (person?.gender as 'Masculino' | 'Feminino') || 'Feminino',
+      birthDate: person?.birth_date || '2000-01-01',
+      age: calculateAge(person?.birth_date || null),
+      maritalStatus: (person?.marital_status as 'Solteiro' | 'Casado' | 'Viúvo' | 'Divorciado') || 'Solteiro',
+      phone: person?.phone || '—',
+      address: person?.address || '—',
+      shirtSize: row.shirt_size || '—',
+      pastor: row.pastor_name || 'Pra. Socorro Paiva',
+      g12: row.g12_leader || '',
+      leader: row.cell_leader || '',
+      status: isPaid ? 'Pago' : 'Pendente',
+      paymentMethod: isPaid ? 'PIX' : '—',
+      amountCents: 20000,
+      comorbidity: health?.condition_description || 'Não',
+      medSchedule: health?.medication_schedule || 'Não',
+      photoUrl: person?.photo_url || undefined,
+      s1: false,
+      s2: false,
+      s3: false,
+      s4: false,
+      s5: false,
+      s6: false,
+      s7: false,
+      s8: false,
+      s9: false,
+    };
+  });
 }
 
 /**
  * Persiste um único aluno de forma atômica no Supabase (people + registrations)
  */
 export async function saveStudentToSupabase(
-  editionId: string,
+  editionId: string | undefined,
   student: StudentRecord
 ): Promise<SyncRpcResult> {
-  if (!editionId) {
-    throw new Error('ID da edição/turma ativa não encontrado');
-  }
-
+  const targetEditionId = editionId || DEFAULT_EDITION_ID;
   const payload = [formatStudentForSync(student)];
 
   const { data, error } = await (
@@ -42,7 +175,7 @@ export async function saveStudentToSupabase(
       ) => Promise<{ data: unknown; error: unknown }>;
     }
   ).rpc('sync_students_from_local', {
-    p_edition_id: editionId,
+    p_edition_id: targetEditionId,
     p_data: payload,
   });
 
@@ -58,13 +191,10 @@ export async function saveStudentToSupabase(
  * Sincroniza uma lista inteira de alunos para o Supabase
  */
 export async function syncAllStudentsToSupabase(
-  editionId: string,
+  editionId: string | undefined,
   students: StudentRecord[]
 ): Promise<SyncRpcResult> {
-  if (!editionId) {
-    throw new Error('ID da edição/turma ativa não encontrado');
-  }
-
+  const targetEditionId = editionId || DEFAULT_EDITION_ID;
   const payload = students.map(formatStudentForSync);
 
   const { data, error } = await (
@@ -75,7 +205,7 @@ export async function syncAllStudentsToSupabase(
       ) => Promise<{ data: unknown; error: unknown }>;
     }
   ).rpc('sync_students_from_local', {
-    p_edition_id: editionId,
+    p_edition_id: targetEditionId,
     p_data: payload,
   });
 

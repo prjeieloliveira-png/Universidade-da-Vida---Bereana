@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { X, Save, CheckCircle2, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { X, Save, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import type { StudentRecord } from '../types';
 import { RegistrationLeadershipFields } from './RegistrationLeadershipFields';
 import { RegistrationHealthAndAttendanceFields } from './RegistrationHealthAndAttendanceFields';
+import { RegistrationPersonalFields } from './RegistrationPersonalFields';
 import { PhotoUpload } from './PhotoUpload';
 
 interface RegistrationEditModalProps {
@@ -24,6 +25,7 @@ export function RegistrationEditModal({
 
   const [formData, setFormData] = useState<StudentRecord>({ ...student });
   const [successNotice, setSuccessNotice] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleChange = (field: keyof StudentRecord, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -31,15 +33,18 @@ export function RegistrationEditModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     try {
       await onSave(formData);
       setSuccessNotice(true);
       setTimeout(() => {
         setSuccessNotice(false);
         onClose();
-      }, 400);
-    } catch {
-      // Erro é capturado e gerenciado pelo React Query
+      }, 500);
+    } catch (err) {
+      console.error('Falha ao salvar aluno no Supabase:', err);
+      const msg = err instanceof Error ? err.message : 'Falha ao salvar no banco de dados. Tente novamente.';
+      setErrorMessage(msg);
     }
   };
 
@@ -69,7 +74,14 @@ export function RegistrationEditModal({
           {successNotice && (
             <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2 text-xs font-semibold text-emerald-800">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Dados atualizados com sucesso!</span>
+              <span>Dados atualizados com sucesso no Supabase!</span>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2 text-xs font-semibold text-red-800">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
           )}
 
@@ -84,91 +96,15 @@ export function RegistrationEditModal({
           </div>
 
           {/* Grupo 1: Dados Pessoais */}
-          <div>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-              1. Dados Pessoais
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nome Completo
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#58bc75] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Sexo</label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => handleChange('gender', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#58bc75] focus:outline-none"
-                >
-                  <option value="Feminino">Feminino</option>
-                  <option value="Masculino">Masculino</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Data de Nascimento
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.birthDate}
-                  onChange={(e) => handleChange('birthDate', e.target.value)}
-                  className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#58bc75] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Estado Civil
-                </label>
-                <select
-                  value={formData.maritalStatus}
-                  onChange={(e) => handleChange('maritalStatus', e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#58bc75] focus:outline-none"
-                >
-                  <option value="Solteiro">Solteiro</option>
-                  <option value="Casado">Casado</option>
-                  <option value="Divorciado">Divorciado</option>
-                  <option value="Viúvo">Viúvo</option>
-                  <option value="União Estável">União Estável</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Celular</label>
-                <input
-                  type="text"
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  placeholder="(86) 99999-0000"
-                  className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#58bc75] focus:outline-none"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Endereço
-                </label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => handleChange('address', e.target.value)}
-                  placeholder="Rua, Número - Bairro - Cidade"
-                  className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#58bc75] focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
+          <RegistrationPersonalFields
+            name={formData.name}
+            gender={formData.gender}
+            birthDate={formData.birthDate}
+            maritalStatus={formData.maritalStatus}
+            phone={formData.phone}
+            address={formData.address}
+            onChange={handleChange}
+          />
 
           {/* Grupo 2: Inscrição & Liderança */}
           <RegistrationLeadershipFields

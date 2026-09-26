@@ -99,4 +99,23 @@ describe('useStudentStore', () => {
     updated = useStudentStore.getState().students.find((s) => s.id === student.id);
     expect(updated?.s5).toBe(false);
   });
+
+  it('hydrates store with setStudents while preserving local attendance markings', () => {
+    const original = useStudentStore.getState().students[0]!;
+    useStudentStore.getState().setAttendance(original.id, 1, true);
+
+    const remoteBatch = [
+      {
+        ...original,
+        name: 'Nome Atualizado do Supabase',
+        s1: false, // remote has false
+      },
+    ];
+
+    useStudentStore.getState().setStudents(remoteBatch);
+    const hydrated = useStudentStore.getState().students.find((s) => s.id === original.id);
+    expect(hydrated?.name).toBe('Nome Atualizado do Supabase');
+    // Local attendance mark should be preserved
+    expect(hydrated?.s1).toBe(true);
+  });
 });
