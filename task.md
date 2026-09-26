@@ -45,3 +45,11 @@
 - [x] Dashboard (`DashboardPlaceholder.tsx`) — resumo financeiro integrado com métricas reais do caixa
 - [x] Quality gate: lint ✅ typecheck ✅ tests 24/24 ✅
 - [x] Validação visual no browser (viewport mobile 390px) ✅
+
+## Correção — Miniatura da foto do aluno
+- [x] Causa: bucket `student-photos` é privado, mas o upload salvava URL `/object/public/...` (HTTP 400)
+- [x] `photo_url` passa a guardar o caminho do objeto; exibição via URL assinada (`useStudentPhotoUrl`)
+- [x] URLs públicas legadas continuam funcionando (`toStudentPhotoPath`)
+- [x] Aplicado em StudentCard, DoorAttendanceCard, StudentPrintSheet e PhotoUpload
+- [x] Quality gate: lint ✅ typecheck ✅ tests 92/92 ✅
+- [ ] Validação visual logado (390px)

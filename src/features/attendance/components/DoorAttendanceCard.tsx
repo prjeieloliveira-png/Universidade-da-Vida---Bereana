@@ -1,6 +1,7 @@
 import { Check, X } from 'lucide-react';
 import type { StudentRecord } from '@/features/registrations/types';
 import type { WeekNumber, WeekKey } from '../types';
+import { useStudentPhotoUrl } from '@/shared/hooks/useStudentPhotoUrl';
 
 interface DoorAttendanceCardProps {
   student: StudentRecord;
@@ -15,6 +16,7 @@ export function DoorAttendanceCard({
 }: DoorAttendanceCardProps) {
   const currentKey = `s${activeWeek}` as WeekKey;
   const isPresent = Boolean(student[currentKey]);
+  const photoSrc = useStudentPhotoUrl(student.photoUrl);
 
   return (
     <div
@@ -27,9 +29,9 @@ export function DoorAttendanceCard({
       {/* Top: Student Header & Info */}
       <div className="flex items-start gap-3 min-w-0">
         {/* Avatar / Photo */}
-        {student.photoUrl ? (
+        {photoSrc ? (
           <img
-            src={student.photoUrl}
+            src={photoSrc}
             alt={student.name}
             className="w-11 h-11 rounded-full object-cover shrink-0 border border-slate-200 shadow-2xs"
           />

@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
 import { Camera, FolderOpen, Loader2, UserCircle2, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
+import { studentPhotoQueryKey, useStudentPhotoUrl } from '@/shared/hooks/useStudentPhotoUrl';
+import { STUDENT_PHOTOS_BUCKET } from '@/shared/utils/studentPhoto';
 
 interface PhotoUploadProps {
   personId: string;
@@ -21,7 +24,11 @@ export function PhotoUpload({
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [preview, setPreview] = useState<string | null>(currentUrl ?? null);
+  const queryClient = useQueryClient();
+  const storedPhotoSrc = useStudentPhotoUrl(currentUrl);
+  // Preview local (blob) do arquivo recém-escolhido; senão, a foto já salva
+  const [preview, setPreview] = useState<string | null>(null);
+  const displaySrc = preview ?? storedPhotoSrc;
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -44,16 +51,14 @@ export function PhotoUpload({
       const path = `${personId}/photo.${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('student-photos')
+        .from(STUDENT_PHOTOS_BUCKET)
         .upload(path, file, { upsert: true, contentType: file.type });
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
-        .from('student-photos')
-        .getPublicUrl(path);
-
-      onUploaded(data.publicUrl);
+      // Bucket privado: salva o caminho do objeto; a exibição usa URL assinada
+      await queryClient.invalidateQueries({ queryKey: studentPhotoQueryKey(path) });
+      onUploaded(path);
       setUploadState('idle');
     } catch (err) {
       console.error('Erro no upload:', err);
@@ -88,9 +93,9 @@ export function PhotoUpload({
         <div
           className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md ring-2 ring-slate-200"
         >
-          {preview ? (
+          {displaySrc ? (
             <img
-              src={preview}
+              src={displaySrc}
               alt="Foto do aluno"
               className="w-full h-full object-cover"
             />
@@ -115,7 +120,7 @@ export function PhotoUpload({
         </div>
 
         {/* Botão de remover */}
-        {preview && uploadState !== 'uploading' && (
+        {displaySrc && uploadState !== 'uploading' && (
           <button
             type="button"
             onClick={handleRemove}
@@ -191,7 +196,7 @@ export function PhotoUpload({
           {errorMsg}
         </p>
       )}
-      {uploadState === 'idle' && !preview && (
+      {uploadState === 'idle' && !displaySrc && (
         <p className="text-[10px] text-slate-400 font-medium text-center">
           Tire uma foto ou escolha da galeria
         </p>

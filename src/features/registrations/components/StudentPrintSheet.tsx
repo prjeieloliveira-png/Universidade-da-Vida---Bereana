@@ -1,5 +1,6 @@
 import { StudentRecord } from '../types';
 import { formatCentsToBRL } from '@/shared/utils/currency';
+import { useStudentPhotoUrl } from '@/shared/hooks/useStudentPhotoUrl';
 
 interface StudentPrintSheetProps {
   student: StudentRecord;
@@ -19,6 +20,7 @@ const sessions: { key: keyof StudentRecord; label: string }[] = [
 ];
 
 export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProps) {
+  const photoSrc = useStudentPhotoUrl(student.photoUrl);
   const birthFormatted = student.birthDate
     ? student.birthDate.split('-').reverse().join('/')
     : '—';
@@ -100,9 +102,9 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
         </div>
 
         {/* Foto 3×4 */}
-        {student.photoUrl && (
+        {photoSrc && (
           <img
-            src={student.photoUrl}
+            src={photoSrc}
             alt={student.name}
             style={{
               width: 54,
@@ -114,7 +116,7 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
             }}
           />
         )}
-        {!student.photoUrl && (
+        {!photoSrc && (
           <div
             style={{
               width: 54,

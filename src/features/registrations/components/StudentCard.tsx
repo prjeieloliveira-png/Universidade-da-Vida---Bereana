@@ -6,6 +6,7 @@ import { StudentWhatsAppButton } from './StudentWhatsAppButton';
 import { PillBadge, type PillVariant } from '@/shared/components/ui/PillBadge';
 import { Pencil, ChevronDown, Printer } from 'lucide-react';
 import type { RegistrationPaymentStatusRow } from '@/features/financial/types';
+import { useStudentPhotoUrl } from '@/shared/hooks/useStudentPhotoUrl';
 
 interface StudentCardProps {
   student: StudentRecord;
@@ -23,6 +24,7 @@ export function StudentCard({
   defaultExpanded = false,
 }: StudentCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const photoSrc = useStudentPhotoUrl(student.photoUrl);
 
   // Derivar status do badge
   const badgeLabel: string = paymentStatus
@@ -63,10 +65,10 @@ export function StudentCard({
           {/* Top Row: Number, Name & Status Badge */}
           <div className="flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              {student.photoUrl ? (
+              {photoSrc ? (
                 <div className="relative shrink-0">
                   <img
-                    src={student.photoUrl}
+                    src={photoSrc}
                     alt={student.name}
                     className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
                   />
@@ -153,10 +155,10 @@ export function StudentCard({
         <div className="hidden sm:flex items-center justify-between gap-3">
           {/* Left Side: Number, Name & Quick Subtitle */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            {student.photoUrl ? (
+            {photoSrc ? (
               <div className="relative shrink-0">
                 <img
-                  src={student.photoUrl}
+                  src={photoSrc}
                   alt={student.name}
                   className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
                 />
