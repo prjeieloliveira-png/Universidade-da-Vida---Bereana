@@ -108,3 +108,26 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Sem mudança de comportamento (mesmo texto, mesmos fluxos, mesmos ids de teste)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
 - [ ] Validação visual logado (registrar um pagamento de teste)
+
+## Hidratar presença real (s1..s9) do Supabase em todas as telas
+- [x] Diagnóstico: `fetchStudentsFromSupabase` sempre setava s1..s9=false; `fetchAttendanceMatrixFromSupabase` (view `v_edition_attendance_matrix`) já existia sem uso
+- [x] `registrationsApi.ts`: `fetchStudentsFromSupabase` agora busca a matriz real em paralelo com o status de pagamento e popula s1..s9 por `registration_id`
+- [x] Novo `useHydrateStudents.ts` (extraído de `useRegistrations`) para reaproveitar fetch+hidratação do Zustand store
+- [x] `useRegistrations` passa a usar `useHydrateStudents` internamente (sem mudança de API pública)
+- [x] `AppShell.tsx` chama `useHydrateStudents()` — cobre Dashboard, Chamada, Liderança, Equipes, Financeiro mesmo sem passar por Inscrições antes
+- [x] `DoorAttendancePage.tsx` (rota pública `/chamada/porta`, fora do AppShell) chama `useHydrateStudents()` sozinha
+- [x] Merge com fila offline otimista preservado (merge OR já existente em `setStudents`, testado em `studentStore.test.ts`)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
+- [x] Validação visual 390px: `/chamada/porta` sem login, dados reais da produção (53 inscritos, contagens de presença corretas e diferentes por semana — S1: 28 presentes/25 faltas, S2: 37/16)
+- [x] Validado logado (390px): Chamada, Inscrições e Dashboard mostram presença real por aluno ("X/9 Presenças", "X/9 P") e contadores corretos após login — causa raiz do login falhar era .env.local ausente (vite dev não carrega .env.production; client caía no fallback http://127.0.0.1:54321). Criado .env.local (git-ignorado) com as mesmas credenciais de .env.production.
+
+## Zerar histórico de chamada (dados de teste) — começar do zero
+- [x] Confirmado com o usuário: apagar só `attendances` (não mexer em `team_meeting_attendances`, inscrições, pagamentos, temas)
+- [x] Testado com `BEGIN; DELETE; ROLLBACK;` via `supabase db query --linked` antes de rodar de verdade
+- [x] `DELETE FROM attendances;` executado em produção — 212 registros removidos, tabela e view `v_edition_attendance_matrix` confirmadas em 0
+- [x] `studentStore.ts`: persist version 4 → 5, com `migrate` zerando s1..s9 em cache de qualquer aparelho que já tivesse marcado presença de teste (senão o merge otimista existente manteria os valores antigos "true")
+- [x] `useAttendanceSync.ts`: chave da fila offline `bereana_attendance_queue_v1` → `_v2` (descarta itens de teste ainda pendentes de sync)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
+- [x] Validado logado + Porta (390px): Chamada, Inscrições e `/chamada/porta` mostram 0/9 presenças para os 53 alunos
+- [x] Validado a migração v4→v5 simulando um aparelho com s1/s2=true salvos localmente: após reload vira false corretamente, sem precisar limpar cache manualmente
+- Pronto para começar a chamada real a partir de agora
