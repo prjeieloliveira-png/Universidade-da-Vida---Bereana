@@ -1227,6 +1227,23 @@ export type Database = {
         }
         Relationships: []
       }
+      v_leadership_hierarchy: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          g12_id: string | null
+          g12_name: string | null
+          id: string | null
+          name: string | null
+          pastor_category: string | null
+          pastor_id: string | null
+          pastor_name: string | null
+          phone: string | null
+          role: string | null
+          role_label: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       record_attendance_rpc: {

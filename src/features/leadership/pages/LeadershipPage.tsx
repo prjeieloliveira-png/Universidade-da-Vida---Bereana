@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { useLeadershipStore } from '../store/leadershipStore';
+import { useLeadershipData } from '../hooks/useLeadershipData';
 import { useCohortStore } from '@/features/cohorts/store/cohortStore';
 import { LeadershipStatsBar } from '../components/LeadershipStatsBar';
 import { LeadershipFilterBar } from '../components/LeadershipFilterBar';
 import { LeadershipModal, LeadershipModalItem } from '../components/LeadershipModal';
 import { LeadershipItemCard } from '../components/LeadershipItemCard';
+import { CloudCheck, Loader2 } from 'lucide-react';
 
 export interface DisplayLeaderItem {
   id: string;
@@ -20,6 +21,7 @@ export interface DisplayLeaderItem {
 
 export function LeadershipPage() {
   const {
+    isLoading,
     pastors,
     g12s,
     leaders,
@@ -32,7 +34,7 @@ export function LeadershipPage() {
     addLeader,
     updateLeader,
     deleteLeader,
-  } = useLeadershipStore();
+  } = useLeadershipData();
 
   const { getActiveCohort, toggleLeaderInCohort } = useCohortStore();
   const activeCohort = getActiveCohort();
@@ -44,7 +46,6 @@ export function LeadershipPage() {
   const [editingItem, setEditingItem] = useState<LeadershipModalItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Check if an item is active in the current cohort
   const isItemActiveInCohort = (itemId: string) => {
     if (!activeCohort.activeLeaderIds || activeCohort.activeLeaderIds.length === 0) {
       return true;
@@ -52,7 +53,6 @@ export function LeadershipPage() {
     return activeCohort.activeLeaderIds.includes(itemId);
   };
 
-  // Flatten all leadership for filtering
   const allItems = useMemo(() => {
     const list: DisplayLeaderItem[] = [];
 
@@ -88,7 +88,6 @@ export function LeadershipPage() {
     return list;
   }, [pastors, g12s, leaders]);
 
-  // Filtered list
   const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
       if (cohortFilter === 'COHORT_ONLY' && !isItemActiveInCohort(item.id)) return false;
@@ -133,40 +132,67 @@ export function LeadershipPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (item: DisplayLeaderItem) => {
+  const handleDelete = async (item: DisplayLeaderItem) => {
     if (!window.confirm(`Tem certeza que deseja excluir ${item.name}?`)) return;
-    if (item.role === 'PASTOR') deletePastor(item.id);
-    else if (item.role === 'G12') deleteG12(item.id);
-    else if (item.role === 'LEADER') deleteLeader(item.id);
+    try {
+      if (item.role === 'PASTOR') await deletePastor(item.id);
+      else if (item.role === 'G12') await deleteG12(item.id);
+      else if (item.role === 'LEADER') await deleteLeader(item.id);
+    } catch (err) {
+      console.error('Erro ao excluir líder:', err);
+      alert('Não foi possível excluir o líder. Verifique vínculos existentes.');
+    }
   };
 
-  const handleSaveItem = (saved: LeadershipModalItem) => {
-    if (!saved.id) {
-      if (saved.role === 'PASTOR') addPastor(saved.name, saved.phone);
-      else if (saved.role === 'G12') addG12(saved.name, saved.pastorId!, saved.phone);
-      else if (saved.role === 'LEADER') addLeader(saved.name, saved.g12Id!, saved.phone);
-    } else {
-      if (saved.role === 'PASTOR') updatePastor(saved.id, saved.name, saved.phone);
-      else if (saved.role === 'G12') updateG12(saved.id, saved.name, saved.pastorId!, saved.phone);
-      else if (saved.role === 'LEADER') updateLeader(saved.id, saved.name, saved.g12Id!, saved.phone);
+  const handleSaveItem = async (saved: LeadershipModalItem) => {
+    try {
+      if (!saved.id) {
+        if (saved.role === 'PASTOR') await addPastor({ name: saved.name, phone: saved.phone });
+        else if (saved.role === 'G12') await addG12({ pastorId: saved.pastorId!, name: saved.name, phone: saved.phone });
+        else if (saved.role === 'LEADER') await addLeader({ g12Id: saved.g12Id!, name: saved.name, phone: saved.phone });
+      } else {
+        if (saved.role === 'PASTOR') await updatePastor({ id: saved.id, name: saved.name, phone: saved.phone });
+        else if (saved.role === 'G12') await updateG12({ id: saved.id, pastorId: saved.pastorId!, name: saved.name, phone: saved.phone });
+        else if (saved.role === 'LEADER') await updateLeader({ id: saved.id, g12Id: saved.g12Id!, name: saved.name, phone: saved.phone });
+      }
+    } catch (err) {
+      console.error('Erro ao salvar líder no Supabase:', err);
+      alert('Erro ao salvar no banco de dados.');
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mb-1">
-          <span>Portal</span>
-          <span>&gt;</span>
-          <span className="text-slate-600 font-semibold">Liderança</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mb-1">
+            <span>Portal</span>
+            <span>&gt;</span>
+            <span className="text-slate-600 font-semibold">Liderança</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Gestão de Lideranças & Organizadores
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Catálogo geral da igreja com escalação para a <strong>{activeCohort.name}</strong>
+          </p>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-          Gestão de Lideranças & Organizadores
-        </h2>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Catálogo geral da igreja com escalação para a <strong>{activeCohort.name}</strong>
-        </p>
+
+        {/* Supabase Status Indicator */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {isLoading ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200/80">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-600" />
+              <span>Carregando...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+              <CloudCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Nuvem Sincronizada</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <LeadershipStatsBar
