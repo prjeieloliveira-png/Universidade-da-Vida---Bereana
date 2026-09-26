@@ -101,3 +101,10 @@
 
 ### Nota sobre migração 20260926000030
 A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_anon_access.sql`) e já aplicou em produção. Copiei o arquivo dela para este checkout para o histórico local bater com o banco, e renumerei minha migração para 20260926000031. Ajustei os GRANTs de record_attendance_rpc/sync_attendances_rpc para `authenticated` apenas (sem anon), para não reabrir o acesso que aquela migração fechou.
+
+## Refatoração — ReceivePaymentModal e ReceiveTeamPaymentModal
+- [x] Dividido em: paymentReceiptShared.tsx (StatusBadge + msg WhatsApp, deduplicados), *SearchStep, *FormStep, *SuccessStep, useReceivePayment.ts e useReceiveTeamPayment.ts (hooks com toda a lógica de dados)
+- [x] ReceivePaymentModal.tsx: 582 → 132 linhas. ReceiveTeamPaymentModal.tsx: 525 → 156 linhas. Todos os arquivos novos abaixo de 250 linhas
+- [x] Sem mudança de comportamento (mesmo texto, mesmos fluxos, mesmos ids de teste)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
+- [ ] Validação visual logado (registrar um pagamento de teste)
