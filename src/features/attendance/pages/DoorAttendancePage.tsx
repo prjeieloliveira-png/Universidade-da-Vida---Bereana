@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useStudentStore } from '@/features/registrations/store/studentStore';
+import { useHydrateStudents } from '@/features/registrations/hooks/useHydrateStudents';
 import { DoorAttendanceCard } from '../components/DoorAttendanceCard';
 import { AttendanceConfirmModal } from '../components/AttendanceConfirmModal';
 import { AttendanceSyncBadge } from '../components/AttendanceSyncBadge';
@@ -13,6 +14,9 @@ const WEEKS: WeekNumber[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 export function DoorAttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { students } = useStudentStore();
+  // Rota pública fora do AppShell: precisa hidratar o studentStore (com a
+  // presença real s1..s9) sozinha, já que nenhuma outra tela roda antes dela.
+  useHydrateStudents();
   const { syncStatus, pendingCount, flushQueue, markAttendance } = useAttendanceSync();
 
   const initialWeek = useMemo<WeekNumber>(() => {

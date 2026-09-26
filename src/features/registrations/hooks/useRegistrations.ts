@@ -1,11 +1,7 @@
-import { useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useStudentStore } from '../store/studentStore';
-import {
-  DEFAULT_EDITION_ID,
-  fetchStudentsFromSupabase,
-  saveStudentToSupabase,
-} from '../api/registrationsApi';
+import { DEFAULT_EDITION_ID, saveStudentToSupabase } from '../api/registrationsApi';
+import { useHydrateStudents } from './useHydrateStudents';
 import type { StudentRecord } from '../types';
 
 interface UseRegistrationsProps {
@@ -14,28 +10,16 @@ interface UseRegistrationsProps {
 
 export function useRegistrations({ editionId }: UseRegistrationsProps) {
   const queryClient = useQueryClient();
-  const { students, updateStudent, addStudent, setStudents } = useStudentStore();
+  const { students, updateStudent, addStudent } = useStudentStore();
   const targetEditionId = editionId || DEFAULT_EDITION_ID;
 
-  // 1. Busca alunos da edição ativa diretamente do Supabase via TanStack Query
+  // 1. Busca alunos da edição ativa no Supabase (com presença real) e hidrata o Zustand store
   const {
-    data: remoteStudents,
     isLoading: isLoadingStudents,
     isRefetching: isRefetchingStudents,
     error: fetchError,
     refetch: refetchStudents,
-  } = useQuery({
-    queryKey: ['students', targetEditionId],
-    queryFn: () => fetchStudentsFromSupabase(targetEditionId),
-    staleTime: 60_000,
-  });
-
-  // 2. Quando os dados remotos chegam, hidrata e sincroniza o Zustand store (para offline e reatividade global)
-  useEffect(() => {
-    if (remoteStudents && remoteStudents.length > 0) {
-      setStudents(remoteStudents);
-    }
-  }, [remoteStudents, setStudents]);
+  } = useHydrateStudents(targetEditionId);
 
   // 3. Mutação de salvamento atômico no Supabase
   const saveMutation = useMutation({

@@ -8,7 +8,9 @@ import {
 import type { StudentRecord } from '@/features/registrations/types';
 import type { WeekNumber } from '../types';
 
-const QUEUE_STORAGE_KEY = 'bereana_attendance_queue_v1';
+// v2: renomeada para descartar itens de teste que ainda estivessem pendentes
+// de sincronizar quando o histórico de chamada foi zerado no banco.
+const QUEUE_STORAGE_KEY = 'bereana_attendance_queue_v2';
 
 export interface AttendanceQueueItem {
   id: string;
