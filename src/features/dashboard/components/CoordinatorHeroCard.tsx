@@ -19,6 +19,11 @@ export function CoordinatorHeroCard({
           <Sparkles className="w-3 h-3 text-[#58bc75]" />
           Edição 2026 Ativa
         </span>
+        <img
+          src="/logo-uv-mark.png"
+          alt="Universidade da Vida"
+          className="w-6 h-7 object-contain drop-shadow-xs"
+        />
       </div>
 
       {/* Decorative Illustration / Avatar Center */}

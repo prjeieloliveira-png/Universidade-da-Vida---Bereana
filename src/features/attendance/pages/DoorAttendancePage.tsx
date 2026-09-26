@@ -103,13 +103,20 @@ export function DoorAttendancePage() {
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#58bc75] block">
-                Portaria & Recepção
-              </span>
-              <h1 className="text-base font-black text-slate-900 leading-tight">
-                Universidade da Vida
-              </h1>
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/logo-uv-mark.png"
+                alt="Universidade da Vida"
+                className="w-8 h-9 object-contain drop-shadow-xs"
+              />
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#00ab81] block">
+                  Portaria & Recepção
+                </span>
+                <h1 className="text-base font-black text-slate-900 leading-tight">
+                  Universidade da Vida
+                </h1>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">

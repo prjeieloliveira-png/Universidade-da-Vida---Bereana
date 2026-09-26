@@ -109,16 +109,23 @@ export function AttendanceReportModal({
         <div className="p-4 sm:p-6 overflow-y-auto space-y-5 print:p-2 print:overflow-visible text-slate-800">
           {/* Document Header */}
           <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#20693a] bg-[#e8f8ee] px-2.5 py-0.5 rounded-full">
-                Igreja Bereana • Relatório Oficial
-              </span>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
-                Universidade da Vida 2026 — Frequência Geral
-              </h1>
-              <p className="text-xs text-slate-500">
-                {total} alunos listados {activeFiltersDesc ? `• Filtro: ${activeFiltersDesc}` : ''}
-              </p>
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo-uv-mark.png"
+                alt="Universidade da Vida"
+                className="w-10 h-11 object-contain shrink-0"
+              />
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#20693a] bg-[#e8f8ee] px-2.5 py-0.5 rounded-full">
+                  Igreja Bereana • Relatório Oficial
+                </span>
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                  Universidade da Vida 2026 — Frequência Geral
+                </h1>
+                <p className="text-xs text-slate-500">
+                  {total} alunos listados {activeFiltersDesc ? `• Filtro: ${activeFiltersDesc}` : ''}
+                </p>
+              </div>
             </div>
             <div className="text-left sm:text-right text-xs text-slate-400">
               <p className="flex items-center sm:justify-end gap-1">

@@ -37,19 +37,26 @@ export const TeamsPrintSheet: React.FC<TeamsPrintSheetProps> = ({
     >
       {/* Cabeçalho Oficial do Relatório */}
       <div className="border-b-2 border-slate-900 pb-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div>
-          <span className="text-[11px] font-black uppercase tracking-widest text-[#0d7647]">
-            Universidade da Vida • Igreja Bereana
-          </span>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-            Relação Geral de Equipes de Serviço
-          </h1>
-          <p className="text-xs text-slate-600 mt-1">
-            Turma: <strong className="text-slate-900">{editionName}</strong> • Emitido em:{' '}
-            <span>
-              {issueDate} às {issueTime}
+        <div className="flex items-center gap-3.5">
+          <img
+            src="/logo-uv-mark.png"
+            alt="Universidade da Vida"
+            className="w-11 h-12 object-contain shrink-0"
+          />
+          <div>
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#00ab81]">
+              Universidade da Vida • Igreja Bereana
             </span>
-          </p>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+              Relação Geral de Equipes de Serviço
+            </h1>
+            <p className="text-xs text-slate-600 mt-1">
+              Turma: <strong className="text-slate-900">{editionName}</strong> • Emitido em:{' '}
+              <span>
+                {issueDate} às {issueTime}
+              </span>
+            </p>
+          </div>
         </div>
 
         {/* Resumo de Voluntários */}

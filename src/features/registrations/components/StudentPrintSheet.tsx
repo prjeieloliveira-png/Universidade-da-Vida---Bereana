@@ -40,15 +40,22 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
         className="flex items-center justify-between pb-3 mb-4"
         style={{ borderBottom: '2px solid #163242' }}
       >
-        <div>
-          <div
-            className="font-black uppercase tracking-widest mb-0.5"
-            style={{ color: '#163242', fontSize: '13px' }}
-          >
-            Universidade da Vida
-          </div>
-          <div style={{ color: '#58bc75', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em' }}>
-            Igreja Bereana • Ficha Cadastral Oficial
+        <div className="flex items-center gap-3">
+          <img
+            src="/logo-uv-mark.png"
+            alt="Universidade da Vida"
+            style={{ width: '38px', height: '42px', objectFit: 'contain' }}
+          />
+          <div>
+            <div
+              className="font-black uppercase tracking-widest mb-0.5"
+              style={{ color: '#163242', fontSize: '13px' }}
+            >
+              Universidade da Vida
+            </div>
+            <div style={{ color: '#00ab81', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em' }}>
+              Igreja Bereana • Ficha Cadastral Oficial
+            </div>
           </div>
         </div>
         <div className="text-right">

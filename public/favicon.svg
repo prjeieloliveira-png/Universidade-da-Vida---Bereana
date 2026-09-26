@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 580" fill="none">
+  <!-- Outer rectangular frame with cut/tab at bottom-right -->
+  <rect x="25" y="25" width="450" height="530" stroke="#00ab81" stroke-width="26" fill="none" />
+  <!-- Small square tab at bottom-right corner -->
+  <rect x="420" y="500" width="55" height="55" fill="#00ab81" />
+  <!-- Bold U shape centered inside frame -->
+  <path d="M 160 145 H 225 V 360 C 225 390 235 410 250 410 C 265 410 275 390 275 360 V 145 H 340 V 360 C 340 435 305 470 250 470 C 195 470 160 435 160 360 Z" fill="#00ab81" />
+</svg>

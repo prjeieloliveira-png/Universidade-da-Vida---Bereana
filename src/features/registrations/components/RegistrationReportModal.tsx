@@ -125,15 +125,22 @@ export function RegistrationReportModal({
         <div className="p-4 sm:p-6 overflow-y-auto space-y-4 print:p-2 print:overflow-visible text-slate-800">
           {/* Printable Header */}
           <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-[#2e844b]">
-                Universidade da Vida • Igreja Bereana
-              </div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">
-                Relatório de Alunos Inscritos
-              </h1>
-              <div className="text-xs text-slate-500 mt-0.5">
-                Turma: <strong>{cohortName}</strong> • Emitido em: {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo-uv-mark.png"
+                alt="Universidade da Vida"
+                className="w-10 h-11 object-contain shrink-0"
+              />
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[#00ab81]">
+                  Universidade da Vida • Igreja Bereana
+                </div>
+                <h1 className="text-xl font-black text-slate-900 tracking-tight">
+                  Relatório de Alunos Inscritos
+                </h1>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  Turma: <strong>{cohortName}</strong> • Emitido em: {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             </div>
 

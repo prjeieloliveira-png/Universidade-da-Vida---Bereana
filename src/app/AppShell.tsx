@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  GraduationCap,
   LayoutDashboard,
   Users,
   CheckSquare,
@@ -82,10 +81,12 @@ export function AppShell() {
             {/* Brand Logo & Desktop Nav Pills */}
             <div className="flex items-center gap-6">
               {/* Logo */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#0d7647] text-white flex items-center justify-center shadow-xs shadow-[#0d7647]/20">
-                  <GraduationCap className="w-5 h-5" />
-                </div>
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/logo-uv-mark.png"
+                  alt="Universidade da Vida"
+                  className="w-8 h-9 sm:w-9 sm:h-10 object-contain drop-shadow-xs"
+                />
                 <div className="hidden sm:block">
                   <h1 className="font-black text-sm text-slate-900 leading-tight tracking-tight">
                     Univ. da Vida

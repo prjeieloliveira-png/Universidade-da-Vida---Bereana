@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDown, Plus, Check, GraduationCap, Calendar, Users } from 'lucide-react';
+import { ChevronDown, Plus, Check, Calendar, Users } from 'lucide-react';
 import { useCohortStore } from '../store/cohortStore';
 import { useStudentStore } from '@/features/registrations/store/studentStore';
 import { NewCohortModal } from './NewCohortModal';
@@ -51,8 +51,8 @@ export function CohortSelector() {
           className="flex items-center gap-2 px-3 sm:px-3.5 py-1.5 bg-white/90 hover:bg-white border border-slate-200/80 rounded-full shadow-2xs text-xs font-bold text-slate-800 transition-all cursor-pointer active:scale-95"
           aria-label="Selecionar Turma"
         >
-          <div className="w-5 h-5 rounded-full bg-[#58bc75]/20 text-[#20693a] flex items-center justify-center shrink-0">
-            <GraduationCap className="w-3 h-3" />
+          <div className="w-5 h-5 flex items-center justify-center shrink-0">
+            <img src="/logo-uv-mark.png" alt="UV" className="w-4 h-4 object-contain" />
           </div>
           <div className="flex items-center gap-1.5">
             <span className="truncate max-w-[110px] sm:max-w-[150px] font-extrabold text-slate-900">
