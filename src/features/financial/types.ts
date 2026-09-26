@@ -98,3 +98,19 @@ export interface PaymentRecord {
   voided_at: string | null;
   notes: string | null;
 }
+
+// Status de pagamento de membro de equipe (v_team_member_payment_status)
+export interface TeamMemberPaymentStatus {
+  team_member_id: string;
+  edition_id: string;
+  person_id: string;
+  team_role_id: string;
+  active: boolean;
+  registration_fee_cents: number;
+  total_paid_cents: number;
+  outstanding_cents: number;
+  status: 'paid' | 'partial' | 'pending';
+  payment_count: number;
+  last_payment_at: string | null;
+}
+

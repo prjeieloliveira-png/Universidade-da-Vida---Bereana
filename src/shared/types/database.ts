@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -73,6 +78,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "registrations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendances_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["registration_id"]
           },
           {
             foreignKeyName: "attendances_registration_id_fkey"
@@ -359,6 +371,13 @@ export type Database = {
             foreignKeyName: "financial_transactions_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
             referencedRelation: "v_registration_attendance_summary"
             referencedColumns: ["registration_id"]
           },
@@ -447,6 +466,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "people"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_records_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: true
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["person_id"]
           },
         ]
       }
@@ -614,6 +640,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "registrations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["registration_id"]
           },
           {
             foreignKeyName: "payments_registration_id_fkey"
@@ -804,6 +837,13 @@ export type Database = {
             referencedRelation: "people"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "registrations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["person_id"]
+          },
         ]
       }
       team_meeting_attendances: {
@@ -851,6 +891,13 @@ export type Database = {
             columns: ["team_member_id"]
             isOneToOne: false
             referencedRelation: "v_team_member_attendance"
+            referencedColumns: ["team_member_id"]
+          },
+          {
+            foreignKeyName: "team_meeting_attendances_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_team_member_payment_status"
             referencedColumns: ["team_member_id"]
           },
         ]
@@ -937,6 +984,91 @@ export type Database = {
           },
         ]
       }
+      team_member_payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          created_by: string | null
+          edition_id: string
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string
+          team_member_id: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          created_by?: string | null
+          edition_id: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          team_member_id: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          created_by?: string | null
+          edition_id?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          team_member_id?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_member_payments_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_member_payments_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "team_member_payments_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_financial_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "team_member_payments_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_member_payments_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_team_member_attendance"
+            referencedColumns: ["team_member_id"]
+          },
+          {
+            foreignKeyName: "team_member_payments_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_team_member_payment_status"
+            referencedColumns: ["team_member_id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           active: boolean
@@ -996,6 +1128,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "people"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "team_members_team_role_id_fkey"
@@ -1064,6 +1203,48 @@ export type Database = {
         }
         Relationships: []
       }
+      v_edition_attendance_matrix: {
+        Row: {
+          birth_date: string | null
+          edition_id: string | null
+          full_name: string | null
+          person_id: string | null
+          registration_id: string | null
+          s1: boolean | null
+          s2: boolean | null
+          s3: boolean | null
+          s4: boolean | null
+          s5: boolean | null
+          s6: boolean | null
+          s7: boolean | null
+          s8: boolean | null
+          s9: boolean | null
+          total_present: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registrations_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "registrations_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_financial_summary"
+            referencedColumns: ["edition_id"]
+          },
+        ]
+      }
       v_edition_financial_summary: {
         Row: {
           confirmed_registrations_count: number | null
@@ -1071,6 +1252,23 @@ export type Database = {
           net_balance_cents: number | null
           total_expense_cents: number | null
           total_revenue_cents: number | null
+        }
+        Relationships: []
+      }
+      v_leadership_hierarchy: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          g12_id: string | null
+          g12_name: string | null
+          id: string | null
+          name: string | null
+          pastor_category: string | null
+          pastor_id: string | null
+          pastor_name: string | null
+          phone: string | null
+          role: string | null
+          role_label: string | null
         }
         Relationships: []
       }
@@ -1111,6 +1309,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "people"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["person_id"]
           },
         ]
       }
@@ -1154,6 +1359,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "people"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["person_id"]
           },
         ]
       }
@@ -1199,6 +1411,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "team_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "team_members_team_role_id_fkey"
             columns: ["team_role_id"]
             isOneToOne: false
@@ -1207,62 +1426,67 @@ export type Database = {
           },
         ]
       }
-      v_edition_attendance_matrix: {
-        Row: {
-          birth_date: string | null
-          edition_id: string | null
-          full_name: string | null
-          person_id: string | null
-          registration_id: string | null
-          s1: boolean | null
-          s2: boolean | null
-          s3: boolean | null
-          s4: boolean | null
-          s5: boolean | null
-          s6: boolean | null
-          s7: boolean | null
-          s8: boolean | null
-          s9: boolean | null
-          total_present: number | null
-        }
-        Relationships: []
-      }
-      v_leadership_hierarchy: {
+      v_team_member_payment_status: {
         Row: {
           active: boolean | null
-          created_at: string | null
-          g12_id: string | null
-          g12_name: string | null
-          id: string | null
-          name: string | null
-          pastor_category: string | null
-          pastor_id: string | null
-          pastor_name: string | null
-          phone: string | null
-          role: string | null
-          role_label: string | null
+          edition_id: string | null
+          last_payment_at: string | null
+          outstanding_cents: number | null
+          payment_count: number | null
+          person_id: string | null
+          registration_fee_cents: number | null
+          status: string | null
+          team_member_id: string | null
+          team_role_id: string | null
+          total_paid_cents: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "team_members_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "team_members_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_financial_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "team_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "team_members_team_role_id_fkey"
+            columns: ["team_role_id"]
+            isOneToOne: false
+            referencedRelation: "team_roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
-      record_attendance_rpc: {
-        Args: {
-          p_birth_date: string
-          p_edition_id: string
-          p_full_name: string
-          p_present: boolean
-          p_session_number: number
-        }
-        Returns: Json
-      }
-      sync_attendances_rpc: {
-        Args: {
-          p_edition_id: string
-          p_items: Json
-        }
-        Returns: Json
-      }
       auth_user_network_id: { Args: never; Returns: string }
       auth_user_role: {
         Args: never
@@ -1277,38 +1501,79 @@ export type Database = {
         Returns: undefined
       }
       normalize_payment_method: { Args: { raw: string }; Returns: string }
-      register_payment:
-        | {
-            Args: {
-              amt: number
-              meth: Database["public"]["Enums"]["payment_method"]
-              pay_date?: string
-              pay_notes?: string
-              reg_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              amt: number
-              meth: string
-              pay_date: string
-              pay_notes?: string
-              reg_id: string
-            }
-            Returns: string
-          }
+      record_attendance_rpc: {
+        Args: {
+          p_birth_date: string
+          p_edition_id: string
+          p_full_name: string
+          p_present: boolean
+          p_session_number: number
+        }
+        Returns: Json
+      }
+      register_payment: {
+        Args: {
+          amt: number
+          meth: string
+          pay_date: string
+          pay_notes?: string
+          reg_id: string
+        }
+        Returns: string
+      }
+      register_team_member_payment: {
+        Args: {
+          p_amount_cents: number
+          p_date: string
+          p_edition_id: string
+          p_method: string
+          p_notes?: string
+          p_team_member_id: string
+        }
+        Returns: string
+      }
+      sync_attendances_rpc: {
+        Args: { p_edition_id: string; p_items: Json }
+        Returns: Json
+      }
       sync_students_from_local: {
         Args: { p_data: Json; p_edition_id: string }
         Returns: Json
       }
       upsert_registration: { Args: { p_data: Json }; Returns: string }
+      upsert_student_registration: {
+        Args: {
+          p_address?: string
+          p_birth_date: string
+          p_cell_leader?: string
+          p_condition_description?: string
+          p_edition_id: string
+          p_full_name: string
+          p_g12_leader?: string
+          p_gender: string
+          p_has_condition?: boolean
+          p_marital_status: string
+          p_medication_schedule?: string
+          p_pastor_name?: string
+          p_person_id?: string
+          p_phone: string
+          p_photo_url?: string
+          p_registration_id?: string
+          p_shirt_size?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       void_financial_transaction: {
-        Args: { tx_id: string; reason?: string }
+        Args: { reason?: string; tx_id: string }
         Returns: undefined
       }
       void_payment: {
         Args: { payment_id: string; reason?: string }
+        Returns: undefined
+      }
+      void_team_member_payment: {
+        Args: { p_payment_id: string; p_reason?: string }
         Returns: undefined
       }
     }
@@ -1423,101 +1688,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      iceberg_namespaces: {
-        Row: {
-          bucket_name: string
-          catalog_id: string
-          created_at: string
-          id: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          bucket_name: string
-          catalog_id: string
-          created_at?: string
-          id?: string
-          metadata?: Json
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          bucket_name?: string
-          catalog_id?: string
-          created_at?: string
-          id?: string
-          metadata?: Json
-          name?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_namespaces_catalog_id_fkey"
-            columns: ["catalog_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      iceberg_tables: {
-        Row: {
-          bucket_name: string
-          catalog_id: string
-          created_at: string
-          id: string
-          location: string
-          name: string
-          namespace_id: string
-          remote_table_id: string | null
-          shard_id: string | null
-          shard_key: string | null
-          updated_at: string
-        }
-        Insert: {
-          bucket_name: string
-          catalog_id: string
-          created_at?: string
-          id?: string
-          location: string
-          name: string
-          namespace_id: string
-          remote_table_id?: string | null
-          shard_id?: string | null
-          shard_key?: string | null
-          updated_at?: string
-        }
-        Update: {
-          bucket_name?: string
-          catalog_id?: string
-          created_at?: string
-          id?: string
-          location?: string
-          name?: string
-          namespace_id?: string
-          remote_table_id?: string | null
-          shard_id?: string | null
-          shard_key?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_tables_catalog_id_fkey"
-            columns: ["catalog_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "iceberg_tables_namespace_id_fkey"
-            columns: ["namespace_id"]
-            isOneToOne: false
-            referencedRelation: "iceberg_namespaces"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       migrations: {
         Row: {
@@ -2049,4 +2219,3 @@ export const Constants = {
     },
   },
 } as const
-

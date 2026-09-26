@@ -6,6 +6,7 @@ import type {
   CashFlowEntry,
   CashCategory,
   CreateTransactionInput,
+  TeamMemberPaymentStatus,
 } from '../types';
 
 export async function fetchCashSummary(editionId: string): Promise<CashSummary | null> {
@@ -231,6 +232,55 @@ export async function voidPayment(paymentId: string, reason: string): Promise<vo
   const { error } = await supabase.rpc('void_payment', {
     payment_id: paymentId,
     reason,
+  });
+
+  if (error) throw error;
+}
+
+// ─── Team Member Payments ─────────────────────────────────────────────────────
+
+export async function fetchTeamMemberPaymentStatuses(
+  editionId: string
+): Promise<TeamMemberPaymentStatus[]> {
+  const { data, error } = await supabase
+    .from('v_team_member_payment_status')
+    .select(
+      'team_member_id, edition_id, person_id, team_role_id, active, registration_fee_cents, total_paid_cents, outstanding_cents, status, payment_count, last_payment_at'
+    )
+    .eq('edition_id', editionId);
+
+  if (error) throw error;
+  return (data ?? []) as TeamMemberPaymentStatus[];
+}
+
+export async function registerTeamMemberPayment(params: {
+  team_member_id: string;
+  edition_id: string;
+  amount_cents: number;
+  method: string;
+  pay_date: string;
+  notes?: string;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('register_team_member_payment', {
+    p_team_member_id: params.team_member_id,
+    p_edition_id: params.edition_id,
+    p_amount_cents: params.amount_cents,
+    p_method: params.method,
+    p_date: params.pay_date,
+    p_notes: params.notes ?? undefined,
+  });
+
+  if (error) throw error;
+  return data as string;
+}
+
+export async function voidTeamMemberPayment(
+  paymentId: string,
+  reason = 'Estorno manual via painel'
+): Promise<void> {
+  const { error } = await supabase.rpc('void_team_member_payment', {
+    p_payment_id: paymentId,
+    p_reason: reason,
   });
 
   if (error) throw error;

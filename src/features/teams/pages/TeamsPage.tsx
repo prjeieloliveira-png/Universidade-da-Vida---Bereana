@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Calendar, Plus, Copy, Loader2, ShieldAlert } from 'lucide-react';
+import { Users, Calendar, Plus, Copy, Printer, Loader2, ShieldAlert } from 'lucide-react';
 import { useActiveEdition } from '@/shared/hooks/useActiveEdition';
 import { useUserRole } from '@/shared/hooks/useUserRole';
 import { useTeamRoles } from '../hooks/useTeamRoles';
@@ -9,6 +9,7 @@ import { TeamListTab } from '../components/TeamListTab';
 import { MeetingListTab } from '../components/MeetingListTab';
 import { TeamMemberModal } from '../components/TeamMemberModal';
 import { CopyTeamsModal } from '../components/CopyTeamsModal';
+import { TeamsPrintModal } from '../components/TeamsPrintModal';
 import type { TeamMemberWithDetails } from '../types/teams';
 
 type ActiveTab = 'membros' | 'reunioes';
@@ -26,6 +27,7 @@ export function TeamsPage() {
     defaultRoleId?: string;
   }>({ isOpen: false });
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   // Queries e Hooks
   const { data: roles = [], isLoading: isRolesLoading } = useTeamRoles();
@@ -110,6 +112,18 @@ export function TeamsPage() {
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <button
             type="button"
+            onClick={() => setIsPrintModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full text-xs font-bold bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200/90 text-slate-700 transition-colors shadow-2xs cursor-pointer"
+            title="Imprimir relação de equipes em folha A4"
+            aria-label="Imprimir relação de equipes em folha A4"
+          >
+            <Printer className="w-4 h-4 text-[#58bc75]" />
+            <span className="hidden sm:inline">Imprimir Equipes</span>
+            <span className="sm:hidden">Imprimir</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setIsCopyModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full text-xs font-bold bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200/90 text-slate-700 transition-colors shadow-2xs cursor-pointer"
           >
@@ -186,6 +200,14 @@ export function TeamsPage() {
         isOpen={isCopyModalOpen}
         onClose={() => setIsCopyModalOpen(false)}
         currentEdition={edition}
+      />
+
+      <TeamsPrintModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        roles={roles}
+        members={teamMembersHook.members}
+        editionName={edition.name}
       />
     </div>
   );
