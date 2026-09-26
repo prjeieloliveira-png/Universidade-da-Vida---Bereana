@@ -45,6 +45,7 @@ export type Database = {
           lesson_id: string
           marked_at: string | null
           marked_by: string | null
+          note: string | null
           present: boolean
           registration_id: string
         }
@@ -53,6 +54,7 @@ export type Database = {
           lesson_id: string
           marked_at?: string | null
           marked_by?: string | null
+          note?: string | null
           present?: boolean
           registration_id: string
         }
@@ -61,6 +63,7 @@ export type Database = {
           lesson_id?: string
           marked_at?: string | null
           marked_by?: string | null
+          note?: string | null
           present?: boolean
           registration_id?: string
         }
@@ -482,6 +485,7 @@ export type Database = {
           edition_id: string
           id: string
           session_date: string | null
+          session_date_label: string | null
           session_number: number
           theme: string | null
           title: string
@@ -491,6 +495,7 @@ export type Database = {
           edition_id: string
           id?: string
           session_date?: string | null
+          session_date_label?: string | null
           session_number: number
           theme?: string | null
           title: string
@@ -500,6 +505,7 @@ export type Database = {
           edition_id?: string
           id?: string
           session_date?: string | null
+          session_date_label?: string | null
           session_number?: number
           theme?: string | null
           title?: string
@@ -1519,6 +1525,7 @@ export type Database = {
           p_birth_date: string
           p_edition_id: string
           p_full_name: string
+          p_note?: string
           p_present: boolean
           p_session_number: number
         }

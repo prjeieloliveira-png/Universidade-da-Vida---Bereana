@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Sparkles, Calendar, BookOpen } from 'lucide-react';
+import { X, Save, Sparkles, Calendar, BookOpen, Loader2, AlertCircle } from 'lucide-react';
 import type { LessonWeekInfo } from '../types';
 
 interface EditLessonThemeModalProps {
   isOpen: boolean;
   onClose: () => void;
   lesson: LessonWeekInfo;
-  onSave: (updates: { title: string; theme: string; dateStr: string }) => void;
+  onSave: (updates: { title: string; theme: string; dateStr: string }) => Promise<unknown> | void;
+  isSaving?: boolean;
+  saveError?: string | null;
 }
 
 export function EditLessonThemeModal({
@@ -14,6 +16,8 @@ export function EditLessonThemeModal({
   onClose,
   lesson,
   onSave,
+  isSaving = false,
+  saveError = null,
 }: EditLessonThemeModalProps) {
   const [title, setTitle] = useState(lesson.title);
   const [theme, setTheme] = useState(lesson.theme);
@@ -27,14 +31,18 @@ export function EditLessonThemeModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      title: title.trim() || `Semana ${lesson.number}`,
-      theme: theme.trim() || 'A Definir',
-      dateStr: dateStr.trim() || lesson.dateStr,
-    });
-    onClose();
+    try {
+      await onSave({
+        title: title.trim() || `Semana ${lesson.number}`,
+        theme: theme.trim() || 'A Definir',
+        dateStr: dateStr.trim() || lesson.dateStr,
+      });
+      onClose();
+    } catch {
+      // Mantém o modal aberto; a mensagem de erro vem de saveError
+    }
   };
 
   return (
@@ -112,21 +120,30 @@ export function EditLessonThemeModal({
             </div>
           </div>
 
+          {saveError && (
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              {saveError}
+            </p>
+          )}
+
           {/* Footer Actions */}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+              disabled={isSaving}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-full text-xs font-bold text-white bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#3f9a5a] flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              disabled={isSaving}
+              className="px-5 py-2 rounded-full text-xs font-bold text-white bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#3f9a5a] flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-60"
             >
-              <Save className="w-4 h-4" />
-              <span>Salvar Tema</span>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>{isSaving ? 'Salvando...' : 'Salvar Tema'}</span>
             </button>
           </div>
         </form>

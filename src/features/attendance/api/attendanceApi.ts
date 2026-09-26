@@ -5,6 +5,8 @@ export interface AttendancePayloadItem {
   birth_date: string;
   session_number: number;
   present: boolean;
+  /** Justificativa opcional, usada principalmente em faltas. */
+  note?: string;
 }
 
 export interface AttendanceRecordResult {
@@ -49,6 +51,7 @@ export async function recordAttendanceInSupabase(params: {
   fullName: string;
   birthDate: string;
   present: boolean;
+  note?: string;
 }): Promise<AttendanceRecordResult> {
   const { data, error } = await (
     supabase as unknown as {
@@ -60,6 +63,7 @@ export async function recordAttendanceInSupabase(params: {
           p_full_name: string;
           p_birth_date: string;
           p_present: boolean;
+          p_note?: string;
         }
       ) => Promise<{ data: unknown; error: unknown }>;
     }
@@ -69,6 +73,7 @@ export async function recordAttendanceInSupabase(params: {
     p_full_name: params.fullName.trim(),
     p_birth_date: params.birthDate,
     p_present: params.present,
+    p_note: params.note?.trim() || undefined,
   });
 
   if (error) {

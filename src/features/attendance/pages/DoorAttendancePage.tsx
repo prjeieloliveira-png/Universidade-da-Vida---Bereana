@@ -74,18 +74,18 @@ export function DoorAttendancePage() {
     setConfirmModal({ isOpen: true, student, action });
   };
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = (note?: string) => {
     if (!confirmModal.student || !confirmModal.action) return;
 
     const isPresent = confirmModal.action === 'PRESENTE';
     const studentName = confirmModal.student.name;
 
-    markAttendance(confirmModal.student, activeWeek, isPresent);
+    markAttendance(confirmModal.student, activeWeek, isPresent, note);
 
     setToastMessage(
       isPresent
         ? `✓ Presença confirmada para ${studentName}`
-        : `✕ Falta registrada para ${studentName}`
+        : `✕ Falta registrada para ${studentName}${note ? ` — ${note}` : ''}`
     );
 
     setConfirmModal({ isOpen: false, student: null, action: null });

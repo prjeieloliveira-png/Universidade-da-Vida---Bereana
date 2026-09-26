@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { CheckCircle2, XCircle, X } from 'lucide-react';
 import type { StudentRecord } from '@/features/registrations/types';
 import type { WeekNumber } from '../types';
@@ -7,7 +8,7 @@ interface AttendanceConfirmModalProps {
   student: StudentRecord | null;
   week: WeekNumber;
   action: 'PRESENTE' | 'FALTA' | null;
-  onConfirm: () => void;
+  onConfirm: (note?: string) => void;
   onClose: () => void;
 }
 
@@ -19,6 +20,13 @@ export function AttendanceConfirmModal({
   onConfirm,
   onClose,
 }: AttendanceConfirmModalProps) {
+  const [note, setNote] = useState('');
+
+  // Limpa a observação ao abrir para um novo aluno/ação
+  useEffect(() => {
+    if (isOpen) setNote('');
+  }, [isOpen, student?.id, action]);
+
   if (!isOpen || !student || !action) return null;
 
   const isPresent = action === 'PRESENTE';
@@ -97,7 +105,7 @@ export function AttendanceConfirmModal({
         </div>
 
         {/* Confirmation Question */}
-        <p className="text-xs text-slate-600 mb-6 text-center font-medium">
+        <p className="text-xs text-slate-600 mb-4 text-center font-medium">
           Tem certeza de que deseja registrar{' '}
           <strong className={isPresent ? 'text-emerald-700' : 'text-rose-700'}>
             {isPresent ? 'PRESENÇA' : 'FALTA'}
@@ -105,11 +113,28 @@ export function AttendanceConfirmModal({
           para este aluno hoje?
         </p>
 
+        {/* Justificativa opcional, apenas para falta */}
+        {!isPresent && (
+          <div className="mb-6">
+            <label htmlFor="attendance-note" className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Justificativa <span className="font-normal text-slate-400">(opcional)</span>
+            </label>
+            <textarea
+              id="attendance-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Ex: Atestado médico, viagem, imprevisto..."
+              rows={2}
+              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-rose-300 focus:outline-none text-slate-900 placeholder:text-slate-400 resize-none"
+            />
+          </div>
+        )}
+
         {/* Buttons */}
         <div className="flex flex-col gap-2.5">
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={() => onConfirm(isPresent ? undefined : note.trim() || undefined)}
             className={`w-full py-3.5 px-5 rounded-2xl font-black text-sm text-white shadow-md active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 ${
               isPresent
                 ? 'bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#409a5b] shadow-emerald-500/20'

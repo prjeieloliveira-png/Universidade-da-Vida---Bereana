@@ -87,3 +87,17 @@
 - [x] `vite.config.ts`: testes agora excluem `.claude/worktrees/**` (evitava rodar/quebrar com testes de sessões paralelas)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
 - [ ] Validação visual logado
+
+## Chamada: observação na falta + tema/data da aula salvos no Supabase
+- [x] Sincronização de presença/falta verificada: já funciona (fila offline + sync_attendances_rpc), 212 registros em produção
+- [x] Migração `20260926000031`: coluna `note` em attendances + `session_date_label` em lessons; record_attendance_rpc e sync_attendances_rpc passam a aceitar/gravar note
+- [x] Testado em produção com ROLLBACK: RPC única, RPC em lote e update direto de lessons — todos ok
+- [x] AttendanceConfirmModal: campo de justificativa opcional só na Falta; fila offline carrega a nota
+- [x] BUG encontrado e corrigido: tema/data da aula (Editar Tema) só salvava no localStorage, nunca no Supabase (todas as 9 aulas estavam com theme/session_date nulos no banco). Criado lessonsApi.ts + useLessonsSync; WeekSelectorPills agora carrega e salva no Supabase
+- [x] Auditoria geral de persistência: inscrições, financeiro, equipes e liderança já salvam corretamente no Supabase
+- [x] PENDENTE (fora do escopo, sinalizado): criar Nova Turma (cohortStore) também é só local, nunca gera linha em `editions` — sistema hoje usa só uma turma fixa, então não afeta a operação atual
+- [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
+- [ ] Validação visual logado (390px)
+
+### Nota sobre migração 20260926000030
+A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_anon_access.sql`) e já aplicou em produção. Copiei o arquivo dela para este checkout para o histórico local bater com o banco, e renumerei minha migração para 20260926000031. Ajustei os GRANTs de record_attendance_rpc/sync_attendances_rpc para `authenticated` apenas (sem anon), para não reabrir o acesso que aquela migração fechou.

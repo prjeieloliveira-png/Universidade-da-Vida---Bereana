@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Calendar, Sparkles, Pencil } from 'lucide-react';
 import { WeekNumber, LESSON_WEEKS, LessonWeekInfo } from '../types';
 import { useLessonStore } from '../store/lessonStore';
+import { useLessonsSync } from '../hooks/useLessonsSync';
 import { EditLessonThemeModal } from './EditLessonThemeModal';
 
 interface WeekSelectorPillsProps {
@@ -10,7 +11,8 @@ interface WeekSelectorPillsProps {
 }
 
 export function WeekSelectorPills({ activeWeek, onSelectWeek }: WeekSelectorPillsProps) {
-  const { lessons, updateLesson } = useLessonStore();
+  const { lessons } = useLessonStore();
+  const { saveLesson, isSavingLesson, saveLessonError } = useLessonsSync();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const fallbackLesson: LessonWeekInfo = LESSON_WEEKS[0] ?? {
@@ -130,7 +132,9 @@ export function WeekSelectorPills({ activeWeek, onSelectWeek }: WeekSelectorPill
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         lesson={currentLesson}
-        onSave={(updates) => updateLesson(currentLesson.number, updates)}
+        onSave={(updates) => saveLesson(currentLesson.number, updates)}
+        isSaving={isSavingLesson}
+        saveError={saveLessonError instanceof Error ? saveLessonError.message : null}
       />
     </div>
   );

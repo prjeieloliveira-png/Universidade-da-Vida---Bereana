@@ -17,6 +17,8 @@ export interface AttendanceQueueItem {
   birthDate: string;
   sessionNumber: number;
   present: boolean;
+  /** Justificativa opcional, usada principalmente em faltas. */
+  note?: string;
   timestamp: number;
 }
 
@@ -81,6 +83,7 @@ export function useAttendanceSync() {
         birth_date: item.birthDate,
         session_number: item.sessionNumber,
         present: item.present,
+        note: item.note,
       }));
 
       await syncBatchAttendancesToSupabase({
@@ -127,7 +130,7 @@ export function useAttendanceSync() {
 
   // Registra presença única (com atualização otimista local + enfileiramento)
   const markAttendance = useCallback(
-    (student: StudentRecord, week: WeekNumber, present: boolean) => {
+    (student: StudentRecord, week: WeekNumber, present: boolean, note?: string) => {
       // 1. Atualização local otimista e instantânea na UI
       setAttendance(student.id, week, present);
 
@@ -144,6 +147,7 @@ export function useAttendanceSync() {
         birthDate: student.birthDate,
         sessionNumber: week,
         present,
+        note,
         timestamp: Date.now(),
       };
 
