@@ -17,6 +17,7 @@ import { FinancialFilterBar, FlowTypeFilter } from '../components/FinancialFilte
 import { TransactionGroupedList } from '../components/TransactionGroupedList';
 import { AddTransactionModal } from '../components/AddTransactionModal';
 import { CategoryManagementModal } from '../components/CategoryManagementModal';
+import { ReceivePaymentModal } from '../components/ReceivePaymentModal';
 import type { CashFlowEntry, CreateTransactionInput } from '../types';
 
 export function FinancialPage() {
@@ -30,6 +31,7 @@ export function FinancialPage() {
   // Modais
   const [modalType, setModalType] = useState<'revenue' | 'expense' | null>(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isReceivePaymentOpen, setIsReceivePaymentOpen] = useState(false);
 
   // Sincronizar abertura do modal de categorias via URL query param (?config=categorias)
   useEffect(() => {
@@ -148,6 +150,7 @@ export function FinancialPage() {
         onOpenCategories={() => setIsCategoryModalOpen(true)}
         onOpenAddRevenue={() => setModalType('revenue')}
         onOpenAddExpense={() => setModalType('expense')}
+        onOpenReceivePayment={() => setIsReceivePaymentOpen(true)}
       />
 
       {/* 3 Metric Cards: RECEITAS | DESPESAS | SALDO */}
@@ -216,6 +219,12 @@ export function FinancialPage() {
         onDeleteCategory={async (id) => {
           await deleteCatMutation.mutateAsync(id);
         }}
+      />
+
+      <ReceivePaymentModal
+        isOpen={isReceivePaymentOpen}
+        editionId={editionId}
+        onClose={() => setIsReceivePaymentOpen(false)}
       />
     </div>
   );

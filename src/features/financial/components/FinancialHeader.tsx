@@ -1,4 +1,4 @@
-import { Wallet, Plus, Settings2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Wallet, Plus, Settings2, ChevronLeft, ChevronRight, ArrowDownCircle } from 'lucide-react';
 
 interface FinancialHeaderProps {
   cohortName: string;
@@ -7,6 +7,7 @@ interface FinancialHeaderProps {
   onOpenCategories: () => void;
   onOpenAddRevenue: () => void;
   onOpenAddExpense: () => void;
+  onOpenReceivePayment: () => void;
 }
 
 export function FinancialHeader({
@@ -16,6 +17,7 @@ export function FinancialHeader({
   onOpenCategories,
   onOpenAddRevenue,
   onOpenAddExpense,
+  onOpenReceivePayment,
 }: FinancialHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -63,6 +65,16 @@ export function FinancialHeader({
         >
           <Settings2 className="w-4 h-4 text-slate-400" />
           <span className="hidden sm:inline">Categorias</span>
+        </button>
+
+        <button
+          id="btn-receive-payment"
+          type="button"
+          onClick={onOpenReceivePayment}
+          className="px-4 py-2.5 rounded-full text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-white transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer ring-2 ring-emerald-300/60"
+        >
+          <ArrowDownCircle className="w-4 h-4" />
+          <span>Receber Pagamento</span>
         </button>
 
         <button
