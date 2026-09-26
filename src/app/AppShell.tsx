@@ -16,6 +16,8 @@ import {
 import { supabase } from '@/shared/lib/supabase';
 import { CohortSelector } from '@/features/cohorts/components/CohortSelector';
 import { useUserRole } from '@/shared/hooks/useUserRole';
+import { useActiveEdition } from '@/shared/hooks/useActiveEdition';
+import { useHydrateStudents } from '@/features/registrations/hooks/useHydrateStudents';
 
 import { MobileMoreSheet, type MobileMoreItem } from './MobileMoreSheet';
 import { DesktopDock } from './DesktopDock';
@@ -25,6 +27,11 @@ export function AppShell() {
   const location = useLocation();
   const { isCoordOrSec, fullName } = useUserRole();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+
+  // Hidrata o studentStore (inclui presença real s1..s9) para todas as telas
+  // do shell autenticado, mesmo sem passar por Inscrições antes.
+  const { data: activeEdition } = useActiveEdition();
+  useHydrateStudents(activeEdition?.id);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

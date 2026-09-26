@@ -1,4 +1,5 @@
 import { supabase } from '@/shared/lib/supabase';
+import { fetchAttendanceMatrixFromSupabase } from '@/features/attendance/api/attendanceApi';
 import type { StudentRecord } from '../types';
 
 export const DEFAULT_EDITION_ID = '33333333-3333-3333-3333-333333333333';
@@ -103,11 +104,14 @@ export async function fetchStudentsFromSupabase(
     return [];
   }
 
-  // Busca status de pagamento para cada inscrição
-  const { data: paymentStatuses } = await supabase
-    .from('v_registration_payment_status')
-    .select('registration_id, status, total_paid_cents')
-    .eq('edition_id', targetEditionId);
+  // Busca status de pagamento e matriz real de presença (s1..s9) em paralelo
+  const [{ data: paymentStatuses }, attendanceMatrix] = await Promise.all([
+    supabase
+      .from('v_registration_payment_status')
+      .select('registration_id, status, total_paid_cents')
+      .eq('edition_id', targetEditionId),
+    fetchAttendanceMatrixFromSupabase(targetEditionId),
+  ]);
 
   const paymentMap = new Map<string, { status: string; totalPaid: number }>();
   paymentStatuses?.forEach((p) => {
@@ -119,6 +123,8 @@ export async function fetchStudentsFromSupabase(
     }
   });
 
+  const attendanceMap = new Map(attendanceMatrix.map((row) => [row.registration_id, row]));
+
   return data.map((row, index) => {
     const person = Array.isArray(row.people) ? row.people[0] : row.people;
     const health = person?.health_records
@@ -129,6 +135,7 @@ export async function fetchStudentsFromSupabase(
 
     const payment = paymentMap.get(row.id);
     const isPaid = isPaidPaymentStatus(payment?.status);
+    const attendance = attendanceMap.get(row.id);
 
     return {
       id: row.id,
@@ -152,15 +159,15 @@ export async function fetchStudentsFromSupabase(
       comorbidity: health?.condition_description || 'Não',
       medSchedule: health?.medication_schedule || 'Não',
       photoUrl: person?.photo_url || undefined,
-      s1: false,
-      s2: false,
-      s3: false,
-      s4: false,
-      s5: false,
-      s6: false,
-      s7: false,
-      s8: false,
-      s9: false,
+      s1: attendance?.s1 ?? false,
+      s2: attendance?.s2 ?? false,
+      s3: attendance?.s3 ?? false,
+      s4: attendance?.s4 ?? false,
+      s5: attendance?.s5 ?? false,
+      s6: attendance?.s6 ?? false,
+      s7: attendance?.s7 ?? false,
+      s8: attendance?.s8 ?? false,
+      s9: attendance?.s9 ?? false,
     };
   });
 }

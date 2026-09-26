@@ -187,21 +187,28 @@ export const useStudentStore = create<StudentStoreState>()(
     }),
     {
       name: 'bereana_students_store_v1',
-      version: 4,
-      migrate: (persistedState: unknown) => {
+      version: 5,
+      migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as { students?: StudentRecord[] };
         if (state && Array.isArray(state.students)) {
+          // v5: zera a chamada de teste em cache local — a partir daqui a
+          // presença real volta a vir do Supabase (histórico zerado no banco).
+          const resetAttendance = version < 5;
           return {
             ...state,
             students: state.students.map((s) => ({
               ...s,
               cohortId: s.cohortId || 'turma-01',
               photoUrl: s.photoUrl ?? undefined,
-              s5: s.s5 ?? false,
-              s6: s.s6 ?? false,
-              s7: s.s7 ?? false,
-              s8: s.s8 ?? false,
-              s9: s.s9 ?? false,
+              s1: resetAttendance ? false : s.s1,
+              s2: resetAttendance ? false : s.s2,
+              s3: resetAttendance ? false : s.s3,
+              s4: resetAttendance ? false : s.s4,
+              s5: resetAttendance ? false : (s.s5 ?? false),
+              s6: resetAttendance ? false : (s.s6 ?? false),
+              s7: resetAttendance ? false : (s.s7 ?? false),
+              s8: resetAttendance ? false : (s.s8 ?? false),
+              s9: resetAttendance ? false : (s.s9 ?? false),
             })),
           };
         }
