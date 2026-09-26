@@ -70,7 +70,7 @@ export function DashboardPlaceholder() {
 
   // Indicadores consolidados do financeiro (Supabase ou fallback)
   const hasRemoteCash = cashSummary && (cashSummary.total_in_cents > 0 || cashSummary.total_registrations > 0);
-  const totalCollectedCents = hasRemoteCash ? cashSummary.total_in_cents : metrics.collectedCents;
+  const totalCollectedCents = hasRemoteCash ? cashSummary.total_registration_paid_cents : metrics.collectedCents;
   const totalPendingCents = hasRemoteCash ? cashSummary.total_receivable_cents : metrics.pendingCents;
   const paymentRatePercentage = hasRemoteCash && cashSummary.total_registrations > 0
     ? Math.round((cashSummary.paid_count / cashSummary.total_registrations) * 100)
@@ -133,9 +133,18 @@ export function DashboardPlaceholder() {
             partialCount={partialCount}
             pendingCount={pendingCount}
             totalRegistrations={totalRegistrations}
+            totalRegistrationGoalCents={hasRemoteCash ? cashSummary.total_registration_goal_cents : undefined}
+            totalTeamMembers={hasRemoteCash ? cashSummary.total_team_members : 0}
+            teamPaidCount={hasRemoteCash ? cashSummary.team_paid_count : 0}
+            teamPartialCount={hasRemoteCash ? cashSummary.team_partial_count : 0}
+            teamPendingCount={hasRemoteCash ? cashSummary.team_pending_count : 0}
+            totalTeamGoalCents={hasRemoteCash ? cashSummary.total_team_goal_cents : 0}
+            totalTeamPaidCents={hasRemoteCash ? cashSummary.total_team_paid_cents : 0}
+            totalTeamReceivableCents={hasRemoteCash ? cashSummary.total_team_receivable_cents : 0}
             onOpenCashflow={() => navigate('/financeiro')}
           />
         </div>
+
 
         {/* Column 2: Engagement Rate / Weekly Attendance Bar Chart */}
         <div className="xl:col-span-5 flex flex-col">

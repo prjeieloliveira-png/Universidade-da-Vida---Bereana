@@ -1193,13 +1193,22 @@ export type Database = {
           paid_count: number | null
           partial_count: number | null
           pending_count: number | null
+          team_paid_count: number | null
+          team_partial_count: number | null
+          team_pending_count: number | null
           total_in_cents: number | null
           total_manual_in_cents: number | null
           total_manual_out_cents: number | null
           total_out_cents: number | null
           total_payment_in_cents: number | null
           total_receivable_cents: number | null
+          total_registration_goal_cents: number | null
+          total_registration_paid_cents: number | null
           total_registrations: number | null
+          total_team_goal_cents: number | null
+          total_team_members: number | null
+          total_team_paid_cents: number | null
+          total_team_receivable_cents: number | null
         }
         Relationships: []
       }

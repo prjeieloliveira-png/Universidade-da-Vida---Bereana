@@ -61,18 +61,31 @@ export interface CreateTransactionInput {
 // Tipo do resumo financeiro (v_cash_summary)
 export interface CashSummary {
   edition_id: string;
+  // Totais gerais
   total_payment_in_cents: number;
   total_manual_in_cents: number;
   total_manual_out_cents: number;
   total_in_cents: number;
   total_out_cents: number;
   net_balance_cents: number;
+  // Inscritos
   total_registrations: number;
   paid_count: number;
   partial_count: number;
   pending_count: number;
   total_receivable_cents: number;
+  total_registration_goal_cents: number;
+  total_registration_paid_cents: number;
+  // Equipes
+  total_team_members: number;
+  team_paid_count: number;
+  team_partial_count: number;
+  team_pending_count: number;
+  total_team_goal_cents: number;
+  total_team_paid_cents: number;
+  total_team_receivable_cents: number;
 }
+
 
 // Tipo da view v_registration_payment_status
 export interface RegistrationPaymentStatusRow {

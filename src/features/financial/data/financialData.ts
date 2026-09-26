@@ -13,7 +13,7 @@ export async function fetchCashSummary(editionId: string): Promise<CashSummary |
   const { data, error } = await supabase
     .from('v_cash_summary')
     .select(
-      'edition_id, total_payment_in_cents, total_manual_in_cents, total_manual_out_cents, total_in_cents, total_out_cents, net_balance_cents, total_registrations, paid_count, partial_count, pending_count, total_receivable_cents'
+      'edition_id, total_payment_in_cents, total_manual_in_cents, total_manual_out_cents, total_in_cents, total_out_cents, net_balance_cents, total_registrations, paid_count, partial_count, pending_count, total_receivable_cents, total_registration_goal_cents, total_registration_paid_cents, total_team_members, team_paid_count, team_partial_count, team_pending_count, total_team_goal_cents, total_team_paid_cents, total_team_receivable_cents'
     )
     .eq('edition_id', editionId)
     .maybeSingle();
@@ -21,6 +21,7 @@ export async function fetchCashSummary(editionId: string): Promise<CashSummary |
   if (error) throw error;
   return data as CashSummary | null;
 }
+
 
 export async function fetchRegistrationPaymentStatuses(
   editionId: string
