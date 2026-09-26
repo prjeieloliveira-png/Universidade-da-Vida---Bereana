@@ -7,7 +7,7 @@ import {
   fetchCashFlow,
   fetchCategories,
   createTransaction,
-  voidTransaction,
+  voidCashFlowEntry,
   createCategory,
   deleteCategory,
 } from '../data/financialData';
@@ -70,10 +70,18 @@ export function FinancialPage() {
   });
 
   const voidTxMutation = useMutation({
-    mutationFn: (entry: CashFlowEntry) => voidTransaction(entry.transaction_id, 'Estorno manual via painel'),
-    onSuccess: () => {
+    mutationFn: (entry: CashFlowEntry) => voidCashFlowEntry(entry, 'Estorno manual via painel'),
+    onSuccess: (_, entry) => {
       queryClient.invalidateQueries({ queryKey: ['cash-flow', editionId] });
       queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+      if (entry.source === 'payment') {
+        queryClient.invalidateQueries({ queryKey: ['payments', editionId] });
+        queryClient.invalidateQueries({ queryKey: ['reg-payment-statuses', editionId] });
+        queryClient.invalidateQueries({ queryKey: ['registrations', editionId] });
+      }
+    },
+    onError: (err: Error) => {
+      alert(`Erro ao estornar lançamento: ${err.message || 'Falha ao processar estorno'}`);
     },
   });
 
@@ -181,6 +189,7 @@ export function FinancialPage() {
       <TransactionGroupedList
         entries={filteredEntries}
         isLoading={isLoading}
+        isVoiding={voidTxMutation.isPending}
         onVoid={(entry) => {
           if (window.confirm(`Deseja realmente estornar este lançamento de ${entry.category}?`)) {
             voidTxMutation.mutate(entry);

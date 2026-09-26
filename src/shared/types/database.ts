@@ -1303,6 +1303,10 @@ export type Database = {
         Returns: Json
       }
       upsert_registration: { Args: { p_data: Json }; Returns: string }
+      void_financial_transaction: {
+        Args: { tx_id: string; reason?: string }
+        Returns: undefined
+      }
       void_payment: {
         Args: { payment_id: string; reason?: string }
         Returns: undefined

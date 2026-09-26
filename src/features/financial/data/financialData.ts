@@ -180,6 +180,13 @@ export async function createTransaction(input: CreateTransactionInput): Promise<
 }
 
 export async function voidTransaction(transactionId: string, reason: string): Promise<void> {
+  const { error: rpcError } = await supabase.rpc('void_financial_transaction', {
+    tx_id: transactionId,
+    reason,
+  });
+
+  if (!rpcError) return;
+
   const { error } = await supabase
     .from('financial_transactions')
     .update({
@@ -189,6 +196,16 @@ export async function voidTransaction(transactionId: string, reason: string): Pr
     .eq('id', transactionId);
 
   if (error) throw error;
+}
+
+export async function voidCashFlowEntry(
+  entry: CashFlowEntry,
+  reason = 'Estorno manual via painel'
+): Promise<void> {
+  if (entry.source === 'payment') {
+    return voidPayment(entry.transaction_id, reason);
+  }
+  return voidTransaction(entry.transaction_id, reason);
 }
 
 export async function registerPayment(params: {

@@ -21,6 +21,7 @@ interface TransactionGroupedListProps {
   entries: CashFlowEntry[];
   onVoid?: (entry: CashFlowEntry) => void;
   isLoading?: boolean;
+  isVoiding?: boolean;
 }
 
 function getCategoryIcon(category: string, flowType: 'in' | 'out') {
@@ -81,6 +82,7 @@ export function TransactionGroupedList({
   entries,
   onVoid,
   isLoading,
+  isVoiding,
 }: TransactionGroupedListProps) {
   // Agrupar por data (YYYY-MM-DD)
   const grouped = useMemo(() => {
@@ -189,8 +191,13 @@ export function TransactionGroupedList({
                       {onVoid && (
                         <button
                           type="button"
+                          disabled={isVoiding}
                           onClick={() => onVoid(entry)}
-                          className="w-8 h-8 rounded-full hover:bg-rose-50 text-slate-300 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                            isVoiding
+                              ? 'opacity-40 cursor-not-allowed text-slate-300'
+                              : 'hover:bg-rose-50 text-slate-300 hover:text-rose-600 cursor-pointer'
+                          }`}
                           title="Estornar / Excluir lançamento"
                           aria-label="Excluir lançamento"
                         >
