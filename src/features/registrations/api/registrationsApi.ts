@@ -195,36 +195,6 @@ export async function saveStudentToSupabase(
   return (data as SyncRpcResult) || { synced: 1, skipped: 0 };
 }
 
-/**
- * Sincroniza uma lista inteira de alunos para o Supabase
- */
-export async function syncAllStudentsToSupabase(
-  editionId: string | undefined,
-  students: StudentRecord[]
-): Promise<SyncRpcResult> {
-  const targetEditionId = editionId || DEFAULT_EDITION_ID;
-  const payload = students.map(formatStudentForSync);
-
-  const { data, error } = await (
-    supabase as unknown as {
-      rpc: (
-        fn: string,
-        args: { p_edition_id: string; p_data: typeof payload }
-      ) => Promise<{ data: unknown; error: unknown }>;
-    }
-  ).rpc('sync_students_from_local', {
-    p_edition_id: targetEditionId,
-    p_data: payload,
-  });
-
-  if (error) {
-    console.error('Erro na sincronização em massa com o Supabase:', error);
-    throw error as Error;
-  }
-
-  return (data as SyncRpcResult) || { synced: students.length, skipped: 0 };
-}
-
 export interface DeleteRegistrationResult {
   personDeleted: boolean;
   attendancesDeleted: number;

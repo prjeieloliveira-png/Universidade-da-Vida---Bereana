@@ -5,7 +5,6 @@ import {
   DEFAULT_EDITION_ID,
   fetchStudentsFromSupabase,
   saveStudentToSupabase,
-  syncAllStudentsToSupabase,
 } from '../api/registrationsApi';
 import type { StudentRecord } from '../types';
 
@@ -59,19 +58,6 @@ export function useRegistrations({ editionId }: UseRegistrationsProps) {
     },
   });
 
-  // 4. Mutação de sincronização em lote
-  const syncAllMutation = useMutation({
-    mutationFn: async (studentsToSync: StudentRecord[]) => {
-      return syncAllStudentsToSupabase(targetEditionId, studentsToSync);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['students', targetEditionId] });
-      void queryClient.invalidateQueries({ queryKey: ['cash-summary', targetEditionId] });
-      void queryClient.invalidateQueries({ queryKey: ['registration-payment-statuses', targetEditionId] });
-      void queryClient.invalidateQueries({ queryKey: ['registrations-count', targetEditionId] });
-    },
-  });
-
   return {
     students,
     isLoadingStudents,
@@ -81,7 +67,5 @@ export function useRegistrations({ editionId }: UseRegistrationsProps) {
     isSaving: saveMutation.isPending,
     saveError: saveMutation.error,
     saveStudent: saveMutation.mutateAsync,
-    isSyncing: syncAllMutation.isPending,
-    syncAllStudents: syncAllMutation.mutateAsync,
   };
 }

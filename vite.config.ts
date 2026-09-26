@@ -18,6 +18,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Evita rodar os testes de worktrees isoladas de outras sessões (ex.: Claude Code)
+    exclude: ['**/node_modules/**', '**/.claude/worktrees/**'],
   },
   server: {
     port: 5173,

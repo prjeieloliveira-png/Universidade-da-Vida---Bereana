@@ -81,3 +81,9 @@
 - [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
 - [ ] Validação visual logado (390px)
 - [ ] PENDENTE (segurança, fora do escopo): policies `*_all_access` com `USING (true)` para `anon` em people, health_records, registrations, attendances etc. — dados expostos a qualquer um com a anon key
+
+## Remoção — botão Sincronizar Nuvem
+- [x] Botão, handler, estado de sucesso e a mutação de sync em lote (`syncAllStudentsToSupabase`) removidos (só serviam para a importação inicial dos alunos)
+- [x] `vite.config.ts`: testes agora excluem `.claude/worktrees/**` (evitava rodar/quebrar com testes de sessões paralelas)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
+- [ ] Validação visual logado
