@@ -53,3 +53,10 @@
 - [x] Aplicado em StudentCard, DoorAttendanceCard, StudentPrintSheet e PhotoUpload
 - [x] Quality gate: lint ✅ typecheck ✅ tests 92/92 ✅
 - [ ] Validação visual logado (390px)
+
+## Enquadramento de foto antes do upload
+- [x] `react-easy-crop` + `ImageCropModal` compartilhado (zoom/pinça, girar 90°, guia oval, proporção 3:4)
+- [x] `cropImage.ts`: recorte via canvas → JPEG máx. 600 px (q 0,85), com testes
+- [x] `PhotoUpload`: abre o enquadramento ao escolher foto; botão Reenquadrar; salva sempre `<personId>/photo.jpg`
+- [x] Quality gate: lint ✅ typecheck ✅ tests 96/96 ✅ build ✅
+- [ ] Validação visual logado (390px) — preview do Claude Code ainda preso à pasta anterior

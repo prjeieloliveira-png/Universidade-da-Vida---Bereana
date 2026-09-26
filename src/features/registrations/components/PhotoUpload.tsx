@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
-import { Camera, FolderOpen, Loader2, UserCircle2, X } from 'lucide-react';
+import { Camera, Crop, FolderOpen, Loader2, UserCircle2, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
 import { studentPhotoQueryKey, useStudentPhotoUrl } from '@/shared/hooks/useStudentPhotoUrl';
 import { STUDENT_PHOTOS_BUCKET } from '@/shared/utils/studentPhoto';
+import { ImageCropModal } from '@/shared/components/ImageCropModal';
 
 interface PhotoUploadProps {
   personId: string;
@@ -13,6 +14,8 @@ interface PhotoUploadProps {
 }
 
 type UploadState = 'idle' | 'uploading' | 'error';
+
+const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 
 export function PhotoUpload({
   personId,
@@ -32,27 +35,29 @@ export function PhotoUpload({
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const uploadFile = async (file: File) => {
-    // Valida tamanho (máx 5 MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg('A foto deve ter no máximo 5 MB.');
-      setUploadState('error');
-      return;
-    }
+  // Imagem aberta no modal de enquadramento (blob local ou URL assinada)
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
+  const closeCrop = () => {
+    // Não revoga o blob do preview atual (caso de "Reenquadrar" logo após enviar)
+    if (cropSrc?.startsWith('blob:') && cropSrc !== preview) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  };
+
+  const uploadCropped = async (blob: Blob) => {
+    closeCrop();
     // Preview local imediato
-    const objectUrl = URL.createObjectURL(file);
-    setPreview(objectUrl);
+    setPreview(URL.createObjectURL(blob));
     setUploadState('uploading');
     setErrorMsg('');
 
     try {
-      const ext = file.name.split('.').pop() ?? 'jpg';
-      const path = `${personId}/photo.${ext}`;
+      // Sempre JPEG após o recorte, sobrescrevendo a foto anterior
+      const path = `${personId}/photo.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from(STUDENT_PHOTOS_BUCKET)
-        .upload(path, file, { upsert: true, contentType: file.type });
+        .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
 
       if (uploadError) throw uploadError;
 
@@ -67,12 +72,21 @@ export function PhotoUpload({
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadFile(file);
     // Reseta o input para permitir selecionar o mesmo arquivo novamente
     e.target.value = '';
+    if (!file) return;
+
+    // O recorte comprime a foto; o limite aqui só evita arquivos absurdos
+    if (file.size > MAX_SOURCE_BYTES) {
+      setErrorMsg('A foto deve ter no máximo 25 MB.');
+      setUploadState('error');
+      return;
+    }
+    setErrorMsg('');
+    setUploadState('idle');
+    setCropSrc(URL.createObjectURL(file));
   };
 
   const handleRemove = (e: React.MouseEvent) => {
@@ -161,7 +175,25 @@ export function PhotoUpload({
             <FolderOpen className="w-3.5 h-3.5" />
             <span>Arquivos</span>
           </button>
+
+          {/* Botão: Reenquadrar a foto atual */}
+          {displaySrc && (
+            <button
+              type="button"
+              id="btn-photo-crop"
+              onClick={() => setCropSrc(displaySrc)}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer border border-slate-200"
+              title="Reenquadrar foto"
+              aria-label="Reenquadrar foto"
+            >
+              <Crop className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
+      )}
+
+      {cropSrc && (
+        <ImageCropModal imageSrc={cropSrc} onCancel={closeCrop} onConfirm={uploadCropped} />
       )}
 
       {/* Input: câmera (capture=user força câmera frontal no mobile) */}

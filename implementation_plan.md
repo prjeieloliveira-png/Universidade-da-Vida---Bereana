@@ -1,32 +1,38 @@
-# Plano de Implementação — Integração Total e Persistência do Menu Liderança no Supabase
+# Plano de Implementação — Enquadramento (recorte) de foto antes do upload
 
-Este plano detalha e registra as etapas executadas para integrar completamente o menu **Liderança** (`/liderancas`) ao banco de dados PostgreSQL do **Supabase em produção**, assegurando persistência definitiva, políticas de segurança RLS e sincronização bidirecional com a hierarquia de Pastores, Líderes G12 e Líderes de Célula.
-
----
-
-## 1. Conclusão do Diagnóstico e Implementação
-
-- [x] Políticas RLS completas configuradas nas tabelas `pastors`, `g12_leaders`, `cell_leaders` e `edition_leaders` para leitura e gravação segura (`20260926000024_leadership_sync_and_permissions.sql`).
-- [x] Carga inicial oficial (seed idempotente) realizada com sucesso no Supabase:
-  - **Pastores:** 2 (Pra. Socorro Paiva e Pr. Luis Gonzaga)
-  - **Líderes G12:** 19 líderes vinculados aos pastores
-  - **Líderes de Célula:** 28 líderes vinculados aos G12
-  - **Total de registros na hierarquia:** 49 líderes ativos
-- [x] View `v_leadership_hierarchy` criada e funcionando para visualização unificada da árvore.
-- [x] Camada de API [leadershipApi.ts](file:///Users/jeieljunior/Documents/SISTEMAS/UNIVERSIDADE%20DA%20VIDA%20-%20BEREANA/src/features/leadership/api/leadershipApi.ts) com métodos tipados para consulta e mutações.
-- [x] Hook reativo [useLeadershipData.ts](file:///Users/jeieljunior/Documents/SISTEMAS/UNIVERSIDADE%20DA%20VIDA%20-%20BEREANA/src/features/leadership/hooks/useLeadershipData.ts) com TanStack Query e sincronização de cache.
-- [x] Tela [LeadershipPage.tsx](file:///Users/jeieljunior/Documents/SISTEMAS/UNIVERSIDADE%20DA%20VIDA%20-%20BEREANA/src/features/leadership/pages/LeadershipPage.tsx) conectada diretamente ao Supabase com indicador "Nuvem Sincronizada" (245 linhas).
+Permitir que, ao escolher uma foto (câmera ou arquivos), o usuário enquadre o rosto antes do envio ao Supabase Storage. O componente será compartilhado, para reutilização em qualquer upload futuro de foto (professores, equipes etc.).
 
 ---
 
-## 2. Quality Gate e Validação
+## 1. Fluxo do usuário
 
-1. **Quality Gate:**
-   - `npm run lint`: 0 erros, 0 avisos.
-   - `npm run typecheck`: 0 erros de tipagem.
-   - `npm run test`: 21 suítes aprovadas, 77/77 testes unitários passando.
-2. **Validação Visual Mobile (390px):**
-   - Validado no navegador integrado em 390x844px com captura de tela confirmando 49 líderes carregados e badge ativo.
-3. **Deploy:**
-   - Build de produção compilado com sucesso.
-   - Commit e envio para a branch `main` no GitHub.
+1. Toca em **Câmera** ou **Arquivos** e escolhe a imagem.
+2. Abre um modal de enquadramento em tela cheia (mobile-first, 390px):
+   - arrastar para posicionar e **pinça** (ou controle deslizante) para zoom;
+   - botão para **girar 90°** (fotos de celular às vezes vêm deitadas);
+   - guia circular sobre a área de recorte, indicando como a miniatura vai ficar.
+3. **Confirmar** → a imagem recortada é enviada; **Cancelar** → nada é enviado.
+4. Com uma foto já salva, um botão **Reenquadrar** reabre o modal com a foto atual.
+
+## 2. Decisões técnicas
+
+- **Biblioteca:** `react-easy-crop` (leve, ~10 KB gzip, suporte nativo a toque/pinça, sem dependências).
+- **Proporção do recorte:** 3:4 (serve à ficha impressa 3×4 e, centralizada, às miniaturas circulares). *A confirmar com o usuário.*
+- **Saída:** recorte feito em `<canvas>` no navegador, exportado como **JPEG, largura máx. 600 px, qualidade 0,85**. Isso reduz fotos de 3–5 MB para ~80–150 KB, o que acelera o envio em internet móvel instável.
+- **Caminho no Storage:** `<personId>/photo.jpg` (sempre `.jpg`, sobrescrevendo a anterior); o cache da URL assinada é invalidado após o envio.
+
+## 3. Arquivos
+
+| Arquivo | Ação |
+|---|---|
+| `package.json` | adicionar `react-easy-crop` |
+| `src/shared/utils/cropImage.ts` (+ teste) | funções puras: cálculo do tamanho de saída e geração do JPEG recortado/girado via canvas |
+| `src/shared/components/ImageCropModal.tsx` | modal reutilizável de enquadramento (zoom, girar, confirmar/cancelar) |
+| `src/features/registrations/components/PhotoUpload.tsx` | abrir o modal ao escolher o arquivo e enviar o resultado recortado; botão **Reenquadrar** |
+
+Todos dentro dos limites de 250 linhas por componente. Nenhuma alteração de banco ou migração.
+
+## 4. Quality Gate e Validação
+
+- `npm run lint && npm run typecheck && npm run test`
+- Validação visual no navegador em **390px**: escolher foto, enquadrar, confirmar e conferir a miniatura no card e na ficha de impressão.
