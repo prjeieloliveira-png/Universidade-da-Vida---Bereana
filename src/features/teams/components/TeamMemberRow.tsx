@@ -1,5 +1,13 @@
 import React from 'react';
-import { MessageCircle, Phone, Edit2, ArrowRightLeft, UserX, UserCheck } from 'lucide-react';
+import {
+  MessageCircle,
+  Phone,
+  Edit2,
+  ArrowRightLeft,
+  UserX,
+  UserCheck,
+  Trash2,
+} from 'lucide-react';
 import { formatPhone, getWhatsAppLink, getTelLink } from '@/shared/utils/phone';
 import { AttendanceBadge } from '@/shared/components/ui/AttendanceBadge';
 import type { TeamMemberWithDetails } from '../types/teams';
@@ -9,6 +17,7 @@ interface TeamMemberRowProps {
   onEdit: (member: TeamMemberWithDetails) => void;
   onMove: (member: TeamMemberWithDetails) => void;
   onToggleActive: (member: TeamMemberWithDetails) => void;
+  onDelete?: (member: TeamMemberWithDetails) => void;
 }
 
 export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
@@ -16,6 +25,7 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
   onEdit,
   onMove,
   onToggleActive,
+  onDelete,
 }) => {
   const waLink = getWhatsAppLink(member.person.phone);
   const telLink = getTelLink(member.person.phone);
@@ -128,6 +138,19 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
         >
           {member.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
         </button>
+
+        {/* Delete Member Button (exibido apenas para membros inativos/ocultos) */}
+        {!member.active && onDelete && (
+          <button
+            type="button"
+            onClick={() => onDelete(member)}
+            title="Excluir membro da equipe"
+            className="w-11 h-11 rounded-full hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
+            aria-label={`Excluir ${member.person.fullName} da equipe`}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );

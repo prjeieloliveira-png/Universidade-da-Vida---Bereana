@@ -268,6 +268,17 @@ export function useTeamMembers(editionId: string | undefined) {
     },
   });
 
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      const { error } = await supabase.from('team_members').delete().eq('id', memberId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['team-members', editionId] });
+      void queryClient.invalidateQueries({ queryKey: ['team-attendance-matrix', editionId] });
+    },
+  });
+
   return {
     members: membersQuery.data ?? [],
     isLoading: membersQuery.isLoading,
@@ -282,6 +293,8 @@ export function useTeamMembers(editionId: string | undefined) {
     isTogglingActive: toggleActiveMutation.isPending,
     moveTeam: moveTeamMutation.mutateAsync,
     isMoving: moveTeamMutation.isPending,
+    deleteMember: deleteMemberMutation.mutateAsync,
+    isDeleting: deleteMemberMutation.isPending,
   };
 }
 

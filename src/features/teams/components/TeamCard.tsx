@@ -11,6 +11,7 @@ interface TeamCardProps {
   onEditMember: (member: TeamMemberWithDetails) => void;
   onMoveMember: (member: TeamMemberWithDetails) => void;
   onToggleActiveMember: (member: TeamMemberWithDetails) => void;
+  onDeleteMember?: (member: TeamMemberWithDetails) => void;
 }
 
 export const TeamCard: React.FC<TeamCardProps> = ({
@@ -21,6 +22,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   onEditMember,
   onMoveMember,
   onToggleActiveMember,
+  onDeleteMember,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -121,6 +123,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 onEdit={onEditMember}
                 onMove={onMoveMember}
                 onToggleActive={onToggleActiveMember}
+                onDelete={onDeleteMember}
               />
             ))
           )}

@@ -3,6 +3,7 @@ import { Search, Eye, EyeOff, Loader2, AlertCircle, RefreshCw } from 'lucide-rea
 import { TeamCard } from './TeamCard';
 import { MoveTeamModal } from './MoveTeamModal';
 import { ToggleMemberActiveModal } from './ToggleMemberActiveModal';
+import { DeleteTeamMemberModal } from './DeleteTeamMemberModal';
 import { unmaskPhone } from '@/shared/utils/phone';
 import type { TeamRoleRow, TeamMemberWithDetails } from '../types/teams';
 import type { useTeamMembers } from '../hooks/useTeamMembers';
@@ -30,6 +31,7 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
     refetch,
     toggleActive,
     moveTeam,
+    deleteMember,
   } = teamMembersHook;
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,6 +40,8 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
   const [memberToMove, setMemberToMove] = useState<TeamMemberWithDetails | null>(null);
   const [isToggleModalOpen, setIsToggleModalOpen] = useState(false);
   const [memberToToggle, setMemberToToggle] = useState<TeamMemberWithDetails | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<TeamMemberWithDetails | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -83,6 +87,16 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
     } else {
       setToastMessage('Membro reativado com sucesso.');
     }
+  };
+
+  const handleOpenDelete = (member: TeamMemberWithDetails) => {
+    setMemberToDelete(member);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async (memberId: string) => {
+    await deleteMember(memberId);
+    setToastMessage('Membro excluído da equipe com sucesso.');
   };
 
   if (isRolesLoading || isMembersLoading) {
@@ -169,6 +183,7 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
               onEditMember={onEditMember}
               onMoveMember={handleOpenMove}
               onToggleActiveMember={handleOpenToggleActive}
+              onDeleteMember={handleOpenDelete}
             />
           );
         })}
@@ -194,6 +209,17 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
         }}
         member={memberToToggle}
         onConfirmToggle={handleConfirmToggleActive}
+      />
+
+      {/* Modal de Excluir Membro (apenas inativos) */}
+      <DeleteTeamMemberModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setMemberToDelete(null);
+        }}
+        member={memberToDelete}
+        onConfirmDelete={handleConfirmDelete}
       />
 
       {/* Floating Feedback Toast */}

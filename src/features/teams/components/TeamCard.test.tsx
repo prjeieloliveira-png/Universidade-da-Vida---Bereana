@@ -75,4 +75,33 @@ describe('TeamCard', () => {
     expect(screen.getByText('Membro Inativo')).toBeInTheDocument();
     expect(screen.getByText('Inativo')).toBeInTheDocument();
   });
+
+  it('deve exibir botão de exclusão apenas para membro inativo e chamar onDeleteMember', () => {
+    const onDeleteMember = vi.fn();
+
+    render(
+      <TeamCard
+        role={mockRole}
+        members={mockMembers}
+        showInactive={true}
+        onAddMember={vi.fn()}
+        onEditMember={vi.fn()}
+        onMoveMember={vi.fn()}
+        onToggleActiveMember={vi.fn()}
+        onDeleteMember={onDeleteMember}
+      />
+    );
+
+    // Membro ativo não deve ter botão de exclusão
+    expect(
+      screen.queryByRole('button', { name: /Excluir Pastor Jeiel da equipe/i })
+    ).not.toBeInTheDocument();
+
+    // Membro inativo deve ter botão de exclusão
+    const deleteBtn = screen.getByRole('button', { name: /Excluir Membro Inativo da equipe/i });
+    expect(deleteBtn).toBeInTheDocument();
+
+    deleteBtn.click();
+    expect(onDeleteMember).toHaveBeenCalledWith(mockMembers[1]);
+  });
 });
