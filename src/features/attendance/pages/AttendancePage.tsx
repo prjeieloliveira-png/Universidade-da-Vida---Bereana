@@ -9,9 +9,11 @@ import { AttendanceStudentRow } from '../components/AttendanceStudentRow';
 import { AttendanceReportModal } from '../components/AttendanceReportModal';
 import { ShareDoorLinkModal } from '../components/ShareDoorLinkModal';
 import { AttendanceSyncBadge } from '../components/AttendanceSyncBadge';
+import { AttendanceConfirmModal } from '../components/AttendanceConfirmModal';
 import { useAttendanceSync } from '../hooks/useAttendanceSync';
 import { fetchAbsenceCounts } from '../api/attendanceApi';
 import { HierarchicalLeaderFilter } from '@/features/registrations/components/HierarchicalLeaderFilter';
+import type { StudentRecord } from '@/features/registrations/types';
 import { WeekNumber, WeekKey } from '../types';
 import { Search, FileSpreadsheet, Smartphone } from 'lucide-react';
 
@@ -23,7 +25,7 @@ export function AttendancePage() {
     syncStatus,
     pendingCount,
     flushQueue,
-    toggleStudentAttendance,
+    markAttendance,
     markBulkStudentsAttendance,
   } = useAttendanceSync();
 
@@ -52,6 +54,11 @@ export function AttendancePage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PRESENTE' | 'FALTA'>('ALL');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    student: StudentRecord | null;
+    action: 'PRESENTE' | 'FALTA' | null;
+  }>({ isOpen: false, student: null, action: null });
 
   const [selectedPastor, setSelectedPastor] = useState<string>('ALL');
   const [selectedG12, setSelectedG12] = useState<string>('ALL');
@@ -91,6 +98,16 @@ export function AttendancePage() {
 
   const handleMarkAllPresent = () => {
     markBulkStudentsAttendance(filteredStudents, activeWeek, true);
+  };
+
+  const handleSelectAction = (student: StudentRecord, action: 'PRESENTE' | 'FALTA') => {
+    setConfirmModal({ isOpen: true, student, action });
+  };
+
+  const handleConfirmAction = (note?: string) => {
+    if (!confirmModal.student || !confirmModal.action) return;
+    markAttendance(confirmModal.student, activeWeek, confirmModal.action === 'PRESENTE', note);
+    setConfirmModal({ isOpen: false, student: null, action: null });
   };
 
   const handleResetHierarchy = () => {
@@ -244,7 +261,7 @@ export function AttendancePage() {
               student={student}
               activeWeek={activeWeek}
               absenceCount={absenceCountMap.get(student.id) ?? 0}
-              onToggle={() => toggleStudentAttendance(student, activeWeek)}
+              onSelectAction={handleSelectAction}
             />
           ))
         )}
@@ -263,6 +280,16 @@ export function AttendancePage() {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         activeWeek={activeWeek}
+      />
+
+      {/* Confirmação antes de aplicar Presente/Falta */}
+      <AttendanceConfirmModal
+        isOpen={confirmModal.isOpen}
+        student={confirmModal.student}
+        week={activeWeek}
+        action={confirmModal.action}
+        onConfirm={handleConfirmAction}
+        onClose={() => setConfirmModal({ isOpen: false, student: null, action: null })}
       />
     </div>
   );

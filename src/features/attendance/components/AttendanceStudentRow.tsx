@@ -8,7 +8,7 @@ interface AttendanceStudentRowProps {
   activeWeek: WeekNumber;
   /** Faltas registradas (real, do Supabase). 2 = amarelo, 3 = laranja, 4+ = vermelho. */
   absenceCount?: number;
-  onToggle: (studentId: string, week: WeekNumber) => void;
+  onSelectAction: (student: StudentRecord, action: 'PRESENTE' | 'FALTA') => void;
 }
 
 const WEEKS: WeekNumber[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -17,7 +17,7 @@ export function AttendanceStudentRow({
   student,
   activeWeek,
   absenceCount = 0,
-  onToggle,
+  onSelectAction,
 }: AttendanceStudentRowProps) {
   const currentKey = `s${activeWeek}` as WeekKey;
   const isPresentInActiveWeek = Boolean(student[currentKey]);
@@ -107,29 +107,36 @@ export function AttendanceStudentRow({
           })}
         </div>
 
-        {/* 1-Click Main Status Button (Presente / Falta na semana ativa) */}
-        <button
-          type="button"
-          title={`Alternar presença na Semana ${activeWeek}`}
-          onClick={() => onToggle(student.id, activeWeek)}
-          className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 ${
-            isPresentInActiveWeek
-              ? 'bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#3f9a5a] text-white ring-2 ring-[#58bc75]/25'
-              : 'bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200/80'
-          }`}
-        >
-          {isPresentInActiveWeek ? (
-            <>
-              <Check className="w-4 h-4 stroke-[3]" />
-              <span>Presente</span>
-            </>
-          ) : (
-            <>
-              <X className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Falta</span>
-            </>
-          )}
-        </button>
+        {/* Presente / Falta na semana ativa — sempre pede confirmação antes de aplicar */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            title={`Marcar presença na Semana ${activeWeek}`}
+            onClick={() => onSelectAction(student, 'PRESENTE')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 ${
+              isPresentInActiveWeek
+                ? 'bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#3f9a5a] text-white ring-2 ring-[#58bc75]/25'
+                : 'bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 border border-emerald-200/80'
+            }`}
+          >
+            <Check className="w-3.5 h-3.5 stroke-[3]" />
+            <span>Presente</span>
+          </button>
+
+          <button
+            type="button"
+            title={`Marcar falta na Semana ${activeWeek}`}
+            onClick={() => onSelectAction(student, 'FALTA')}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 ${
+              !isPresentInActiveWeek
+                ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white ring-2 ring-rose-600/25'
+                : 'bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200/80'
+            }`}
+          >
+            <X className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Falta</span>
+          </button>
+        </div>
       </div>
     </div>
   );

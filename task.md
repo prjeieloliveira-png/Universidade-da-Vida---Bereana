@@ -155,3 +155,11 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Validado logado + Porta (390px): Chamada, Inscrições e `/chamada/porta` mostram 0/9 presenças para os 53 alunos
 - [x] Validado a migração v4→v5 simulando um aparelho com s1/s2=true salvos localmente: após reload vira false corretamente, sem precisar limpar cache manualmente
 - Pronto para começar a chamada real a partir de agora
+
+## Chamada: dois botões (Presente/Falta) com confirmação
+- [x] `AttendanceStudentRow.tsx`: botão único de alternância trocado por dois botões (Presente / Falta), mesmo padrão visual já usado na Porta — o selecionado fica sólido (verde/vermelho), o outro neutro
+- [x] `AttendancePage.tsx`: reaproveita `AttendanceConfirmModal` (já existente na Porta) — clicar em qualquer um dos dois botões sempre abre confirmação antes de aplicar, com justificativa opcional na Falta
+- [x] Removido código morto: `toggleStudentAttendance` (useAttendanceSync) e `toggleAttendance` (studentStore), sem uso após a troca
+- [x] Testes de `AttendanceStudentRow` reescritos para os dois botões
+- [x] Quality gate: lint ✅ typecheck ✅ tests 103/103 ✅
+- [x] Validado logado (390px): confirmação abre para Presente e para Falta, cor muda corretamente após confirmar, contadores atualizam

@@ -51,7 +51,7 @@ export function useAttendanceSync() {
     activeCohort?.id === 'turma-01'
       ? '33333333-3333-3333-3333-333333333333'
       : activeCohort?.id || '33333333-3333-3333-3333-333333333333';
-  const { toggleAttendance, setAttendance, setBulkAttendance } = useStudentStore();
+  const { setAttendance, setBulkAttendance } = useStudentStore();
 
   const [queue, setQueue] = useState<AttendanceQueueItem[]>(loadQueue);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => {
@@ -174,49 +174,6 @@ export function useAttendanceSync() {
     [setAttendance, flushQueue]
   );
 
-  // Toggle de presença rápida (para AttendanceStudentRow)
-  const toggleStudentAttendance = useCallback(
-    (student: StudentRecord, week: WeekNumber) => {
-      const key = `s${week}` as keyof StudentRecord;
-      const currentVal = Boolean(student[key]);
-      const nextVal = !currentVal;
-      toggleAttendance(student.id, week);
-
-      const currentQueue = loadQueue();
-      const existingIdx = currentQueue.findIndex(
-        (q) => q.fullName === student.name && q.sessionNumber === week
-      );
-
-      const newItem: AttendanceQueueItem = {
-        id: `${student.id}-w${week}-${Date.now()}`,
-        studentId: student.id,
-        fullName: student.name,
-        birthDate: student.birthDate,
-        sessionNumber: week,
-        present: nextVal,
-        timestamp: Date.now(),
-      };
-
-      let updatedQueue: AttendanceQueueItem[];
-      if (existingIdx >= 0) {
-        updatedQueue = [...currentQueue];
-        updatedQueue[existingIdx] = newItem;
-      } else {
-        updatedQueue = [...currentQueue, newItem];
-      }
-
-      saveQueue(updatedQueue);
-      setQueue(updatedQueue);
-
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        flushQueue();
-      } else {
-        setSyncStatus('offline');
-      }
-    },
-    [toggleAttendance, flushQueue]
-  );
-
   // Marcação em lote de presença (ex: "Marcar Todos Presentes")
   const markBulkStudentsAttendance = useCallback(
     (students: StudentRecord[], week: WeekNumber, present: boolean) => {
@@ -262,7 +219,6 @@ export function useAttendanceSync() {
     lastSyncTime,
     flushQueue,
     markAttendance,
-    toggleStudentAttendance,
     markBulkStudentsAttendance,
   };
 }
