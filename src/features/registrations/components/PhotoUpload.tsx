@@ -105,7 +105,7 @@ export function PhotoUpload({
       {/* Avatar / Preview */}
       <div className="relative group">
         <div
-          className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md ring-2 ring-slate-200"
+          className="relative w-24 h-24 rounded-2xl overflow-hidden border-4 border-white shadow-md ring-2 ring-slate-200"
         >
           {displaySrc ? (
             <img
@@ -127,7 +127,7 @@ export function PhotoUpload({
 
           {/* Overlay de carregamento */}
           {uploadState === 'uploading' && (
-            <span className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full">
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl">
               <Loader2 className="w-6 h-6 text-white animate-spin" />
             </span>
           )}

@@ -108,3 +108,27 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Sem mudança de comportamento (mesmo texto, mesmos fluxos, mesmos ids de teste)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
 - [ ] Validação visual logado (registrar um pagamento de teste)
+
+## Indicador de faltas no card do aluno (Inscrições)
+- [x] Migração 20260926000032: view v_registration_absence_count (conta só faltas explicitamente registradas)
+- [x] StudentCard: fundo pastel por faltas (2=amber, 3=orange, 4+=rose), title com a contagem
+- [x] Testado logado: cores e contagem batendo com o banco (verificado via bg computado + SQL)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
+- [ ] PENDENTE (fora do escopo, sinalizado): s1..s9 do aluno (badges de presença/filtro) nunca são hidratados do Supabase — refletem só o que aquele navegador marcou localmente
+
+## Correção — nome abreviado no cabeçalho
+- [x] "Univ. da Vida" → "Universidade da Vida" no logo do AppShell
+- [x] Testado logado em 1280px: cabe sem quebrar layout
+
+## Moldura da foto: círculo → quadrado arredondado + grade de enquadramento
+- [x] StudentCard, DoorAttendanceCard, PhotoUpload: rounded-full → rounded-lg/2xl (evita cortar o rosto nos cantos)
+- [x] ImageCropModal: cropShape round → rect, guia oval → grade 2x2 (estilo câmera do iPhone)
+- [x] Testado logado: card e reenquadramento confirmados visualmente
+- [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
+
+## Correção — indicador de faltas movido para Chamada
+- [x] Removido de Inscrições (StudentCard voltou ao normal)
+- [x] Adicionado em Chamada (AttendanceStudentRow), com a mesma contagem real do Supabase
+- [x] Lógica de cor extraída para src/features/attendance/utils/absenceTint.ts (com testes)
+- [x] Testado logado: Inscrições sem cor, Chamada com amarelo/laranja/vermelho corretos
+- [x] Quality gate: lint ✅ typecheck ✅ tests 102/102 ✅

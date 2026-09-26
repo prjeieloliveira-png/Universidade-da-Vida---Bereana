@@ -17,7 +17,8 @@ const MAX_ZOOM = 4;
 
 /**
  * Modal reutilizável para enquadrar uma foto antes do upload.
- * A guia oval indica onde centralizar o rosto; o resultado é um JPEG
+ * A grade (estilo câmera) ajuda a centralizar o rosto sem cortar a foto;
+ * o resultado é um JPEG
  * retangular na proporção `aspect`.
  */
 export function ImageCropModal({
@@ -78,8 +79,8 @@ export function ImageCropModal({
           aspect={aspect}
           minZoom={MIN_ZOOM}
           maxZoom={MAX_ZOOM}
-          cropShape="round"
-          showGrid={false}
+          cropShape="rect"
+          showGrid
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onCropComplete={(_area, areaPixels) => setCroppedArea(areaPixels)}
@@ -89,7 +90,7 @@ export function ImageCropModal({
 
       <footer className="px-4 pt-3 pb-5 flex flex-col gap-3 bg-slate-950">
         <p className="text-center text-[11px] text-slate-400 font-medium">
-          Arraste e use o zoom para centralizar o rosto dentro da guia
+          Arraste e use o zoom para centralizar o rosto na grade
         </p>
 
         <div className="flex items-center gap-3">

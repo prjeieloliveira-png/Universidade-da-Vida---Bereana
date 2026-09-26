@@ -93,6 +93,13 @@ export type Database = {
             foreignKeyName: "attendances_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
+            referencedRelation: "v_registration_absence_count"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "attendances_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
             referencedRelation: "v_registration_attendance_summary"
             referencedColumns: ["registration_id"]
           },
@@ -381,6 +388,13 @@ export type Database = {
             foreignKeyName: "financial_transactions_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
+            referencedRelation: "v_registration_absence_count"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
             referencedRelation: "v_registration_attendance_summary"
             referencedColumns: ["registration_id"]
           },
@@ -652,6 +666,13 @@ export type Database = {
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "payments_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_registration_absence_count"
             referencedColumns: ["registration_id"]
           },
           {
@@ -1286,6 +1307,36 @@ export type Database = {
           role_label: string | null
         }
         Relationships: []
+      }
+      v_registration_absence_count: {
+        Row: {
+          absence_count: number | null
+          edition_id: string | null
+          registration_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registrations_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_cash_summary"
+            referencedColumns: ["edition_id"]
+          },
+          {
+            foreignKeyName: "registrations_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_financial_summary"
+            referencedColumns: ["edition_id"]
+          },
+        ]
       }
       v_registration_attendance_summary: {
         Row: {

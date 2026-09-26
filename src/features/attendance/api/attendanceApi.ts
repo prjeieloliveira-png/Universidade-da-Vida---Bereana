@@ -138,3 +138,28 @@ export async function fetchAttendanceMatrixFromSupabase(
 
   return (data as AttendanceMatrixRow[]) || [];
 }
+
+export interface RegistrationAbsenceCount {
+  registration_id: string;
+  absence_count: number;
+}
+
+/**
+ * Contagem de faltas explicitamente registradas por inscrição (present=false
+ * em `attendances`). Semanas ainda não registradas não entram na contagem.
+ */
+export async function fetchAbsenceCounts(editionId: string): Promise<RegistrationAbsenceCount[]> {
+  const { data, error } = await supabase
+    .from('v_registration_absence_count')
+    .select('registration_id, absence_count')
+    .eq('edition_id', editionId);
+
+  if (error) {
+    console.error('Erro ao buscar contagem de faltas:', error);
+    throw error;
+  }
+
+  return (data || [])
+    .filter((row): row is { registration_id: string; absence_count: number } => !!row.registration_id)
+    .map((row) => ({ registration_id: row.registration_id, absence_count: row.absence_count ?? 0 }));
+}

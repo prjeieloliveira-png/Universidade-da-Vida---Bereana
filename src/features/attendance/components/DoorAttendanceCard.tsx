@@ -33,11 +33,11 @@ export function DoorAttendanceCard({
           <img
             src={photoSrc}
             alt={student.name}
-            className="w-11 h-11 rounded-full object-cover shrink-0 border border-slate-200 shadow-2xs"
+            className="w-11 h-11 rounded-lg object-cover shrink-0 border border-slate-200 shadow-2xs"
           />
         ) : (
           <div
-            className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-black text-xs shadow-2xs ${
+            className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 font-black text-xs shadow-2xs ${
               isPresent
                 ? 'bg-emerald-600 text-white'
                 : 'bg-slate-100 text-slate-600 border border-slate-200'
