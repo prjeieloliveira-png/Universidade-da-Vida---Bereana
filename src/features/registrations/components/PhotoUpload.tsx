@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Camera, Loader2, UserCircle2, X } from 'lucide-react';
+import { Camera, FolderOpen, Loader2, UserCircle2, X } from 'lucide-react';
 import { supabase } from '@/shared/lib/supabase';
 
 interface PhotoUploadProps {
@@ -17,15 +17,15 @@ export function PhotoUpload({
   gender,
   onUploaded,
 }: PhotoUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Dois inputs separados: câmera e arquivos
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const [preview, setPreview] = useState<string | null>(currentUrl ?? null);
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadFile = async (file: File) => {
     // Valida tamanho (máx 5 MB)
     if (file.size > 5 * 1024 * 1024) {
       setErrorMsg('A foto deve ter no máximo 5 MB.');
@@ -62,28 +62,31 @@ export function PhotoUpload({
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(file);
+    // Reseta o input para permitir selecionar o mesmo arquivo novamente
+    e.target.value = '';
+  };
+
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
     setPreview(null);
     setUploadState('idle');
     setErrorMsg('');
     onUploaded('');
-    if (inputRef.current) inputRef.current.value = '';
   };
 
   const avatarBg = gender === 'Feminino' ? '#fce7f3' : '#dbeafe';
   const avatarText = gender === 'Feminino' ? '#9d174d' : '#1e40af';
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-3">
       {/* Avatar / Preview */}
       <div className="relative group">
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md ring-2 ring-slate-200 transition-all hover:ring-[#58bc75] cursor-pointer focus:outline-none focus:ring-[#58bc75]"
-          title="Alterar foto"
-          aria-label="Alterar foto do aluno"
+        <div
+          className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md ring-2 ring-slate-200"
         >
           {preview ? (
             <img
@@ -103,27 +106,20 @@ export function PhotoUpload({
             </span>
           )}
 
-          {/* Overlay ao passar o mouse */}
-          <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-            {uploadState === 'uploading' ? (
+          {/* Overlay de carregamento */}
+          {uploadState === 'uploading' && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full">
               <Loader2 className="w-6 h-6 text-white animate-spin" />
-            ) : (
-              <>
-                <Camera className="w-5 h-5 text-white" />
-                <span className="text-[9px] font-bold text-white uppercase tracking-wide">
-                  {preview ? 'Alterar' : 'Adicionar'}
-                </span>
-              </>
-            )}
-          </span>
-        </button>
+            </span>
+          )}
+        </div>
 
         {/* Botão de remover */}
         {preview && uploadState !== 'uploading' && (
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 hover:bg-rose-600 flex items-center justify-center shadow-sm transition-colors cursor-pointer"
+            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 hover:bg-rose-600 flex items-center justify-center shadow-sm transition-colors cursor-pointer z-10"
             title="Remover foto"
             aria-label="Remover foto"
           >
@@ -132,9 +128,40 @@ export function PhotoUpload({
         )}
       </div>
 
-      {/* Input oculto */}
+      {/* Dois botões de ação: Câmera e Arquivos */}
+      {uploadState !== 'uploading' && (
+        <div className="flex items-center gap-2">
+          {/* Botão: Abrir câmera */}
+          <button
+            type="button"
+            id="btn-photo-camera"
+            onClick={() => cameraRef.current?.click()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer border border-slate-200"
+            title="Tirar foto com a câmera"
+            aria-label="Abrir câmera"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Câmera</span>
+          </button>
+
+          {/* Botão: Escolher arquivo */}
+          <button
+            type="button"
+            id="btn-photo-file"
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer border border-slate-200"
+            title="Escolher foto dos arquivos"
+            aria-label="Escolher foto dos arquivos"
+          >
+            <FolderOpen className="w-3.5 h-3.5" />
+            <span>Arquivos</span>
+          </button>
+        </div>
+      )}
+
+      {/* Input: câmera (capture=user força câmera frontal no mobile) */}
       <input
-        ref={inputRef}
+        ref={cameraRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/heic"
         capture="user"
@@ -143,20 +170,30 @@ export function PhotoUpload({
         aria-hidden="true"
       />
 
-      {/* Label e estado */}
+      {/* Input: arquivos (sem capture, abre galeria/explorador) */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        className="sr-only"
+        onChange={handleFileChange}
+        aria-hidden="true"
+      />
+
+      {/* Mensagens de estado */}
       {uploadState === 'uploading' && (
         <p className="text-[11px] text-slate-500 font-medium animate-pulse">
           Enviando foto…
         </p>
       )}
       {uploadState === 'error' && (
-        <p className="text-[11px] text-rose-600 font-semibold text-center max-w-[120px]">
+        <p className="text-[11px] text-rose-600 font-semibold text-center max-w-[140px]">
           {errorMsg}
         </p>
       )}
-      {uploadState === 'idle' && (
+      {uploadState === 'idle' && !preview && (
         <p className="text-[10px] text-slate-400 font-medium text-center">
-          {preview ? 'Toque para alterar' : 'Toque para adicionar foto'}
+          Tire uma foto ou escolha da galeria
         </p>
       )}
     </div>
