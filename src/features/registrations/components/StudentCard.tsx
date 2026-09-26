@@ -66,7 +66,7 @@ export function StudentCard({
           <div className="flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               {photoSrc ? (
-                <div className="relative shrink-0">
+                <div className={`relative shrink-0 z-10 origin-left transition-all duration-300 ease-out motion-reduce:transition-none ${isExpanded ? 'scale-[1.35] mr-3' : ''}`}>
                   <img
                     src={photoSrc}
                     alt={student.name}
@@ -156,7 +156,7 @@ export function StudentCard({
           {/* Left Side: Number, Name & Quick Subtitle */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {photoSrc ? (
-              <div className="relative shrink-0">
+              <div className={`relative shrink-0 z-10 origin-left transition-all duration-300 ease-out motion-reduce:transition-none ${isExpanded ? 'scale-[1.75] mr-7' : ''}`}>
                 <img
                   src={photoSrc}
                   alt={student.name}
@@ -239,10 +239,10 @@ export function StudentCard({
         </div>
       </div>
 
-      {/* Expandable Full Details Section */}
-      {isExpanded && (
-        <StudentCardDetails student={student} paymentStatus={paymentStatus} />
-      )}
+      {/* Expandable Full Details Section (grid-rows 0fr→1fr anima a altura, em sincronia com a foto) */}
+      <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`} inert={!isExpanded}>
+        <div className="overflow-hidden min-h-0"><StudentCardDetails student={student} paymentStatus={paymentStatus} /></div>
+      </div>
     </article>
   );
 }
