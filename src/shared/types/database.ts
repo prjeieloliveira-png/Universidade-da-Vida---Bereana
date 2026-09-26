@@ -1207,8 +1207,45 @@ export type Database = {
           },
         ]
       }
+      v_edition_attendance_matrix: {
+        Row: {
+          birth_date: string | null
+          edition_id: string | null
+          full_name: string | null
+          person_id: string | null
+          registration_id: string | null
+          s1: boolean | null
+          s2: boolean | null
+          s3: boolean | null
+          s4: boolean | null
+          s5: boolean | null
+          s6: boolean | null
+          s7: boolean | null
+          s8: boolean | null
+          s9: boolean | null
+          total_present: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      record_attendance_rpc: {
+        Args: {
+          p_birth_date: string
+          p_edition_id: string
+          p_full_name: string
+          p_present: boolean
+          p_session_number: number
+        }
+        Returns: Json
+      }
+      sync_attendances_rpc: {
+        Args: {
+          p_edition_id: string
+          p_items: Json
+        }
+        Returns: Json
+      }
       auth_user_network_id: { Args: never; Returns: string }
       auth_user_role: {
         Args: never

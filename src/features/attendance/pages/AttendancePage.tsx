@@ -6,36 +6,42 @@ import { AttendanceStatsBar } from '../components/AttendanceStatsBar';
 import { AttendanceStudentRow } from '../components/AttendanceStudentRow';
 import { AttendanceReportModal } from '../components/AttendanceReportModal';
 import { ShareDoorLinkModal } from '../components/ShareDoorLinkModal';
+import { AttendanceSyncBadge } from '../components/AttendanceSyncBadge';
+import { useAttendanceSync } from '../hooks/useAttendanceSync';
 import { HierarchicalLeaderFilter } from '@/features/registrations/components/HierarchicalLeaderFilter';
 import { WeekNumber, WeekKey } from '../types';
 import { Search, FileSpreadsheet, Smartphone } from 'lucide-react';
 
 export function AttendancePage() {
-  const { students, toggleAttendance, setBulkAttendance } = useStudentStore();
+  const { students } = useStudentStore();
   const { activeCohortId, getActiveCohort } = useCohortStore();
   const activeCohort = getActiveCohort();
+  const {
+    syncStatus,
+    pendingCount,
+    flushQueue,
+    toggleStudentAttendance,
+    markBulkStudentsAttendance,
+  } = useAttendanceSync();
 
   const cohortStudents = useMemo(() => {
     return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
   }, [students, activeCohortId]);
 
-  const [activeWeek, setActiveWeek] = useState<WeekNumber>(2); // Default to Week 2 which was in progress in PDF
+  const [activeWeek, setActiveWeek] = useState<WeekNumber>(2);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PRESENTE' | 'FALTA'>('ALL');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // Hierarchical leadership filter
   const [selectedPastor, setSelectedPastor] = useState<string>('ALL');
   const [selectedG12, setSelectedG12] = useState<string>('ALL');
   const [selectedLeader, setSelectedLeader] = useState<string>('ALL');
 
   const currentKey = `s${activeWeek}` as WeekKey;
 
-  // Filter logic
   const filteredStudents = useMemo(() => {
     return cohortStudents.filter((s) => {
-      // 1. Text Search
       const matchesSearch =
         searchQuery.trim() === '' ||
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -44,14 +50,12 @@ export function AttendancePage() {
         s.g12.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.leader.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // 2. Presence Status Filter in Active Week
       const isPresent = Boolean(s[currentKey]);
       const matchesStatus =
         statusFilter === 'ALL' ||
         (statusFilter === 'PRESENTE' && isPresent) ||
         (statusFilter === 'FALTA' && !isPresent);
 
-      // 3. Leadership Hierarchy
       const matchesPastor = selectedPastor === 'ALL' || s.pastor === selectedPastor;
       const matchesG12 = selectedG12 === 'ALL' || s.g12 === selectedG12;
       const matchesLeader = selectedLeader === 'ALL' || s.leader === selectedLeader;
@@ -60,7 +64,6 @@ export function AttendancePage() {
     });
   }, [cohortStudents, searchQuery, statusFilter, currentKey, selectedPastor, selectedG12, selectedLeader]);
 
-  // Metrics for active week based on filtered scope
   const presentCount = useMemo(
     () => filteredStudents.filter((s) => Boolean(s[currentKey])).length,
     [filteredStudents, currentKey]
@@ -68,8 +71,7 @@ export function AttendancePage() {
   const absentCount = filteredStudents.length - presentCount;
 
   const handleMarkAllPresent = () => {
-    const ids = filteredStudents.map((s) => s.id);
-    setBulkAttendance(ids, activeWeek, true);
+    markBulkStudentsAttendance(filteredStudents, activeWeek, true);
   };
 
   const handleResetHierarchy = () => {
@@ -78,7 +80,6 @@ export function AttendancePage() {
     setSelectedLeader('ALL');
   };
 
-  // Active filter description for report
   const activeFiltersDesc = useMemo(() => {
     const parts: string[] = [];
     if (selectedPastor !== 'ALL') parts.push(`Pastor: ${selectedPastor}`);
@@ -107,8 +108,14 @@ export function AttendancePage() {
           </p>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons & Sync Indicator */}
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <AttendanceSyncBadge
+            status={syncStatus}
+            pendingCount={pendingCount}
+            onForceSync={flushQueue}
+          />
+
           <button
             type="button"
             onClick={() => setIsShareModalOpen(true)}
@@ -144,7 +151,6 @@ export function AttendancePage() {
       {/* Search & Hierarchical Leadership Filters */}
       <div className="bg-white border border-slate-200/80 rounded-[28px] p-4 shadow-xs space-y-3">
         <div className="flex flex-col md:flex-row items-center gap-3">
-          {/* Search Input */}
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
@@ -156,7 +162,6 @@ export function AttendancePage() {
             />
           </div>
 
-          {/* Quick Presence Status Filter */}
           <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
             <button
               onClick={() => setStatusFilter('ALL')}
@@ -191,7 +196,6 @@ export function AttendancePage() {
           </div>
         </div>
 
-        {/* Hierarchical Leadership Filter */}
         <HierarchicalLeaderFilter
           students={cohortStudents}
           selectedPastor={selectedPastor}
@@ -220,7 +224,7 @@ export function AttendancePage() {
               key={student.id}
               student={student}
               activeWeek={activeWeek}
-              onToggle={toggleAttendance}
+              onToggle={() => toggleStudentAttendance(student, activeWeek)}
             />
           ))
         )}
@@ -243,4 +247,3 @@ export function AttendancePage() {
     </div>
   );
 }
-

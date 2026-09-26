@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useStudentStore } from '@/features/registrations/store/studentStore';
 import { DoorAttendanceCard } from '../components/DoorAttendanceCard';
 import { AttendanceConfirmModal } from '../components/AttendanceConfirmModal';
+import { AttendanceSyncBadge } from '../components/AttendanceSyncBadge';
+import { useAttendanceSync } from '../hooks/useAttendanceSync';
 import { WeekNumber, WeekKey } from '../types';
 import { Search, X, CheckCircle2 } from 'lucide-react';
 
@@ -10,9 +12,9 @@ const WEEKS: WeekNumber[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export function DoorAttendancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { students, setAttendance } = useStudentStore();
+  const { students } = useStudentStore();
+  const { syncStatus, pendingCount, flushQueue, markAttendance } = useAttendanceSync();
 
-  // Read initial week from query params (?semana=X) or default to 2
   const initialWeek = useMemo<WeekNumber>(() => {
     const param = searchParams.get('semana');
     const parsed = param ? parseInt(param, 10) : 2;
@@ -23,7 +25,6 @@ export function DoorAttendancePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'PRESENTE' | 'FALTA'>('ALL');
 
-  // Confirmation modal state
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     student: (typeof students)[0] | null;
@@ -34,12 +35,9 @@ export function DoorAttendancePage() {
     action: null,
   });
 
-  // Success toast state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
   const currentKey = `s${activeWeek}` as WeekKey;
 
-  // Filter students by active week, search query and status filter
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
       const matchesSearch =
@@ -58,14 +56,12 @@ export function DoorAttendancePage() {
     });
   }, [students, searchQuery, filterType, currentKey]);
 
-  // Counts for the active week
   const presentCount = useMemo(
     () => students.filter((s) => Boolean(s[currentKey])).length,
     [students, currentKey]
   );
   const absentCount = students.length - presentCount;
 
-  // Update query params when week changes
   const handleSelectWeek = (week: WeekNumber) => {
     setActiveWeek(week);
     setSearchParams({ semana: String(week) });
@@ -75,11 +71,7 @@ export function DoorAttendancePage() {
     student: (typeof students)[0],
     action: 'PRESENTE' | 'FALTA'
   ) => {
-    setConfirmModal({
-      isOpen: true,
-      student,
-      action,
-    });
+    setConfirmModal({ isOpen: true, student, action });
   };
 
   const handleConfirmAction = () => {
@@ -88,10 +80,8 @@ export function DoorAttendancePage() {
     const isPresent = confirmModal.action === 'PRESENTE';
     const studentName = confirmModal.student.name;
 
-    // Persist in local store
-    setAttendance(confirmModal.student.id, activeWeek, isPresent);
+    markAttendance(confirmModal.student, activeWeek, isPresent);
 
-    // Show temporary feedback toast
     setToastMessage(
       isPresent
         ? `✓ Presença confirmada para ${studentName}`
@@ -101,7 +91,6 @@ export function DoorAttendancePage() {
     setConfirmModal({ isOpen: false, student: null, action: null });
   };
 
-  // Auto-dismiss toast
   useEffect(() => {
     if (!toastMessage) return;
     const timer = setTimeout(() => setToastMessage(null), 3000);
@@ -123,20 +112,25 @@ export function DoorAttendancePage() {
               </h1>
             </div>
 
-            {/* Week Selector Dropdown / Badge */}
-            <div className="flex items-center gap-1.5 bg-slate-100 rounded-xl p-1 border border-slate-200/60">
-              <span className="text-[10px] font-bold text-slate-500 pl-1.5">Semana:</span>
-              <select
-                value={activeWeek}
-                onChange={(e) => handleSelectWeek(parseInt(e.target.value, 10) as WeekNumber)}
-                className="text-xs font-black bg-white rounded-lg px-2 py-1 text-slate-800 border-none shadow-2xs focus:ring-2 focus:ring-[#58bc75] cursor-pointer"
-              >
-                {WEEKS.map((w) => (
-                  <option key={w} value={w}>
-                    S{w}
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2">
+              <AttendanceSyncBadge
+                status={syncStatus}
+                pendingCount={pendingCount}
+                onForceSync={flushQueue}
+                compact
+              />
+              <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 border border-slate-200/60">
+                <span className="text-[10px] font-bold text-slate-500 pl-1">Semana:</span>
+                <select
+                  value={activeWeek}
+                  onChange={(e) => handleSelectWeek(parseInt(e.target.value, 10) as WeekNumber)}
+                  className="text-xs font-black bg-white rounded-lg px-2 py-1 text-slate-800 border-none shadow-2xs focus:ring-2 focus:ring-[#58bc75] cursor-pointer"
+                >
+                  {WEEKS.map((w) => (
+                    <option key={w} value={w}>S{w}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -160,7 +154,6 @@ export function DoorAttendancePage() {
 
       {/* Main Container */}
       <main className="max-w-lg mx-auto px-4 pt-4 space-y-3">
-        {/* Prominent Search Bar */}
         <div className="relative">
           <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input

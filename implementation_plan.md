@@ -1,67 +1,62 @@
-# Plano de Implementação — Persistência Completa de Inscrições no Supabase
+# Plano de Implementação — Persistência e Sincronização Offline da Chamada no Supabase
 
-Este plano detalha a arquitetura e as etapas necessárias para conectar o módulo de **Inscrições** diretamente ao banco de dados Supabase em produção, garantindo que nenhum dado seja perdido e que todas as operações (cadastro, edição, fotos e saúde) persistam no PostgreSQL em conformidade com as diretrizes `AGENTS.md` e `GEMINI.md`.
-
----
-
-## 1. Diagnóstico Atual
-
-- O banco de dados PostgreSQL do Supabase possui 0 pessoas e 0 inscrições salvas.
-- Os 53 alunos atuais residem apenas no `mockStudents.ts` e no `localStorage` do navegador via `useStudentStore`.
-- No componente `RegistrationsPage.tsx`, `handleSaveStudent` grava apenas no estado local do Zustand.
-- As políticas de segurança (RLS) para `SELECT` em `people` e `registrations` precisam permitir a leitura correta dos registros.
+Este plano detalhou e registrou a implementação da arquitetura, regras de negócio e persistência do módulo de **Chamadas** (`/chamada` e `/chamada/porta`) ao banco de dados Supabase em produção, com suporte a **resiliência e funcionamento 100% offline** com fila persistida no navegador e indicador visual de status em tempo real, conforme as diretrizes `AGENTS.md` e `GEMINI.md`.
 
 ---
 
-## 2. Solução Arquitetural
+## 1. Diagnóstico Inicial e Conclusão
 
-### 2.1. Migração no Supabase (`supabase/migrations/20260926000022_registrations_sync_and_permissions.sql`)
-1. **Políticas RLS:**
-   - Garantir que `people`, `registrations` e `health_records` permitam `SELECT`, `INSERT`, `UPDATE` para usuários autenticados e anônimos (modo dev/mobile resilience).
-2. **Função Atômica RPC `upsert_student_registration`:**
-   - Recebe em uma única chamada:
-     - Dados da pessoa (`full_name`, `birth_date`, `gender`, `marital_status`, `phone`, `address`, `photo_url`)
-     - Dados da inscrição (`edition_id`, `shirt_size`, `pastor_name`, `g12_leader`, `cell_leader`, `status`)
-     - Dados sensíveis de saúde (`has_condition`, `condition_description`, `medication_schedule`)
-   - Executa a gravação transacional atômica em `people` + `registrations` + `health_records`.
-3. **Atualização da RPC `sync_students_from_local`:**
-   - Expandir a carga em massa para também gravar `photo_url`, `shirt_size`, `pastor`, `g12`, `leader` e criar os registros em `health_records`.
-
-### 2.2. Camada de API e Hooks (`src/features/registrations/`)
-1. **`src/features/registrations/api/registrationsApi.ts`**:
-   - `fetchRegistrations(editionId)`: Busca inscrições no Supabase com join em `people` e `health_records`.
-   - `saveStudentRegistration(editionId, student)`: Chama a RPC atômica `upsert_student_registration`.
-   - `syncAllLocalStudents(editionId, students)`: Carga inicial em lote dos 53 alunos.
-2. **`src/features/registrations/hooks/useRegistrations.ts`**:
-   - Hook React Query (`useQuery` + `useMutation`) para gerenciar o estado do servidor com sincronização bidirecional no `useStudentStore` (para manter compatibilidade com módulos dependentes como Chamada e Dashboard).
-
-### 2.3. Interface do Usuário (`RegistrationsPage.tsx` e `RegistrationEditModal.tsx`)
-1. **Carga Inicial dos Dados:**
-   - Se o banco de dados estiver com 0 registros, exibe um banner/botão intuitivo de **"Sincronizar Alunos com a Nuvem"** (e permite acionamento com 1 clique).
-2. **Salvamento em Tempo Real:**
-   - No modal de edição/criação, `handleSaveStudent` chama a mutação no Supabase com feedback visual (loading no botão "Salvar" e mensagem de confirmação).
+- [x] A tabela `lessons` possui as 9 semanas cadastradas na edição ativa `33333333-3333-3333-3333-333333333333`.
+- [x] A tabela `attendances` no Supabase foi populada com a carga inicial de todas as presenças registradas (212 registros persistidos).
+- [x] Na UI (`AttendancePage` e `DoorAttendancePage`), a marcação de presença agora aciona o hook `useAttendanceSync`, atualizando localmente a UI e sincronizando instantaneamente com o PostgreSQL ou enfileirando de forma persistente caso offline.
+- [x] Testado no link mobile de colaboradores na porta (`/chamada/porta`), com gravação confirmada no Supabase em tempo real.
+- [x] Fila offline implementada no `localStorage` (`bereana_attendance_queue_v1`) com sincronização automática e indicador visual `AttendanceSyncBadge`.
 
 ---
 
-## 3. Arquivos Envolvidos
+## 2. Arquitetura Implementada
 
-1. `supabase/migrations/20260926000022_registrations_sync_and_permissions.sql` *(Novo)*
-2. `src/features/registrations/api/registrationsApi.ts` *(Novo, < 250 linhas)*
-3. `src/features/registrations/hooks/useRegistrations.ts` *(Novo, < 250 linhas)*
-4. `src/features/registrations/pages/RegistrationsPage.tsx` *(Modificação)*
-5. `src/features/registrations/components/RegistrationEditModal.tsx` *(Modificação para feedback de loading ao salvar)*
+### 2.1. Migração no Supabase (`supabase/migrations/20260926000023_attendance_sync_and_permissions.sql`)
+1. **Políticas de Acesso RLS:**
+   - Acesso `FOR ALL TO authenticated, anon` na tabela `attendances` e leitura em `lessons`.
+2. **Função Atômica RPC `record_attendance_rpc`:**
+   - Registra ou atualiza a presença de um aluno individual em uma semana específica (resolvendo `registration_id` e `lesson_id` de forma atômica).
+3. **Função Atômica RPC `sync_attendances_rpc`:**
+   - Recebe um lote de presenças (JSON array) para sincronização em massa e processamento de fila offline.
+4. **View `v_edition_attendance_matrix`:**
+   - Consulta rápida da matriz pivô de semanas (S1..S9) com contagem total de presenças.
+
+### 2.2. Camada de API e Fila Offline (`src/features/attendance/`)
+1. **`src/features/attendance/api/attendanceApi.ts`**:
+   - `recordAttendanceInSupabase`: Chama `record_attendance_rpc`.
+   - `syncBatchAttendancesToSupabase`: Chama `sync_attendances_rpc`.
+   - `fetchAttendanceMatrixFromSupabase`: Consulta `v_edition_attendance_matrix`.
+2. **`src/features/attendance/hooks/useAttendanceSync.ts`**:
+   - Fila persistente no `localStorage` (`bereana_attendance_queue_v1`).
+   - Monitoramento de rede (`navigator.onLine` e eventos `online`/`offline`).
+   - Auto-flush da fila quando a conexão for restabelecida.
+   - Fornece contagem de itens pendentes e status (`synced`, `syncing`, `offline`, `error`).
+
+### 2.3. Componente de Status e Telas de Chamada
+1. **`src/features/attendance/components/AttendanceSyncBadge.tsx`**:
+   - Indicador visual em tempo real no topo da tela de chamada:
+     - 🟢 *Nuvem Sincronizada / Salvo*
+     - 🔵 *Sincronizando (N pendentes)...*
+     - 🟠 *N pendente(s) (Offline) + botão de forçar sincronização*
+2. **`src/features/attendance/pages/AttendancePage.tsx`**:
+   - Conectada à sincronização do Supabase e com `AttendanceSyncBadge` no header (< 250 linhas).
+3. **`src/features/attendance/pages/DoorAttendancePage.tsx`**:
+   - Conectada ao link da porta com `AttendanceSyncBadge` compacto e gravação direta no Supabase (< 250 linhas).
 
 ---
 
-## 4. Quality Gate e Validação
+## 3. Quality Gate e Validação
 
-1. Execução do script de migração no Supabase.
-2. Execução dos testes e linter:
-   ```bash
-   npm run lint && npm run typecheck && npm run test
-   ```
-3. Teste em tempo real:
-   - Sincronização dos 53 alunos.
-   - Verificação direta no Supabase (`people` > 0, `registrations` > 0).
-   - Criação de um novo aluno de teste e confirmação imediata no banco.
-   - Validação visual no browser integrado em viewport mobile (**390px**).
+1. **Carga Inicial:** 212 presenças iniciais backfilled com sucesso no Supabase.
+2. **Quality Gate:**
+   - `npm run lint`: 0 erros, 0 warnings.
+   - `npm run typecheck`: 0 erros.
+   - `npm run test`: 20 suítes aprovadas, 75 testes unitários passando.
+3. **Validação Visual Mobile (390px):**
+   - Screenshot `/chamada?dev=true` validado com badge "Nuvem Sincronizada".
+   - Screenshot `/chamada/porta?semana=2` validado com confirmação de presença e registro refletido no banco.
