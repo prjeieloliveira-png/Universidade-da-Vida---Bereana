@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Save, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { X, Save, CheckCircle2, Loader2, AlertCircle, Trash2 } from 'lucide-react';
 import type { StudentRecord } from '../types';
 import { RegistrationLeadershipFields } from './RegistrationLeadershipFields';
 import { RegistrationHealthAndAttendanceFields } from './RegistrationHealthAndAttendanceFields';
@@ -12,6 +12,8 @@ interface RegistrationEditModalProps {
   onClose: () => void;
   onSave: (saved: StudentRecord) => Promise<void> | void;
   isSaving?: boolean;
+  /** Quando informado, exibe o botão de excluir (somente coordenação/secretaria). */
+  onDelete?: () => void;
 }
 
 export function RegistrationEditModal({
@@ -20,6 +22,7 @@ export function RegistrationEditModal({
   onClose,
   onSave,
   isSaving = false,
+  onDelete,
 }: RegistrationEditModalProps) {
   if (!isOpen || !student) return null;
 
@@ -179,6 +182,16 @@ export function RegistrationEditModal({
 
           {/* Footer Actions */}
           <div className="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
+            {onDelete && student.id && (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="mr-auto px-4 py-2.5 rounded-full text-xs font-semibold text-rose-600 hover:bg-rose-50 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Excluir</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}

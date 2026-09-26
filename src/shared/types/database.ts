@@ -1501,6 +1501,10 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      delete_registration: {
+        Args: { p_registration_id: string }
+        Returns: Json
+      }
       import_legacy_payments: { Args: { p_data: Json }; Returns: Json }
       import_local_data: { Args: { p_snapshot: Json }; Returns: Json }
       is_coord_or_sec: { Args: never; Returns: boolean }

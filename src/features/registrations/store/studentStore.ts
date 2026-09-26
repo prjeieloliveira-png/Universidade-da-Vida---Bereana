@@ -68,6 +68,7 @@ interface StudentStoreState {
   updateStudent: (student: StudentRecord) => void;
   addStudent: (student: Omit<StudentRecord, 'id' | 'personId' | 'num' | 'age'>) => void;
   setStudents: (students: StudentRecord[]) => void;
+  removeStudent: (studentId: string) => void;
   toggleAttendance: (studentId: string, week: WeekNumber) => void;
   setAttendance: (studentId: string, week: WeekNumber, present: boolean) => void;
   setBulkAttendance: (studentIds: string[], week: WeekNumber, present: boolean) => void;
@@ -84,6 +85,8 @@ export const useStudentStore = create<StudentStoreState>()(
       setSearchQuery: (query) => set({ searchQuery: query }),
       setFilterStatus: (status) => set({ filterStatus: status }),
       setFilterPastor: (pastor) => set({ filterPastor: pastor }),
+      removeStudent: (studentId) =>
+        set((state) => ({ students: state.students.filter((s) => s.id !== studentId) })),
       updateStudent: (updated) =>
         set((state) => ({
           students: state.students.map((s) =>

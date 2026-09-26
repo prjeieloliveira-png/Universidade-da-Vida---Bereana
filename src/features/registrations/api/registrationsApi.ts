@@ -24,6 +24,14 @@ function calculateAge(birthDateStr: string | null): number {
   return Math.max(0, age);
 }
 
+/**
+ * `v_registration_payment_status.status` retorna 'paid' | 'partial' | 'pending'
+ * (minúsculas). Parcial conta como pendente, igual aos totais de `v_cash_summary`.
+ */
+export function isPaidPaymentStatus(status?: string | null): boolean {
+  return status?.toLowerCase() === 'paid';
+}
+
 export function formatStudentForSync(s: StudentRecord) {
   let birthDate = s.birthDate?.trim();
   if (!birthDate || birthDate === '' || isNaN(Date.parse(birthDate))) {
@@ -105,7 +113,7 @@ export async function fetchStudentsFromSupabase(
   paymentStatuses?.forEach((p) => {
     if (p.registration_id) {
       paymentMap.set(p.registration_id, {
-        status: p.status || 'PENDING',
+        status: p.status || 'pending',
         totalPaid: p.total_paid_cents || 0,
       });
     }
@@ -120,7 +128,7 @@ export async function fetchStudentsFromSupabase(
       : null;
 
     const payment = paymentMap.get(row.id);
-    const isPaid = payment?.status === 'PAID' || payment?.status === 'OVERPAID';
+    const isPaid = isPaidPaymentStatus(payment?.status);
 
     return {
       id: row.id,
@@ -215,4 +223,36 @@ export async function syncAllStudentsToSupabase(
   }
 
   return (data as SyncRpcResult) || { synced: students.length, skipped: 0 };
+}
+
+export interface DeleteRegistrationResult {
+  personDeleted: boolean;
+  attendancesDeleted: number;
+}
+
+/**
+ * Exclui a inscrição via RPC `delete_registration` (apenas coordenação/secretaria).
+ * O banco bloqueia a exclusão quando há pagamentos válidos.
+ */
+export async function deleteRegistration(registrationId: string): Promise<DeleteRegistrationResult> {
+  const { data, error } = await supabase.rpc('delete_registration', {
+    p_registration_id: registrationId,
+  });
+
+  if (error) {
+    console.error('Erro ao excluir inscrição:', error);
+    if (error.hint === 'has_payments') {
+      throw new Error('Este aluno tem pagamentos registrados. Estorne no Financeiro antes de excluir.');
+    }
+    if (error.code === '42501') {
+      throw new Error('Apenas coordenação ou secretaria pode excluir inscritos.');
+    }
+    throw new Error('Não foi possível excluir o inscrito. Verifique a conexão e tente novamente.');
+  }
+
+  const result = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+  return {
+    personDeleted: result.person_deleted === true,
+    attendancesDeleted: typeof result.attendances_deleted === 'number' ? result.attendances_deleted : 0,
+  };
 }

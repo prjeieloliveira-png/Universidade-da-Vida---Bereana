@@ -5,8 +5,11 @@ import { useCohortStore } from '@/features/cohorts/store/cohortStore';
 import { useActiveEdition } from '@/shared/hooks/useActiveEdition';
 import { fetchCashSummary, fetchRegistrationPaymentStatuses } from '@/features/financial/data/financialData';
 import { filterStudents } from '../utils/studentFilter';
+import { isPaidPaymentStatus } from '../api/registrationsApi';
 import { StudentCard } from '../components/StudentCard';
 import { RegistrationEditModal } from '../components/RegistrationEditModal';
+import { DeleteRegistrationDialog } from '../components/DeleteRegistrationDialog';
+import { useUserRole } from '@/shared/hooks/useUserRole';
 import { RegistrationFilterBar } from '../components/RegistrationFilterBar';
 import { RegistrationReportModal } from '../components/RegistrationReportModal';
 import { StudentIndividualPrintModal } from '../components/StudentIndividualPrintModal';
@@ -32,6 +35,10 @@ export function RegistrationsPage() {
     isSyncing,
     syncAllStudents,
   } = useRegistrations({ editionId });
+
+  const { role } = useUserRole();
+  const canDeleteStudents = role === 'coordinator' || role === 'secretary';
+  const [deletingStudent, setDeletingStudent] = useState<StudentRecord | null>(null);
 
   const [syncSuccessMessage, setSyncSuccessMessage] = useState<string | null>(null);
 
@@ -61,9 +68,18 @@ export function RegistrationsPage() {
     return map;
   }, [paymentStatuses]);
 
+  // O status vem da view de pagamentos (mesma fonte do badge e dos contadores),
+  // pois a lista local pode estar desatualizada em relação aos pagamentos.
   const cohortStudents = useMemo(() => {
-    return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
-  }, [students, activeCohortId]);
+    return students
+      .filter((s) => (s.cohortId || 'turma-01') === activeCohortId)
+      .map((s) => {
+        const pStatus = paymentStatusMap.get(s.id) || paymentStatusMap.get(s.personId);
+        if (!pStatus) return s;
+        const status: StudentRecord['status'] = isPaidPaymentStatus(pStatus.status) ? 'Pago' : 'Pendente';
+        return status === s.status ? s : { ...s, status };
+      });
+  }, [students, activeCohortId, paymentStatusMap]);
 
   const [editingStudent, setEditingStudent] = useState<StudentRecord | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -287,6 +303,21 @@ export function RegistrationsPage() {
           }}
           onSave={handleSaveStudent}
           isSaving={isSaving}
+          onDelete={canDeleteStudents ? () => setDeletingStudent(editingStudent) : undefined}
+        />
+      )}
+
+      {deletingStudent && (
+        <DeleteRegistrationDialog
+          student={deletingStudent}
+          paymentStatus={paymentStatusMap.get(deletingStudent.id) || paymentStatusMap.get(deletingStudent.personId)}
+          editionId={editionId}
+          onClose={() => setDeletingStudent(null)}
+          onDeleted={() => {
+            setDeletingStudent(null);
+            setIsEditModalOpen(false);
+            setEditingStudent(null);
+          }}
         />
       )}
 

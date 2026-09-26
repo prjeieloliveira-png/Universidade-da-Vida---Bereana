@@ -1,38 +1,41 @@
-# Plano de Implementação — Enquadramento (recorte) de foto antes do upload
+# Plano de Implementação — Excluir inscrito (menu Inscrições)
 
-Permitir que, ao escolher uma foto (câmera ou arquivos), o usuário enquadre o rosto antes do envio ao Supabase Storage. O componente será compartilhado, para reutilização em qualquer upload futuro de foto (professores, equipes etc.).
+Permitir que a coordenação/secretaria exclua um inscrito, inclusive os cadastros de teste.
 
 ---
 
-## 1. Fluxo do usuário
+## 1. Impacto no banco (levantado em produção)
 
-1. Toca em **Câmera** ou **Arquivos** e escolhe a imagem.
-2. Abre um modal de enquadramento em tela cheia (mobile-first, 390px):
-   - arrastar para posicionar e **pinça** (ou controle deslizante) para zoom;
-   - botão para **girar 90°** (fotos de celular às vezes vêm deitadas);
-   - guia circular sobre a área de recorte, indicando como a miniatura vai ficar.
-3. **Confirmar** → a imagem recortada é enviada; **Cancelar** → nada é enviado.
-4. Com uma foto já salva, um botão **Reenquadrar** reabre o modal com a foto atual.
+Excluir uma inscrição (`registrations`) dispara, pelas chaves estrangeiras já existentes:
 
-## 2. Decisões técnicas
+| Tabela | Efeito |
+|---|---|
+| `payments` | **apagados** (ON DELETE CASCADE) — some do caixa e dos totais |
+| `attendances` | **apagadas** (CASCADE) |
+| `financial_transactions` | mantidas, com `registration_id = NULL` |
 
-- **Biblioteca:** `react-easy-crop` (leve, ~10 KB gzip, suporte nativo a toque/pinça, sem dependências).
-- **Proporção do recorte:** 3:4 (serve à ficha impressa 3×4 e, centralizada, às miniaturas circulares). *A confirmar com o usuário.*
-- **Saída:** recorte feito em `<canvas>` no navegador, exportado como **JPEG, largura máx. 600 px, qualidade 0,85**. Isso reduz fotos de 3–5 MB para ~80–150 KB, o que acelera o envio em internet móvel instável.
-- **Caminho no Storage:** `<personId>/photo.jpg` (sempre `.jpg`, sobrescrevendo a anterior); o cache da URL assinada é invalidado após o envio.
+A pessoa (`people`) é a entidade permanente. Se ela não tiver outra inscrição nem estiver em uma equipe (`team_members`), é excluída junto (e `health_records` por cascata), para não deixar cadastros órfãos, como os de teste.
 
-## 3. Arquivos
+## 2. Banco — migração `20260926000029_delete_registration_rpc.sql` (não destrutiva)
+
+- Função `delete_registration(p_registration_id uuid)`, `SECURITY DEFINER`, `search_path` fixo:
+  - exige `is_coord_or_sec()`; caso contrário, lança erro "Sem permissão";
+  - executa tudo em uma transação: apaga a inscrição e, se aplicável, a pessoa;
+  - retorna um resumo: `{ person_deleted, payments_deleted, attendances_deleted }`.
+- `GRANT EXECUTE` apenas para `authenticated`.
+
+## 3. Frontend
 
 | Arquivo | Ação |
 |---|---|
-| `package.json` | adicionar `react-easy-crop` |
-| `src/shared/utils/cropImage.ts` (+ teste) | funções puras: cálculo do tamanho de saída e geração do JPEG recortado/girado via canvas |
-| `src/shared/components/ImageCropModal.tsx` | modal reutilizável de enquadramento (zoom, girar, confirmar/cancelar) |
-| `src/features/registrations/components/PhotoUpload.tsx` | abrir o modal ao escolher o arquivo e enviar o resultado recortado; botão **Reenquadrar** |
+| `api/registrationsApi.ts` | `deleteRegistration(id)` chamando a RPC |
+| `hooks/useRegistrations.ts` | mutação de exclusão: remove da lista local e invalida pagamentos/caixa |
+| `components/DeleteRegistrationDialog.tsx` (novo) | confirmação com nome, pagamentos (R$) e presenças que serão apagados |
+| `components/RegistrationEditModal.tsx` | botão **Excluir inscrição** (vermelho, no rodapé), visível só para coordenação/secretaria |
 
-Todos dentro dos limites de 250 linhas por componente. Nenhuma alteração de banco ou migração.
+O botão fica dentro do modal de edição (lápis), e não direto no card, para evitar exclusões por toque acidental no celular.
 
 ## 4. Quality Gate e Validação
 
-- `npm run lint && npm run typecheck && npm run test`
-- Validação visual no navegador em **390px**: escolher foto, enquadrar, confirmar e conferir a miniatura no card e na ficha de impressão.
+- `npm run lint && npm run typecheck && npm run test` e `supabase db lint`
+- Validação visual em 390px: excluir um aluno de teste e conferir lista, contadores e caixa.

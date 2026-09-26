@@ -60,3 +60,24 @@
 - [x] `PhotoUpload`: abre o enquadramento ao escolher foto; botão Reenquadrar; salva sempre `<personId>/photo.jpg`
 - [x] Quality gate: lint ✅ typecheck ✅ tests 96/96 ✅ build ✅
 - [ ] Validação visual logado (390px) — preview do Claude Code ainda preso à pasta anterior
+
+## Foto ampliada ao expandir o card do aluno
+- [x] `StudentCard`: avatar cresce com animação (scale 1.75 desktop / 1.35 mobile) sem alterar a altura do card
+- [x] Painel de detalhes abre/fecha com animação de altura + fade (300 ms, em sincronia com a foto)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 96/96 ✅
+- [ ] Validação visual logado
+
+## Correção — Filtro Pagos/Pendentes
+- [x] Causa: `registrationsApi` comparava `PAID`/`OVERPAID`, mas `v_registration_payment_status` retorna `paid`/`partial`/`pending` (minúsculas) → ninguém ficava "Pago"
+- [x] `isPaidPaymentStatus` (com teste) + página usa o status da view também no filtro (mesma fonte do badge e dos contadores)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
+- [ ] Validação visual logado
+
+## Excluir inscrito (menu Inscrições)
+- [x] Migração `20260926000029`: RPC `delete_registration` (SECURITY DEFINER, só coord/secretaria autenticados; bloqueia se houver pagamento válido; apaga pessoa órfã) — aplicada em produção
+- [x] Testada em produção com ROLLBACK: pendente exclui ✅, pago bloqueia ✅, anon negado ✅
+- [x] `database.ts` regenerado; `deleteRegistration` + `useDeleteRegistration` + `removeStudent` na store
+- [x] `DeleteRegistrationDialog` + botão Excluir no modal de edição (só coordenação/secretaria)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 98/98 ✅
+- [ ] Validação visual logado (390px)
+- [ ] PENDENTE (segurança, fora do escopo): policies `*_all_access` com `USING (true)` para `anon` em people, health_records, registrations, attendances etc. — dados expostos a qualquer um com a anon key
