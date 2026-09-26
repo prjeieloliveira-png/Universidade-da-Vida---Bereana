@@ -1,58 +1,67 @@
-# Plano de Implementação — Correção do Deploy Automático e Cache na Hostinger
+# Plano de Implementação — Persistência Completa de Inscrições no Supabase
 
-Este documento estabelece o diagnóstico preciso e as ações necessárias para resolver o problema de sincronização entre o código local e a versão em produção no link da Hostinger (`https://blanchedalmond-otter-989415.hostingersite.com/dashboard`), em conformidade com as diretrizes `AGENTS.md` e `GEMINI.md`.
-
----
-
-## 1. Diagnóstico do Problema
-
-Ao inspecionar a resposta HTTP do site em produção:
-- O arquivo `index.html` e o bundle `assets/index-Bcg2aZiq.js` na Hostinger possuem timestamp `Fri, 25 Sep 2026 13:52:21 GMT` (correspondente ao commit `6f238ba`).
-- O commit `de46dee` (que contém o novo painel financeiro) foi gerado às `19:52:52 GMT`. Embora o workflow do GitHub Actions tenha sido concluído como "sucesso", **os arquivos na Hostinger não foram atualizados**.
-- **Causa Raiz 1 (FTP Sync State):** A action `SamKirkland/FTP-Deploy-Action@v4.3.5` utiliza o arquivo `.ftp-deploy-sync-state.json` com `dangerous-clean-slate: false`. Quando a pasta `dist/` é gerada durante o build (fora do Git), a action compara com o estado anterior e deixa de substituir o `index.html` e subir os novos arquivos gerados.
-- **Causa Raiz 2 (Cache de Navegador / CDN):** O arquivo `public/.htaccess` não possui diretivas de `Cache-Control` desativando o cache de arquivos HTML. Isso faz com que navegadores e o Hostinger CDN retenham o `index.html` antigo.
+Este plano detalha a arquitetura e as etapas necessárias para conectar o módulo de **Inscrições** diretamente ao banco de dados Supabase em produção, garantindo que nenhum dado seja perdido e que todas as operações (cadastro, edição, fotos e saúde) persistam no PostgreSQL em conformidade com as diretrizes `AGENTS.md` e `GEMINI.md`.
 
 ---
 
-## 2. Solução Proposta
+## 1. Diagnóstico Atual
 
-### 2.1. Ajuste no GitHub Actions (`.github/workflows/deploy.yml`)
-- Ativar `dangerous-clean-slate: true`: garante que a pasta de publicação na Hostinger seja limpa a cada deploy, removendo bundles antigos com hashes defasados e forçando a sincronização de 100% dos arquivos do build atual.
-- Adicionar `log-level: verbose`: exibe detalhadamente no log do GitHub Actions cada arquivo transferido.
+- O banco de dados PostgreSQL do Supabase possui 0 pessoas e 0 inscrições salvas.
+- Os 53 alunos atuais residem apenas no `mockStudents.ts` e no `localStorage` do navegador via `useStudentStore`.
+- No componente `RegistrationsPage.tsx`, `handleSaveStudent` grava apenas no estado local do Zustand.
+- As políticas de segurança (RLS) para `SELECT` em `people` e `registrations` precisam permitir a leitura correta dos registros.
 
-### 2.2. Prevenção de Cache em `public/.htaccess`
-- Adicionar cabeçalhos Apache para arquivos `.html`:
-  ```apache
-  <IfModule mod_headers.c>
-    <FilesMatch "\.(html|htm)$">
-      Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
-      Header set Pragma "no-cache"
-      Header set Expires "0"
-    </FilesMatch>
-  </IfModule>
-  ```
-  Isso garante que o `index.html` seja sempre requisitado ao servidor, carregando imediatamente os bundles JS/CSS recém-compilados.
+---
+
+## 2. Solução Arquitetural
+
+### 2.1. Migração no Supabase (`supabase/migrations/20260926000022_registrations_sync_and_permissions.sql`)
+1. **Políticas RLS:**
+   - Garantir que `people`, `registrations` e `health_records` permitam `SELECT`, `INSERT`, `UPDATE` para usuários autenticados e anônimos (modo dev/mobile resilience).
+2. **Função Atômica RPC `upsert_student_registration`:**
+   - Recebe em uma única chamada:
+     - Dados da pessoa (`full_name`, `birth_date`, `gender`, `marital_status`, `phone`, `address`, `photo_url`)
+     - Dados da inscrição (`edition_id`, `shirt_size`, `pastor_name`, `g12_leader`, `cell_leader`, `status`)
+     - Dados sensíveis de saúde (`has_condition`, `condition_description`, `medication_schedule`)
+   - Executa a gravação transacional atômica em `people` + `registrations` + `health_records`.
+3. **Atualização da RPC `sync_students_from_local`:**
+   - Expandir a carga em massa para também gravar `photo_url`, `shirt_size`, `pastor`, `g12`, `leader` e criar os registros em `health_records`.
+
+### 2.2. Camada de API e Hooks (`src/features/registrations/`)
+1. **`src/features/registrations/api/registrationsApi.ts`**:
+   - `fetchRegistrations(editionId)`: Busca inscrições no Supabase com join em `people` e `health_records`.
+   - `saveStudentRegistration(editionId, student)`: Chama a RPC atômica `upsert_student_registration`.
+   - `syncAllLocalStudents(editionId, students)`: Carga inicial em lote dos 53 alunos.
+2. **`src/features/registrations/hooks/useRegistrations.ts`**:
+   - Hook React Query (`useQuery` + `useMutation`) para gerenciar o estado do servidor com sincronização bidirecional no `useStudentStore` (para manter compatibilidade com módulos dependentes como Chamada e Dashboard).
+
+### 2.3. Interface do Usuário (`RegistrationsPage.tsx` e `RegistrationEditModal.tsx`)
+1. **Carga Inicial dos Dados:**
+   - Se o banco de dados estiver com 0 registros, exibe um banner/botão intuitivo de **"Sincronizar Alunos com a Nuvem"** (e permite acionamento com 1 clique).
+2. **Salvamento em Tempo Real:**
+   - No modal de edição/criação, `handleSaveStudent` chama a mutação no Supabase com feedback visual (loading no botão "Salvar" e mensagem de confirmação).
 
 ---
 
 ## 3. Arquivos Envolvidos
 
-1. `.github/workflows/deploy.yml` — Configuração da action de deploy FTP.
-2. `public/.htaccess` — Regras de cabeçalho e anti-cache para Apache/Hostinger.
+1. `supabase/migrations/20260926000022_registrations_sync_and_permissions.sql` *(Novo)*
+2. `src/features/registrations/api/registrationsApi.ts` *(Novo, < 250 linhas)*
+3. `src/features/registrations/hooks/useRegistrations.ts` *(Novo, < 250 linhas)*
+4. `src/features/registrations/pages/RegistrationsPage.tsx` *(Modificação)*
+5. `src/features/registrations/components/RegistrationEditModal.tsx` *(Modificação para feedback de loading ao salvar)*
 
 ---
 
 ## 4. Quality Gate e Validação
 
-1. Executar verificação local:
+1. Execução do script de migração no Supabase.
+2. Execução dos testes e linter:
    ```bash
-   npm run build
+   npm run lint && npm run typecheck && npm run test
    ```
-2. Commit e push para a branch `main`:
-   ```bash
-   git add .
-   git commit -m "fix(ci): ativa clean-slate no deploy FTP e desativa cache de index.html"
-   git push origin main
-   ```
-3. Acompanhar a execução do GitHub Actions.
-4. Validar via requisição HTTP (`curl` / navegador) se `blanchedalmond-otter-989415.hostingersite.com` passou a entregar o novo bundle com a tela financeira reformulada.
+3. Teste em tempo real:
+   - Sincronização dos 53 alunos.
+   - Verificação direta no Supabase (`people` > 0, `registrations` > 0).
+   - Criação de um novo aluno de teste e confirmação imediata no banco.
+   - Validação visual no browser integrado em viewport mobile (**390px**).

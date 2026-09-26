@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, CheckCircle2 } from 'lucide-react';
+import { X, Save, CheckCircle2, Loader2 } from 'lucide-react';
 import type { StudentRecord } from '../types';
 import { RegistrationLeadershipFields } from './RegistrationLeadershipFields';
 import { RegistrationHealthAndAttendanceFields } from './RegistrationHealthAndAttendanceFields';
@@ -9,7 +9,8 @@ interface RegistrationEditModalProps {
   student: StudentRecord | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (saved: StudentRecord) => void;
+  onSave: (saved: StudentRecord) => Promise<void> | void;
+  isSaving?: boolean;
 }
 
 export function RegistrationEditModal({
@@ -17,6 +18,7 @@ export function RegistrationEditModal({
   isOpen,
   onClose,
   onSave,
+  isSaving = false,
 }: RegistrationEditModalProps) {
   if (!isOpen || !student) return null;
 
@@ -27,14 +29,18 @@ export function RegistrationEditModal({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    setSuccessNotice(true);
-    setTimeout(() => {
-      setSuccessNotice(false);
-      onClose();
-    }, 400);
+    try {
+      await onSave(formData);
+      setSuccessNotice(true);
+      setTimeout(() => {
+        setSuccessNotice(false);
+        onClose();
+      }, 400);
+    } catch {
+      // Erro é capturado e gerenciado pelo React Query
+    }
   };
 
   return (
@@ -246,10 +252,20 @@ export function RegistrationEditModal({
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-full text-xs font-bold text-white bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#429c5d] flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              disabled={isSaving}
+              className="px-6 py-2.5 rounded-full text-xs font-bold text-white bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#429c5d] disabled:opacity-60 flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
-              <Save className="w-4 h-4" />
-              <span>Salvar Alterações</span>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Salvando no Supabase...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Salvar Alterações</span>
+                </>
+              )}
             </button>
           </div>
         </form>
