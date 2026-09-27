@@ -35,35 +35,35 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
   return (
     <div
       className="w-full bg-white text-slate-900"
-      style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: '11px' }}
+      style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: '14px' }}
     >
       {/* ── Cabeçalho ── */}
       <div
         className="flex items-center justify-between pb-3 mb-4"
-        style={{ borderBottom: '2px solid #163242' }}
+        style={{ borderBottom: '2px solid #163242', paddingBottom: 16, marginBottom: 22 }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" style={{ gap: 16 }}>
           <img
             src="/logo-uv-mark.png"
             alt="Universidade da Vida"
-            style={{ width: '38px', height: '42px', objectFit: 'contain' }}
+            style={{ width: '48px', height: '54px', objectFit: 'contain' }}
           />
           <div>
             <div
               className="font-black uppercase tracking-widest mb-0.5"
-              style={{ color: '#163242', fontSize: '13px' }}
+              style={{ color: '#163242', fontSize: '17px' }}
             >
               Universidade da Vida
             </div>
-            <div style={{ color: '#00ab81', fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em' }}>
+            <div style={{ color: '#00ab81', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em' }}>
               Igreja Bereana • Ficha Cadastral Oficial
             </div>
           </div>
         </div>
         <div className="text-right">
-          <div style={{ color: '#94a3b8', fontSize: '9px' }}>Turma</div>
-          <div className="font-bold" style={{ fontSize: '12px', color: '#163242' }}>{cohortName}</div>
-          <div style={{ color: '#94a3b8', fontSize: '9px' }}>
+          <div style={{ color: '#94a3b8', fontSize: '11px' }}>Turma</div>
+          <div className="font-bold" style={{ fontSize: '15px', color: '#163242' }}>{cohortName}</div>
+          <div style={{ color: '#94a3b8', fontSize: '11px' }}>
             Emitido: {new Date().toLocaleDateString('pt-BR')}
           </div>
         </div>
@@ -72,21 +72,21 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
       {/* ── Número + Nome ── */}
       <div
         className="flex items-center gap-3 mb-4 p-3 rounded-xl"
-        style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
+        style={{ background: '#f8fafc', border: '1px solid #e2e8f0', gap: 16, marginBottom: 22, padding: 18 }}
       >
         <div
           className="flex items-center justify-center rounded-full font-black shrink-0"
           style={{
-            width: 40, height: 40, background: '#163242', color: '#58bc75', fontSize: '15px',
+            width: 52, height: 52, background: '#163242', color: '#58bc75', fontSize: '19px',
           }}
         >
           {student.num}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-black truncate" style={{ fontSize: '16px', color: '#0f172a' }}>
+          <div className="font-black truncate" style={{ fontSize: '21px', color: '#0f172a' }}>
             {student.name}
           </div>
-          <div style={{ color: '#64748b', fontSize: '10px', fontWeight: 600 }}>
+          <div style={{ color: '#64748b', fontSize: '12px', fontWeight: 600 }}>
             {student.gender} • {student.maritalStatus} • {student.age} anos
           </div>
         </div>
@@ -95,7 +95,7 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
           style={{
             background: student.status === 'Pago' ? '#dcfce7' : '#fef9c3',
             color: student.status === 'Pago' ? '#15803d' : '#92400e',
-            fontSize: '11px',
+            fontSize: '13px',
           }}
         >
           {student.status}
@@ -107,8 +107,8 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
             src={photoSrc}
             alt={student.name}
             style={{
-              width: 54,
-              height: 72,
+              width: 72,
+              height: 96,
               objectFit: 'cover',
               borderRadius: 6,
               border: '1px solid #e2e8f0',
@@ -119,8 +119,8 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
         {!photoSrc && (
           <div
             style={{
-              width: 54,
-              height: 72,
+              width: 72,
+              height: 96,
               borderRadius: 6,
               border: '1.5px dashed #cbd5e1',
               display: 'flex',
@@ -128,7 +128,7 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
               justifyContent: 'center',
               flexShrink: 0,
               color: '#cbd5e1',
-              fontSize: '8px',
+              fontSize: '10px',
               fontWeight: 700,
               textAlign: 'center',
               lineHeight: 1.3,
@@ -142,7 +142,7 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
       </div>
 
       {/* ── Grid Principal ── */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="grid grid-cols-2 gap-3 mb-3" style={{ gap: 18, marginBottom: 18 }}>
 
         {/* Dados Pessoais */}
         <Section title="1. Dados Pessoais">
@@ -161,9 +161,9 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
       </div>
 
       {/* ── Financeiro ── */}
-      <div className="mb-3">
+      <div className="mb-3" style={{ marginBottom: 18 }}>
         <SectionFull title="3. Financeiro">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2" style={{ gap: 14 }}>
             <Row label="Valor" value={formatCentsToBRL(student.amountCents)} />
             <Row label="Forma de Pagamento" value={student.paymentMethod} />
             <Row label="Status" value={student.status} highlight={student.status === 'Pendente'} />
@@ -172,30 +172,30 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
       </div>
 
       {/* ── Frequência ── */}
-      <div className="mb-3">
+      <div className="mb-3" style={{ marginBottom: 18 }}>
         <SectionFull title={`4. Frequência (${attendedCount}/${sessions.length} sessões)`}>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap" style={{ gap: 12 }}>
             {sessions.map((s) => {
               const attended = student[s.key] === true;
               return (
                 <div
                   key={s.key}
                   className="flex flex-col items-center gap-0.5"
-                  style={{ minWidth: 28 }}
+                  style={{ minWidth: 38 }}
                 >
                   <div
                     style={{
-                      width: 28, height: 28, borderRadius: 8,
+                      width: 38, height: 38, borderRadius: 10,
                       background: attended ? '#dcfce7' : '#f1f5f9',
                       border: `1.5px solid ${attended ? '#86efac' : '#e2e8f0'}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '12px', fontWeight: 700,
+                      fontSize: '16px', fontWeight: 700,
                       color: attended ? '#15803d' : '#94a3b8',
                     }}
                   >
                     {attended ? '✓' : '—'}
                   </div>
-                  <span style={{ fontSize: '8px', fontWeight: 700, color: '#94a3b8' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8' }}>
                     {s.label}
                   </span>
                 </div>
@@ -206,9 +206,9 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
       </div>
 
       {/* ── Saúde ── */}
-      <div className="mb-4">
+      <div className="mb-4" style={{ marginBottom: 22 }}>
         <SectionFull title="5. Saúde">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2" style={{ gap: 14 }}>
             <Row
               label="Comorbidade / Alergias"
               value={student.comorbidity || 'Não'}
@@ -226,18 +226,18 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
       {/* ── Assinatura ── */}
       <div
         className="flex items-end justify-between pt-3"
-        style={{ borderTop: '1px solid #e2e8f0' }}
+        style={{ borderTop: '1px solid #e2e8f0', paddingTop: 18 }}
       >
         <div style={{ flex: 1 }}>
-          <div style={{ borderBottom: '1px dashed #94a3b8', marginBottom: 4, height: 24 }} />
-          <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600 }}>
+          <div style={{ borderBottom: '1px dashed #94a3b8', marginBottom: 6, height: 34 }} />
+          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
             Assinatura do Participante
           </div>
         </div>
-        <div style={{ width: 24 }} />
+        <div style={{ width: 32 }} />
         <div style={{ flex: 1 }}>
-          <div style={{ borderBottom: '1px dashed #94a3b8', marginBottom: 4, height: 24 }} />
-          <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600 }}>
+          <div style={{ borderBottom: '1px dashed #94a3b8', marginBottom: 6, height: 34 }} />
+          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
             Coordenação
           </div>
         </div>
@@ -246,7 +246,7 @@ export function StudentPrintSheet({ student, cohortName }: StudentPrintSheetProp
       {/* ── Rodapé ── */}
       <div
         className="mt-3 text-center"
-        style={{ fontSize: '8px', color: '#cbd5e1', borderTop: '1px solid #f1f5f9', paddingTop: 6 }}
+        style={{ fontSize: '10px', color: '#cbd5e1', borderTop: '1px solid #f1f5f9', paddingTop: 8 }}
       >
         Universidade da Vida Bereana • Documento de uso interno da coordenação
       </div>
@@ -260,15 +260,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div
       className="p-3 rounded-xl"
-      style={{ border: '1px solid #e2e8f0', background: '#f8fafc' }}
+      style={{ border: '1px solid #e2e8f0', background: '#f8fafc', padding: 16 }}
     >
       <div
         className="font-black uppercase mb-2"
-        style={{ fontSize: '8px', letterSpacing: '0.1em', color: '#94a3b8' }}
+        style={{ fontSize: '10px', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 10 }}
       >
         {title}
       </div>
-      <div className="space-y-1.5">{children}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
     </div>
   );
 }
@@ -277,11 +277,11 @@ function SectionFull({ title, children }: { title: string; children: React.React
   return (
     <div
       className="p-3 rounded-xl"
-      style={{ border: '1px solid #e2e8f0', background: '#f8fafc' }}
+      style={{ border: '1px solid #e2e8f0', background: '#f8fafc', padding: 16 }}
     >
       <div
         className="font-black uppercase mb-2"
-        style={{ fontSize: '8px', letterSpacing: '0.1em', color: '#94a3b8' }}
+        style={{ fontSize: '10px', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 10 }}
       >
         {title}
       </div>
@@ -301,12 +301,12 @@ function Row({
 }) {
   return (
     <div className="flex flex-col">
-      <span style={{ fontSize: '8px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+      <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
         {label}
       </span>
       <span
         className="font-semibold truncate"
-        style={{ fontSize: '11px', color: highlight ? '#b91c1c' : '#0f172a', fontWeight: highlight ? 700 : 600 }}
+        style={{ fontSize: '14px', color: highlight ? '#b91c1c' : '#0f172a', fontWeight: highlight ? 700 : 600 }}
       >
         {value || '—'}
       </span>

@@ -196,3 +196,11 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Nova `StudentSummaryPrintSheet.tsx` + `StudentSummaryPrintModal.tsx`: tabela com Nº, Nome, G12, Líder (só quando diferente do G12), Pagamento e Frequência (X/9) — uma linha por aluno, respeita o filtro ativo igual a Ficha Completa
 - [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
 - [x] Validado logado (390px e desktop): menu abre, Ficha Completa continua igual, Lista Resumida mostra a tabela certa
+
+## Ficha Completa: melhor aproveitamento da folha A4
+- [x] Causa: fontes e espaçamentos pequenos demais (pensados pro preview reduzido dentro do modal) deixavam a ficha ocupando só a metade de cima da página A4 real, com muito espaço vazio embaixo
+- [x] `StudentPrintSheet.tsx`: aumentado fonte base, títulos, badges, foto (54×72 → 72×96), chips de frequência e espaçamento entre seções (~1.3-1.5x), sem quebrar layout
+- [x] `StudentIndividualPrintModal.tsx` e `StudentBatchPrintModal.tsx`: página impressa agora centraliza o conteúdo verticalmente (`display:flex; justify-content:center`) dentro da folha A4 — se ainda sobrar espaço, fica distribuído, não empilhado embaixo
+- [x] Continua uma ficha por página (`page-break-after`), sem mudança nisso
+- [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
+- [x] Validado o resultado real em tamanho A4 (via preview isolado, mesmo CSS usado na impressão): ficha completa preenche praticamente a página inteira, nos dois modos (individual e lote)
