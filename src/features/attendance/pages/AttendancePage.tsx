@@ -11,7 +11,7 @@ import { ShareDoorLinkModal } from '../components/ShareDoorLinkModal';
 import { AttendanceSyncBadge } from '../components/AttendanceSyncBadge';
 import { AttendanceConfirmModal } from '../components/AttendanceConfirmModal';
 import { useAttendanceSync } from '../hooks/useAttendanceSync';
-import { fetchAbsenceCounts } from '../api/attendanceApi';
+import { fetchAbsenceCounts, fetchAttendanceLog } from '../api/attendanceApi';
 import { HierarchicalLeaderFilter } from '@/features/registrations/components/HierarchicalLeaderFilter';
 import type { StudentRecord } from '@/features/registrations/types';
 import { WeekNumber, WeekKey } from '../types';
@@ -48,6 +48,34 @@ export function AttendancePage() {
     absenceCounts?.forEach((row) => map.set(row.registration_id, row.absence_count));
     return map;
   }, [absenceCounts]);
+
+  // Semanas com falta de fato registrada no Supabase (distingue de "ainda não registrada")
+  const registrationIds = useMemo(() => cohortStudents.map((s) => s.id), [cohortStudents]);
+  const { data: attendanceLog } = useQuery({
+    queryKey: ['attendance-log', registrationIds],
+    queryFn: () => fetchAttendanceLog(registrationIds),
+    enabled: registrationIds.length > 0,
+    staleTime: 30_000,
+  });
+
+  // Marcações de falta confirmadas nesta sessão, antes mesmo de o Supabase ter sincronizado
+  const [optimisticFalta, setOptimisticFalta] = useState<Set<string>>(new Set());
+
+  const recordedAbsentWeeksByStudent = useMemo(() => {
+    const map = new Map<string, Set<number>>();
+    attendanceLog?.forEach((entry) => {
+      if (entry.present) return;
+      if (!map.has(entry.registration_id)) map.set(entry.registration_id, new Set());
+      map.get(entry.registration_id)!.add(entry.session_number);
+    });
+    optimisticFalta.forEach((key) => {
+      const [studentId, weekStr] = key.split(':');
+      if (!studentId || !weekStr) return;
+      if (!map.has(studentId)) map.set(studentId, new Set());
+      map.get(studentId)!.add(Number(weekStr));
+    });
+    return map;
+  }, [attendanceLog, optimisticFalta]);
 
   const [activeWeek, setActiveWeek] = useState<WeekNumber>(2);
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,7 +134,12 @@ export function AttendancePage() {
 
   const handleConfirmAction = (note?: string) => {
     if (!confirmModal.student || !confirmModal.action) return;
-    markAttendance(confirmModal.student, activeWeek, confirmModal.action === 'PRESENTE', note);
+    const isPresent = confirmModal.action === 'PRESENTE';
+    markAttendance(confirmModal.student, activeWeek, isPresent, note);
+    if (!isPresent) {
+      const key = `${confirmModal.student.id}:${activeWeek}`;
+      setOptimisticFalta((prev) => new Set(prev).add(key));
+    }
     setConfirmModal({ isOpen: false, student: null, action: null });
   };
 
@@ -261,6 +294,7 @@ export function AttendancePage() {
               student={student}
               activeWeek={activeWeek}
               absenceCount={absenceCountMap.get(student.id) ?? 0}
+              recordedAbsentWeeks={recordedAbsentWeeksByStudent.get(student.id)}
               onSelectAction={handleSelectAction}
             />
           ))
