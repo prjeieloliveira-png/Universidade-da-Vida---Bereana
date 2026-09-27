@@ -212,3 +212,9 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] `AttendanceStudentRow.tsx`: chip agora tem 3 estados — verde (presente), vermelho (falta confirmada), neutro (não registrada)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
 - [x] Validado ao vivo em produção: confirmei falta pra Karina na S2, chip ficou vermelho sólido na hora; revertido o dado de teste (DELETE do registro) depois de confirmar
+
+## Inscrições: ordenar alunos em ordem alfabética
+- [x] Botão "A-Z" novo na barra de filtros (`RegistrationFilterBar.tsx`), ativa/desativa ordenação alfabética (pt-BR, ignora acento/maiúscula)
+- [x] `sortStudentsByName` em `studentFilter.ts`, aplicado no `filteredStudents` (fonte única usada pela listagem, Ficha Completa, Lista Resumida e Exportar PDF) — a ordenação vale junto com qualquer filtro ativo (idade, sexo, estado civil, camiseta, pagamento, etc.)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
+- [x] Validado logado (desktop e 390px): ativei A-Z + filtro Pendentes juntos, confirmei que a listagem, a Lista Resumida e a Ficha Completa (25 fichas) seguem a mesma ordem alfabética
