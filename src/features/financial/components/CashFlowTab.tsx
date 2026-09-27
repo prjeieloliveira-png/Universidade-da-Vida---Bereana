@@ -99,10 +99,16 @@ export function CashFlowTab({ editionId }: CashFlowTabProps) {
                       <p className="text-sm font-semibold text-slate-800 truncate">
                         {entry.person_name ?? entry.category}
                       </p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className="text-xs text-slate-400">{entry.category}</span>
                         <span className="w-1 h-1 rounded-full bg-slate-300" />
                         <span className="text-xs text-slate-400">{methodLabel}</span>
+                        {entry.recorded_by_name && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-slate-300" />
+                            <span className="text-xs text-slate-400">por {entry.recorded_by_name}</span>
+                          </>
+                        )}
                       </div>
                     </div>
 

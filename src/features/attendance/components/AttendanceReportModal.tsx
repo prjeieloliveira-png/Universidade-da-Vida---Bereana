@@ -1,6 +1,9 @@
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Printer, Download, X, Check, FileSpreadsheet, Users, Calendar } from 'lucide-react';
 import type { StudentRecord } from '@/features/registrations/types';
 import { useLessonStore } from '../store/lessonStore';
+import { fetchAttendanceLog } from '../api/attendanceApi';
 
 interface AttendanceReportModalProps {
   isOpen: boolean;
@@ -16,6 +19,26 @@ export function AttendanceReportModal({
   activeFiltersDesc,
 }: AttendanceReportModalProps) {
   const { lessons } = useLessonStore();
+  const registrationIds = useMemo(() => students.map((s) => s.id), [students]);
+
+  const { data: attendanceLog } = useQuery({
+    queryKey: ['attendance-log', registrationIds],
+    queryFn: () => fetchAttendanceLog(registrationIds),
+    enabled: isOpen && registrationIds.length > 0,
+    staleTime: 30_000,
+  });
+
+  const authorMap = useMemo(() => {
+    const map = new Map<string, { markedByName: string | null; markedAt: string | null }>();
+    attendanceLog?.forEach((entry) => {
+      map.set(`${entry.registration_id}-${entry.session_number}`, {
+        markedByName: entry.marked_by_name,
+        markedAt: entry.marked_at,
+      });
+    });
+    return map;
+  }, [attendanceLog]);
+
   if (!isOpen) return null;
 
   const total = students.length;
@@ -195,8 +218,21 @@ export function AttendanceReportModal({
                       <td className="py-2 px-3 text-slate-600 hidden md:table-cell truncate max-w-[130px]">{student.pastor}</td>
                       {lessons.map((l) => {
                         const isPresent = Boolean(student[l.key]);
+                        const author = authorMap.get(`${student.id}-${l.number}`);
+                        const authorLabel = author?.markedByName
+                          ? `Registrado por ${author.markedByName}${
+                              author.markedAt
+                                ? ` em ${new Date(author.markedAt).toLocaleString('pt-BR', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}`
+                                : ''
+                            }`
+                          : 'Ainda sem registro no Supabase para esta semana';
                         return (
-                          <td key={l.number} className="py-2 px-1 text-center">
+                          <td key={l.number} className="py-2 px-1 text-center" title={authorLabel}>
                             <span
                               className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black ${
                                 isPresent ? 'bg-[#58bc75] text-white' : 'bg-rose-100 text-rose-700'

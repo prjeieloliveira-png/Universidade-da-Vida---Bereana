@@ -1,7 +1,18 @@
+import type { ReactElement } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AttendanceReportModal } from './AttendanceReportModal';
 import type { StudentRecord } from '@/features/registrations/types';
+
+vi.mock('../api/attendanceApi', () => ({
+  fetchAttendanceLog: vi.fn().mockResolvedValue([]),
+}));
+
+function renderWithClient(ui: ReactElement) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 const mockStudents: StudentRecord[] = [
   {
@@ -69,7 +80,7 @@ const mockStudents: StudentRecord[] = [
 
 describe('AttendanceReportModal', () => {
   it('does not render when isOpen is false', () => {
-    render(
+    renderWithClient(
       <AttendanceReportModal
         isOpen={false}
         onClose={vi.fn()}
@@ -84,7 +95,7 @@ describe('AttendanceReportModal', () => {
     const handleClose = vi.fn();
     const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
 
-    render(
+    renderWithClient(
       <AttendanceReportModal
         isOpen={true}
         onClose={handleClose}
