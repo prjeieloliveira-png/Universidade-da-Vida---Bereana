@@ -97,7 +97,8 @@ export function StudentCard({
           {/* Bottom Row: Pastor/G12, Attendance summary, Edit & Expand */}
           <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100/70 text-[11px] text-slate-400">
             <p className="truncate flex-1 min-w-0">
-              {student.pastor} • G12: {student.g12}
+              G12: {student.g12}
+              {student.leader && student.leader !== student.g12 ? ` • Líder: ${student.leader}` : ''}
             </p>
 
             <div
@@ -176,7 +177,8 @@ export function StudentCard({
                 {student.name}
               </h3>
               <p className="text-[11px] text-slate-400 truncate">
-                {student.pastor} • G12: {student.g12}
+                G12: {student.g12}
+                {student.leader && student.leader !== student.g12 ? ` • Líder: ${student.leader}` : ''}
               </p>
             </div>
           </div>
