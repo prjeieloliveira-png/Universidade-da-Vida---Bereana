@@ -190,3 +190,9 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] `StudentCard.tsx` (mobile e desktop): "{pastor} • G12: {g12}" → "G12: {g12}" + " • Líder: {leader}" só quando o líder é diferente do G12 (evita repetir o mesmo nome duas vezes)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
 - [x] Validado logado (390px e desktop)
+
+## Imprimir Fichas: opção de Lista Resumida além da Ficha Completa
+- [x] Botão "Imprimir Fichas" (Inscrições) virou um menu com duas opções: "Ficha Completa" (comportamento antigo, uma página A4 por aluno) e "Lista Resumida" (nova)
+- [x] Nova `StudentSummaryPrintSheet.tsx` + `StudentSummaryPrintModal.tsx`: tabela com Nº, Nome, G12, Líder (só quando diferente do G12), Pagamento e Frequência (X/9) — uma linha por aluno, respeita o filtro ativo igual a Ficha Completa
+- [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
+- [x] Validado logado (390px e desktop): menu abre, Ficha Completa continua igual, Lista Resumida mostra a tabela certa

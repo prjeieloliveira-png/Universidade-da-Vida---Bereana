@@ -14,6 +14,7 @@ import { RegistrationFilterBar } from '../components/RegistrationFilterBar';
 import { RegistrationReportModal } from '../components/RegistrationReportModal';
 import { StudentIndividualPrintModal } from '../components/StudentIndividualPrintModal';
 import { StudentBatchPrintModal } from '../components/StudentBatchPrintModal';
+import { StudentSummaryPrintModal } from '../components/StudentSummaryPrintModal';
 import { StudentRecord, RegistrationFilterState, initialRegistrationFilterState } from '../types';
 import type { RegistrationPaymentStatusRow } from '@/features/financial/types';
 import { UserPlus, Users, RefreshCw } from 'lucide-react';
@@ -83,6 +84,7 @@ export function RegistrationsPage() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isPrintAllModalOpen, setIsPrintAllModalOpen] = useState(false);
+  const [isPrintSummaryModalOpen, setIsPrintSummaryModalOpen] = useState(false);
   const [printingStudent, setPrintingStudent] = useState<StudentRecord | null>(null);
 
   // Unified Filter State
@@ -125,8 +127,12 @@ export function RegistrationsPage() {
     setIsPrintModalOpen(true);
   };
 
-  const handleOpenPrintAll = () => {
+  const handleOpenPrintAllDetailed = () => {
     setIsPrintAllModalOpen(true);
+  };
+
+  const handleOpenPrintAllSummary = () => {
+    setIsPrintSummaryModalOpen(true);
   };
 
   const handleOpenCreate = () => {
@@ -208,7 +214,8 @@ export function RegistrationsPage() {
         onFilterChange={handleFilterChange}
         onResetFilters={handleResetFilters}
         onOpenReportModal={() => setIsReportModalOpen(true)}
-        onPrintAll={handleOpenPrintAll}
+        onPrintAllDetailed={handleOpenPrintAllDetailed}
+        onPrintAllSummary={handleOpenPrintAllSummary}
         totalCohortCount={cohortStudents.length}
         paidCount={paidCount}
         pendingCount={pendingCount}
@@ -308,6 +315,15 @@ export function RegistrationsPage() {
         <StudentBatchPrintModal
           isOpen={isPrintAllModalOpen}
           onClose={() => setIsPrintAllModalOpen(false)}
+          students={filteredStudents}
+          cohortName={activeCohort.name}
+        />
+      )}
+
+      {isPrintSummaryModalOpen && (
+        <StudentSummaryPrintModal
+          isOpen={isPrintSummaryModalOpen}
+          onClose={() => setIsPrintSummaryModalOpen(false)}
           students={filteredStudents}
           cohortName={activeCohort.name}
         />

@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Search, SlidersHorizontal, FileDown, Printer, X } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { Search, SlidersHorizontal, FileDown, Printer, ChevronDown, FileText, ListChecks, X } from 'lucide-react';
 import { StudentRecord, RegistrationFilterState, initialRegistrationFilterState } from '../types';
 import { RegistrationAdvancedFiltersDrawer } from './RegistrationAdvancedFiltersDrawer';
 
@@ -9,7 +9,8 @@ interface RegistrationFilterBarProps {
   onFilterChange: <K extends keyof RegistrationFilterState>(key: K, value: RegistrationFilterState[K]) => void;
   onResetFilters: () => void;
   onOpenReportModal: () => void;
-  onPrintAll: () => void;
+  onPrintAllDetailed: () => void;
+  onPrintAllSummary: () => void;
   totalCohortCount: number;
   paidCount: number;
   pendingCount: number;
@@ -24,12 +25,26 @@ export function RegistrationFilterBar({
   onFilterChange,
   onResetFilters,
   onOpenReportModal,
-  onPrintAll,
+  onPrintAllDetailed,
+  onPrintAllSummary,
   totalCohortCount,
   paidCount,
   pendingCount,
 }: RegistrationFilterBarProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
+  const printMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isPrintMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (printMenuRef.current && !printMenuRef.current.contains(e.target as Node)) {
+        setIsPrintMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isPrintMenuOpen]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -150,14 +165,52 @@ export function RegistrationFilterBar({
             <span className="hidden sm:inline">Exportar PDF</span>
           </button>
 
-          <button
-            onClick={onPrintAll}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold bg-[#163242]/10 hover:bg-[#163242]/20 text-[#163242] border border-[#163242]/20 transition-all cursor-pointer"
-            title="Imprimir fichas individuais de todos os alunos filtrados"
-          >
-            <Printer className="w-3.5 h-3.5 text-[#163242]" />
-            <span className="hidden sm:inline">Imprimir Fichas</span>
-          </button>
+          <div className="relative" ref={printMenuRef}>
+            <button
+              onClick={() => setIsPrintMenuOpen((v) => !v)}
+              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                isPrintMenuOpen
+                  ? 'bg-[#163242] text-white border-[#163242]'
+                  : 'bg-[#163242]/10 hover:bg-[#163242]/20 text-[#163242] border-[#163242]/20'
+              }`}
+              title="Imprimir fichas dos alunos filtrados"
+            >
+              <Printer className={`w-3.5 h-3.5 ${isPrintMenuOpen ? 'text-[#58bc75]' : 'text-[#163242]'}`} />
+              <span className="hidden sm:inline">Imprimir Fichas</span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${isPrintMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isPrintMenuOpen && (
+              <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-64 bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                <button
+                  onClick={() => {
+                    setIsPrintMenuOpen(false);
+                    onPrintAllDetailed();
+                  }}
+                  className="w-full flex items-start gap-2.5 px-3.5 py-3 hover:bg-slate-50 transition-colors cursor-pointer text-left border-b border-slate-100"
+                >
+                  <FileText className="w-4 h-4 text-[#163242] shrink-0 mt-0.5" />
+                  <span>
+                    <span className="block text-xs font-bold text-slate-800">Ficha Completa</span>
+                    <span className="block text-[11px] text-slate-400 mt-0.5">Uma página por aluno, com todos os dados</span>
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsPrintMenuOpen(false);
+                    onPrintAllSummary();
+                  }}
+                  className="w-full flex items-start gap-2.5 px-3.5 py-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                >
+                  <ListChecks className="w-4 h-4 text-[#163242] shrink-0 mt-0.5" />
+                  <span>
+                    <span className="block text-xs font-bold text-slate-800">Lista Resumida</span>
+                    <span className="block text-[11px] text-slate-400 mt-0.5">Nome, G12, líder, pagamento e frequência</span>
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
