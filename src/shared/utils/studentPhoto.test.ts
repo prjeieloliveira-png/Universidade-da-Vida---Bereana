@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toStudentPhotoPath } from './studentPhoto';
+import { toStudentOriginalPhotoPath, toStudentPhotoPath } from './studentPhoto';
 
 describe('toStudentPhotoPath', () => {
   it('retorna null quando não há foto', () => {
@@ -22,5 +22,11 @@ describe('toStudentPhotoPath', () => {
   it('ignora URLs que não pertencem ao bucket', () => {
     expect(toStudentPhotoPath('https://example.com/foto.png')).toBeNull();
     expect(toStudentPhotoPath('blob:http://localhost/123')).toBeNull();
+  });
+});
+
+describe('toStudentOriginalPhotoPath', () => {
+  it('monta o caminho fixo da imagem original a partir do personId', () => {
+    expect(toStudentOriginalPhotoPath('abc-123')).toBe('abc-123/original');
   });
 });

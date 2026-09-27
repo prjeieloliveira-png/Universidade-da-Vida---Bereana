@@ -174,3 +174,12 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Chamada: `AttendanceReportModal` mostra quem marcou e quando (tooltip nos chips S1-S9)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 103/103 ✅
 - [ ] Validação visual final pendente: sessão do navegador de teste ficou inválida durante um teste de login (self-inflicted, não é bug) — preciso logar de novo pra confirmar a tela de Configurações e o cadastro pela UI normal (já confirmado funcionando via console/banco)
+
+## Reenquadrar foto: voltar ao tamanho/enquadramento original
+- [x] Causa: "Reenquadrar" recortava a partir da foto já cortada (`photo.jpg`, sempre 600px), perdendo pra sempre os pixels fora do recorte anterior — não tinha como voltar à imagem original
+- [x] `PhotoUpload.tsx`: ao enviar uma foto nova, guarda também o arquivo bruto (sem recorte) em `<personId>/original` no bucket privado
+- [x] "Reenquadrar" agora busca essa imagem original (URL assinada) e recorta sempre a partir dela — nunca a partir de um recorte anterior
+- [x] Fallback: fotos enviadas antes dessa mudança (sem original salvo) continuam reenquadrando a partir da foto atual, sem quebrar
+- [x] `toStudentOriginalPhotoPath` com teste
+- [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
+- [ ] Validação visual logado (390px) pendente — sessão do preview caiu num teste anterior, aguardando login
