@@ -38,7 +38,10 @@ export function StudentBatchPrintModal({
         <style>
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
           html, body { width: 210mm; background: white; font-family: Inter, system-ui, sans-serif; }
-          .page-sheet { width: 210mm; min-height: 297mm; padding: 14mm; page-break-after: always; background: white; }
+          .page-sheet {
+            width: 210mm; min-height: 297mm; padding: 14mm; page-break-after: always; background: white;
+            display: flex; flex-direction: column; justify-content: center;
+          }
           .page-sheet:last-child { page-break-after: avoid; }
           @media print {
             html, body { width: 210mm; margin: 0; padding: 0; }

@@ -48,7 +48,7 @@ export function StudentIndividualPrintModal({
         <style>
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
           html, body { width: 210mm; min-height: 297mm; background: white; font-family: Inter, system-ui, sans-serif; }
-          body { padding: 16mm 14mm; }
+          body { padding: 16mm 14mm; display: flex; flex-direction: column; justify-content: center; }
           @media print {
             html, body { width: 210mm; height: 297mm; margin: 0; padding: 14mm; }
             @page { size: A4 portrait; margin: 0; }
