@@ -16,3 +16,12 @@ export interface CreateUserInput {
   full_name: string;
   role: UserRole;
 }
+
+export interface UpdateUserInput {
+  user_id: string;
+  email: string;
+  /** Vazio mantém a senha atual. */
+  password?: string;
+  full_name: string;
+  role: UserRole;
+}
