@@ -204,3 +204,11 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Continua uma ficha por página (`page-break-after`), sem mudança nisso
 - [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
 - [x] Validado o resultado real em tamanho A4 (via preview isolado, mesmo CSS usado na impressão): ficha completa preenche praticamente a página inteira, nos dois modos (individual e lote)
+
+## Chamada: quadradinho S1-S9 fica vermelho quando falta é confirmada
+- [x] Antes, semana sem presença (`false`) sempre aparecia neutra/branca — sem distinguir "falta confirmada" de "ainda não registrada"
+- [x] Confirmado com o usuário: manter neutro para semanas nunca registradas (não pintar de vermelho semanas futuras); só fica vermelho quando a falta foi de fato confirmada
+- [x] `AttendancePage.tsx`: busca `v_attendance_log` (mesma view de "quem realizou") pra saber quais semanas cada aluno já tem registro real; mescla com um Set otimista local, atualizado assim que a Falta é confirmada (não espera o round-trip do Supabase)
+- [x] `AttendanceStudentRow.tsx`: chip agora tem 3 estados — verde (presente), vermelho (falta confirmada), neutro (não registrada)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
+- [x] Validado ao vivo em produção: confirmei falta pra Karina na S2, chip ficou vermelho sólido na hora; revertido o dado de teste (DELETE do registro) depois de confirmar

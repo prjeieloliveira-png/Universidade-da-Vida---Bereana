@@ -8,15 +8,19 @@ interface AttendanceStudentRowProps {
   activeWeek: WeekNumber;
   /** Faltas registradas (real, do Supabase). 2 = amarelo, 3 = laranja, 4+ = vermelho. */
   absenceCount?: number;
+  /** Semanas (1-9) com falta de fato confirmada/registrada — distingue de "ainda não registrada". */
+  recordedAbsentWeeks?: Set<number>;
   onSelectAction: (student: StudentRecord, action: 'PRESENTE' | 'FALTA') => void;
 }
 
 const WEEKS: WeekNumber[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const EMPTY_ABSENT_WEEKS = new Set<number>();
 
 export function AttendanceStudentRow({
   student,
   activeWeek,
   absenceCount = 0,
+  recordedAbsentWeeks = EMPTY_ABSENT_WEEKS,
   onSelectAction,
 }: AttendanceStudentRowProps) {
   const currentKey = `s${activeWeek}` as WeekKey;
@@ -87,15 +91,24 @@ export function AttendanceStudentRow({
           {WEEKS.map((w) => {
             const isWeekPresent = Boolean(student[`s${w}`]);
             const isCurrentWeek = w === activeWeek;
+            const statusLabel = isWeekPresent
+              ? 'Presente'
+              : recordedAbsentWeeks.has(w)
+              ? 'Falta'
+              : 'Ainda não registrada';
             return (
               <span
                 key={w}
-                title={`Semana ${w}: ${isWeekPresent ? 'Presente' : 'Falta'}`}
+                title={`Semana ${w}: ${statusLabel}`}
                 className={`w-7 h-7 rounded-lg text-[10px] font-black flex items-center justify-center transition-all shrink-0 select-none ${
                   isWeekPresent
                     ? isCurrentWeek
                       ? 'bg-[#58bc75] text-white shadow-xs ring-1 ring-[#163242]'
                       : 'bg-[#58bc75] text-white shadow-2xs'
+                    : recordedAbsentWeeks.has(w)
+                    ? isCurrentWeek
+                      ? 'bg-rose-600 text-white shadow-xs ring-1 ring-[#163242]'
+                      : 'bg-rose-100 text-rose-700 border border-rose-200/80'
                     : isCurrentWeek
                     ? 'bg-white text-slate-700 border-2 border-[#163242]'
                     : 'bg-white text-slate-400 border border-slate-200/80'
