@@ -35,45 +35,57 @@ const mockStudent: StudentRecord = {
 };
 
 describe('AttendanceStudentRow', () => {
-  it('renders student info and present status in week 1', () => {
-    const handleToggle = vi.fn();
+  it('renders student info and both action buttons', () => {
+    const handleSelectAction = vi.fn();
     render(
       <AttendanceStudentRow
         student={mockStudent}
         activeWeek={1}
-        onToggle={handleToggle}
+        onSelectAction={handleSelectAction}
       />
     );
 
     expect(screen.getByText('Alana Mikaela')).toBeInTheDocument();
-    expect(screen.getByText('Presente')).toBeInTheDocument();
     expect(screen.getByText('2/9 Presenças')).toBeInTheDocument();
-
+    expect(screen.getByRole('button', { name: /presente/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^falta$/i })).toBeInTheDocument();
   });
 
-  it('renders absent status in week 3 and triggers toggle callback', () => {
-    const handleToggle = vi.fn();
+  it('calls onSelectAction with PRESENTE when clicking the Presente button', () => {
+    const handleSelectAction = vi.fn();
     render(
       <AttendanceStudentRow
         student={mockStudent}
         activeWeek={3}
-        onToggle={handleToggle}
+        onSelectAction={handleSelectAction}
       />
     );
 
-    expect(screen.getByText('Falta')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /presente/i }));
+    expect(handleSelectAction).toHaveBeenCalledWith(mockStudent, 'PRESENTE');
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: /falta/i }));
-    expect(handleToggle).toHaveBeenCalledWith('reg-1', 3);
+  it('calls onSelectAction with FALTA when clicking the Falta button', () => {
+    const handleSelectAction = vi.fn();
+    render(
+      <AttendanceStudentRow
+        student={mockStudent}
+        activeWeek={3}
+        onSelectAction={handleSelectAction}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^falta$/i }));
+    expect(handleSelectAction).toHaveBeenCalledWith(mockStudent, 'FALTA');
   });
 
   it('renders week pills S1 to S9 as read-only indicators and not clickable buttons', () => {
-    const handleToggle = vi.fn();
+    const handleSelectAction = vi.fn();
     render(
       <AttendanceStudentRow
         student={mockStudent}
         activeWeek={1}
-        onToggle={handleToggle}
+        onSelectAction={handleSelectAction}
       />
     );
 
@@ -82,10 +94,8 @@ describe('AttendanceStudentRow', () => {
     expect(screen.getByText('S4')).toBeInTheDocument();
     expect(screen.getByText('S1')).toBeInTheDocument();
 
-    // Clicar no texto da pílula não deve disparar o callback onToggle
+    // Clicar no texto da pílula não deve disparar o callback
     fireEvent.click(screen.getByText('S4'));
-    expect(handleToggle).not.toHaveBeenCalled();
+    expect(handleSelectAction).not.toHaveBeenCalled();
   });
 });
-
-

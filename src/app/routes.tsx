@@ -9,6 +9,7 @@ import { LeadershipPage } from '@/features/leadership/pages/LeadershipPage';
 import { DashboardPlaceholder } from './pages/DashboardPlaceholder';
 import { FinancialPage } from '@/features/financial/pages/FinancialPage';
 import { TeamsPage } from '@/features/teams/pages/TeamsPage';
+import { SettingsPage } from '@/features/settings/pages/SettingsPage';
 
 export function AppRoutes() {
   return (
@@ -33,6 +34,7 @@ export function AppRoutes() {
         <Route path="liderancas" element={<LeadershipPage />} />
         <Route path="equipes" element={<TeamsPage />} />
         <Route path="financeiro" element={<FinancialPage />} />
+        <Route path="configuracoes" element={<SettingsPage />} />
       </Route>
 
       {/* Fallback */}

@@ -155,3 +155,31 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Validado logado + Porta (390px): Chamada, Inscrições e `/chamada/porta` mostram 0/9 presenças para os 53 alunos
 - [x] Validado a migração v4→v5 simulando um aparelho com s1/s2=true salvos localmente: após reload vira false corretamente, sem precisar limpar cache manualmente
 - Pronto para começar a chamada real a partir de agora
+
+## Chamada: dois botões (Presente/Falta) com confirmação
+- [x] `AttendanceStudentRow.tsx`: botão único de alternância trocado por dois botões (Presente / Falta), mesmo padrão visual já usado na Porta — o selecionado fica sólido (verde/vermelho), o outro neutro
+- [x] `AttendancePage.tsx`: reaproveita `AttendanceConfirmModal` (já existente na Porta) — clicar em qualquer um dos dois botões sempre abre confirmação antes de aplicar, com justificativa opcional na Falta
+- [x] Removido código morto: `toggleStudentAttendance` (useAttendanceSync) e `toggleAttendance` (studentStore), sem uso após a troca
+- [x] Testes de `AttendanceStudentRow` reescritos para os dois botões
+- [x] Quality gate: lint ✅ typecheck ✅ tests 103/103 ✅
+- [x] Validado logado (390px): confirmação abre para Presente e para Falta, cor muda corretamente após confirmar, contadores atualizam
+
+## Cadastro de usuários (Configurações) + "quem realizou"
+- [x] Migração `20260926000033`: `v_attendance_log` (nova) + `recorded_by_name` em `v_cash_flow` (join com `profiles`)
+- [x] Nova Edge Function `create-user` (Deno, `supabase/functions/create-user`): cria login + perfil via Admin API (service_role só no servidor), só coordenação/secretaria pode chamar
+- [x] BUG encontrado e corrigido: já existia um trigger `handle_new_user` que cria a linha em `profiles` automaticamente ao criar o login — minha function tentava inserir de novo e batia ("duplicate key"). Trocado para `upsert`
+- [x] Testado via console (bypassando a UI): criação de usuário com papel "Líder de Rede" salva certo no banco, login funciona de verdade com a senha cadastrada; usuário de teste removido depois
+- [x] Nova tela `/configuracoes` (engrenagem do AppShell agora abre ela): lista de usuários + botão Novo Usuário; atalho pra Categorias Financeiras continua lá
+- [x] Financeiro: `CashFlowTab` mostra "por Fulano" em cada lançamento
+- [x] Chamada: `AttendanceReportModal` mostra quem marcou e quando (tooltip nos chips S1-S9)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 103/103 ✅
+- [ ] Validação visual final pendente: sessão do navegador de teste ficou inválida durante um teste de login (self-inflicted, não é bug) — preciso logar de novo pra confirmar a tela de Configurações e o cadastro pela UI normal (já confirmado funcionando via console/banco)
+
+## Reenquadrar foto: voltar ao tamanho/enquadramento original
+- [x] Causa: "Reenquadrar" recortava a partir da foto já cortada (`photo.jpg`, sempre 600px), perdendo pra sempre os pixels fora do recorte anterior — não tinha como voltar à imagem original
+- [x] `PhotoUpload.tsx`: ao enviar uma foto nova, guarda também o arquivo bruto (sem recorte) em `<personId>/original` no bucket privado
+- [x] "Reenquadrar" agora busca essa imagem original (URL assinada) e recorta sempre a partir dela — nunca a partir de um recorte anterior
+- [x] Fallback: fotos enviadas antes dessa mudança (sem original salvo) continuam reenquadrando a partir da foto atual, sem quebrar
+- [x] `toStudentOriginalPhotoPath` com teste
+- [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
+- [ ] Validação visual logado (390px) pendente — sessão do preview caiu num teste anterior, aguardando login

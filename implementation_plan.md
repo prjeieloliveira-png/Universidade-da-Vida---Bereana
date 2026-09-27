@@ -1,44 +1,33 @@
-# Plano — Indicador de faltas no card do aluno (Inscrições)
+# Plano — Cadastro de usuários (login/senha) + "quem realizou"
 
-## Regra
-- 2 faltas → card em amarelo pastel
-- 3 faltas → card em laranja pastel
-- 4+ faltas → card em vermelho pastel
-- Menos de 2 → sem alteração (visual atual)
+## Contexto (o que já existe, confirmado no código)
+- Hoje só existe **um** jeito de criar login: inserir direto em `auth.users` via SQL (só eu ou você conseguem, via `supabase db query`/seed). Não existe tela nem função pra isso.
+- `attendances.marked_by` e `financial_transactions.recorded_by` (e `payments.recorded_by`) **já existem e já são gravados automaticamente** (via `auth.uid()`, dentro das próprias RPCs). O que falta é: (1) contas individuais de verdade pra cada pessoa, e (2) mostrar isso na tela — hoje esses campos nunca aparecem em lugar nenhum da interface.
+- A engrenagem no canto superior direito do `AppShell` já existe, mas hoje só abre `/financeiro?config=categorias` (configuração de categorias do financeiro). Vou transformar isso numa tela de Configurações de verdade, com uma seção de Usuários (e a de Categorias continua acessível de lá).
+- Criar um usuário com email+senha exige a **Admin API do Supabase** (`auth.admin.createUser`), que só funciona com a chave `service_role` — nunca pode ir pro navegador. Então isso precisa de uma **Supabase Edge Function** (não existe nenhuma hoje no projeto). A função roda no servidor, valida que quem está chamando é coordenação/secretaria, e só então cria o login.
 
-## Como contar "falta" corretamente
-Os campos locais `s1..s9` do aluno vêm só do navegador (fila offline/zustand) e podem estar desatualizados em relação a outro dispositivo (ex.: chamada feita pela Porta). Por isso o indicador vai usar a contagem real do Supabase: quantas linhas em `attendances` têm `present = false` para a inscrição — ou seja, só conta falta que foi de fato registrada em algum aparelho, nunca uma semana que ainda não aconteceu.
+## ⚠️ Ponto que preciso confirmar com você antes de programar
+Hoje a Porta da Chamada funciona porque **um aparelho fica logado com uma conta só**, e todo mundo que usa aquele tablet marca presença "como" essa mesma conta. Se o objetivo é realmente saber **qual pessoa** marcou cada presença/lançamento, isso só funciona se **cada pessoa logar com a própria conta** no aparelho (ou pelo menos escolher o próprio nome antes de registrar) — senão o campo "quem realizou" vai sempatar sempre com a mesma pessoa (quem logou primeiro no tablet), mesmo sendo outra pessoa mexendo.
 
-## Implementação
-1. Migração `20260926000032` (não destrutiva): view `v_registration_absence_count` (`registration_id`, `absence_count`).
-2. `attendanceApi.ts`: `fetchAbsenceCounts(editionId)`.
-3. `RegistrationsPage.tsx`: busca e mescla no `cohortStudents`, igual já é feito com o status de pagamento.
-4. `StudentCard.tsx`: recebe `absenceCount`; aplica fundo/borda pastel (amber-50/300, orange-50/300, rose-50/300) no card inteiro.
+Isso vale tanto pra Chamada (já no ar) quanto pro link do Financeiro que a gente ia fazer depois. Quero confirmar o que você prefere:
+1. Cada colaborador loga com a própria conta (login/senha individual) sempre que for usar — mais preciso, mas dá mais trabalho no dia a dia (login toda vez ou trocar de conta no aparelho compartilhado).
+2. Mantém aparelho compartilhado logado numa conta só, mas antes de cada registro a pessoa escolhe o próprio nome numa lista simples (sem senha) — mais rápido no dia a dia, mas não é "seguro" (qualquer um pode escolher o nome de outro).
 
-## Observação separada (resolvida depois)
-Ao investigar, confirmei que `fetchStudentsFromSupabase` sempre zera `s1..s9` e nada no app hidrata a frequência real do Supabase de volta para a tela — os badges de presença refletiam só o que aquele navegador marcou localmente. Isso foi corrigido depois (ver `task.md`, seção "Hidratar presença real (s1..s9)").
+## 1. Banco de dados
+- Migração nova `20260926000033_settings_users.sql`... na verdade sem mudança de schema aqui: `profiles`, roles e as policies já servem (qualquer autenticado já pode ler `profiles`; só coordenação/secretaria pode alterar). Vou usar o papel `viewer` (já existe, sem nenhuma permissão extra de escrita nas outras tabelas) pra contas de colaboradores simples — assim não preciso mexer no enum de papéis.
+- **Nova Edge Function `create-user`** (`supabase/functions/create-user/index.ts`): recebe `{ email, password, full_name, role }`; confere no cabeçalho da requisição que quem está chamando é coordenação/secretaria (consulta `profiles` pelo JWT); usa `service_role` (variável de ambiente que o Supabase já injeta sozinho dentro da function, não preciso configurar nada manual) pra criar o login (`auth.admin.createUser`) e a linha em `profiles`; se der erro no meio, desfaz o que já tinha criado. Faço deploy dessa função pelo `supabase functions deploy` (CLI já está logada no seu projeto).
 
----
+## 2. Frontend — Tela de Configurações
+- Nova rota `/configuracoes` dentro do `AppShell` (só aparece no menu pra coordenação/secretaria, mesmo padrão de Equipes/Financeiro hoje).
+- A engrenagem passa a abrir `/configuracoes` (a configuração de categorias do financeiro continua existindo, só muda o link de entrada).
+- `src/features/settings/pages/SettingsPage.tsx`: lista de usuários (nome, email, papel, data de criação) + botão "Novo Usuário" → formulário simples (nome completo, email, senha, papel) → chama a Edge Function.
+- Sem edição/desativação de usuário por enquanto (não foi pedido) — só cadastrar e listar.
 
-# Plano de Implementação — Zerar histórico de chamada (dados de teste)
+## 3. Mostrar "quem realizou"
+- **Financeiro**: nova coluna/etiqueta "registrado por {nome}" em cada lançamento do `CashFlowTab` (join simples de `recorded_by` → `profiles.full_name` numa view).
+- **Chamada**: adiciono "registrado por {nome} às HH:mm" no Relatório (`AttendanceReportModal`), já que ali tem espaço — não vou tentar espremer isso nos chips S1-S9 (ficaria apertado demais no mobile).
 
-## Aprovado pelo usuário
-- Escopo: apagar somente `attendances` (presença S1-S9 dos alunos). Não mexer em `team_meeting_attendances`, inscrições, pagamentos ou temas das aulas.
-- Também ajustar o código para forçar cada aparelho a descartar marcações locais antigas (cache), já que o merge otimista existente (`inc.s1 || localAtt.s1` em `studentStore.ts`) prioriza o valor local — sem isso, um aparelho que já marcou presença de teste continuaria mostrando "Presente" mesmo com o banco zerado.
-
-## Estado atual (antes de zerar)
-`attendances`: 212 registros (67 presentes / 145 faltas), gravados entre 26/09 13:42 e 19:42 (produção).
-
-## 1. Apagar no banco
-`DELETE FROM attendances;` via `supabase db query --linked` (projeto já linkado: `wjyuxatjtmehnxpewqfz`).
-- Testar primeiro dentro de uma transação com `ROLLBACK` para confirmar o efeito (contagem antes/depois), só then rodar o `DELETE` real sem rollback.
-- Não é alteração estrutural (nenhum `DROP`/migração de schema) — é limpeza de dados de teste, então não precisa de arquivo em `supabase/migrations/`.
-
-## 2. Forçar reset das marcações locais em cache
-- `src/features/registrations/store/studentStore.ts`: bump da versão do `persist` (4 → 5) com um passo de `migrate` que zera `s1..s9` de todos os alunos persistidos localmente. Isso roda uma única vez, no próximo carregamento de cada aparelho, e depois a hidratação real do Supabase (já zerado) assume corretamente.
-- `src/features/attendance/hooks/useAttendanceSync.ts`: troca a chave de armazenamento da fila offline (`bereana_attendance_queue_v1` → `bereana_attendance_queue_v2`), descartando qualquer item de teste ainda pendente de sincronizar.
-
-## 3. Quality Gate e Validação
+## 4. Quality Gate e Validação
 - `npm run lint && npm run typecheck && npm run test`
-- Conferir no banco: `SELECT count(*) FROM attendances;` deve retornar 0
-- Validação visual em 390px: Chamada, Inscrições e Porta devem mostrar 0/9 presenças para todos os alunos após o reset
+- Testar a Edge Function em produção: criar um usuário de teste, confirmar login funcionando, depois excluir
+- Validação visual em 390px: tela de Configurações, cadastro de usuário, e "quem realizou" aparecendo no Financeiro e no Relatório da Chamada

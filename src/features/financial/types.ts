@@ -37,6 +37,7 @@ export interface CashFlowEntry {
   edition_id: string;
   person_name: string | null;
   description?: string | null;
+  recorded_by_name: string | null;
 }
 
 // Categoria de fluxo de caixa

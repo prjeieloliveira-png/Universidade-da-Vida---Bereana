@@ -1198,6 +1198,61 @@ export type Database = {
       }
     }
     Views: {
+      v_attendance_log: {
+        Row: {
+          lesson_id: string | null
+          marked_at: string | null
+          marked_by_name: string | null
+          note: string | null
+          present: boolean | null
+          registration_id: string | null
+          session_number: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendances_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendances_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendances_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_edition_attendance_matrix"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "attendances_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_registration_absence_count"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "attendances_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_registration_attendance_summary"
+            referencedColumns: ["registration_id"]
+          },
+          {
+            foreignKeyName: "attendances_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "v_registration_payment_status"
+            referencedColumns: ["registration_id"]
+          },
+        ]
+      }
       v_cash_flow: {
         Row: {
           amount_cents: number | null
@@ -1207,6 +1262,7 @@ export type Database = {
           flow_type: string | null
           payment_method: string | null
           person_name: string | null
+          recorded_by_name: string | null
           registration_id: string | null
           source: string | null
           transaction_id: string | null

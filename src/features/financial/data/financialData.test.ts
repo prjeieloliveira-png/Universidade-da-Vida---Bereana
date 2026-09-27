@@ -27,6 +27,7 @@ describe('financialData - void entries', () => {
       registration_id: 'reg-uuid-1',
       edition_id: 'ed-uuid-1',
       person_name: 'Rômulo Leite Brito',
+      recorded_by_name: null,
     };
 
     (supabase.rpc as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -54,6 +55,7 @@ describe('financialData - void entries', () => {
       registration_id: null,
       edition_id: 'ed-uuid-1',
       person_name: null,
+      recorded_by_name: null,
     };
 
     (supabase.rpc as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({

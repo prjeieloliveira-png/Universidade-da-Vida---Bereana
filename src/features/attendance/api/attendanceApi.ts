@@ -163,3 +163,30 @@ export async function fetchAbsenceCounts(editionId: string): Promise<Registratio
     .filter((row): row is { registration_id: string; absence_count: number } => !!row.registration_id)
     .map((row) => ({ registration_id: row.registration_id, absence_count: row.absence_count ?? 0 }));
 }
+
+export interface AttendanceLogEntry {
+  registration_id: string;
+  session_number: number;
+  present: boolean;
+  marked_at: string | null;
+  marked_by_name: string | null;
+}
+
+/**
+ * Detalhe de quem marcou cada presença/falta (para o Relatório), por lista de inscrições.
+ */
+export async function fetchAttendanceLog(registrationIds: string[]): Promise<AttendanceLogEntry[]> {
+  if (registrationIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('v_attendance_log')
+    .select('registration_id, session_number, present, marked_at, marked_by_name')
+    .in('registration_id', registrationIds);
+
+  if (error) {
+    console.error('Erro ao buscar log de presença:', error);
+    throw error;
+  }
+
+  return (data as AttendanceLogEntry[]) || [];
+}

@@ -129,7 +129,7 @@ export async function fetchCashFlow(editionId: string): Promise<CashFlowEntry[]>
       supabase
         .from('v_cash_flow')
         .select(
-          'transaction_id, date, source, flow_type, amount_cents, payment_method, category, registration_id, edition_id, person_name'
+          'transaction_id, date, source, flow_type, amount_cents, payment_method, category, registration_id, edition_id, person_name, recorded_by_name'
         )
         .eq('edition_id', editionId)
         .order('date', { ascending: false }),

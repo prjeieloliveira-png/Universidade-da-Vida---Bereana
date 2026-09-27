@@ -3,7 +3,7 @@ import { Camera, Crop, FolderOpen, Loader2, UserCircle2, X } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
 import { studentPhotoQueryKey, useStudentPhotoUrl } from '@/shared/hooks/useStudentPhotoUrl';
-import { STUDENT_PHOTOS_BUCKET } from '@/shared/utils/studentPhoto';
+import { STUDENT_PHOTOS_BUCKET, toStudentOriginalPhotoPath } from '@/shared/utils/studentPhoto';
 import { ImageCropModal } from '@/shared/components/ImageCropModal';
 
 interface PhotoUploadProps {
@@ -37,14 +37,20 @@ export function PhotoUpload({
 
   // Imagem aberta no modal de enquadramento (blob local ou URL assinada)
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  // Arquivo bruto recém-escolhido (antes de qualquer recorte); só existe quando
+  // o crop em andamento veio de um novo upload, não de um "Reenquadrar".
+  const pendingOriginalFile = useRef<File | null>(null);
+  const [isFetchingOriginal, setIsFetchingOriginal] = useState(false);
 
   const closeCrop = () => {
     // Não revoga o blob do preview atual (caso de "Reenquadrar" logo após enviar)
     if (cropSrc?.startsWith('blob:') && cropSrc !== preview) URL.revokeObjectURL(cropSrc);
     setCropSrc(null);
+    pendingOriginalFile.current = null;
   };
 
   const uploadCropped = async (blob: Blob) => {
+    const originalFile = pendingOriginalFile.current;
     closeCrop();
     // Preview local imediato
     setPreview(URL.createObjectURL(blob));
@@ -60,6 +66,17 @@ export function PhotoUpload({
         .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
 
       if (uploadError) throw uploadError;
+
+      // Guarda a imagem original (sem recorte) só quando veio de um upload novo,
+      // para permitir reenquadrar depois sem perder qualidade/enquadramento
+      if (originalFile) {
+        await supabase.storage
+          .from(STUDENT_PHOTOS_BUCKET)
+          .upload(toStudentOriginalPhotoPath(personId), originalFile, {
+            upsert: true,
+            contentType: originalFile.type || 'image/jpeg',
+          });
+      }
 
       // Bucket privado: salva o caminho do objeto; a exibição usa URL assinada
       await queryClient.invalidateQueries({ queryKey: studentPhotoQueryKey(path) });
@@ -86,7 +103,26 @@ export function PhotoUpload({
     }
     setErrorMsg('');
     setUploadState('idle');
+    pendingOriginalFile.current = file;
     setCropSrc(URL.createObjectURL(file));
+  };
+
+  const handleReenquadrar = async () => {
+    if (!displaySrc) return;
+    setIsFetchingOriginal(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from(STUDENT_PHOTOS_BUCKET)
+        .createSignedUrl(toStudentOriginalPhotoPath(personId), 3600);
+
+      // Sempre reenquadra a partir da imagem original guardada (nunca perde
+      // qualidade); fotos enviadas antes dessa opção existir caem no fallback.
+      setCropSrc(error || !data?.signedUrl ? displaySrc : data.signedUrl);
+    } catch {
+      setCropSrc(displaySrc);
+    } finally {
+      setIsFetchingOriginal(false);
+    }
   };
 
   const handleRemove = (e: React.MouseEvent) => {
@@ -176,17 +212,22 @@ export function PhotoUpload({
             <span>Arquivos</span>
           </button>
 
-          {/* Botão: Reenquadrar a foto atual */}
+          {/* Botão: Reenquadrar a foto atual (sempre a partir da imagem original) */}
           {displaySrc && (
             <button
               type="button"
               id="btn-photo-crop"
-              onClick={() => setCropSrc(displaySrc)}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer border border-slate-200"
+              onClick={handleReenquadrar}
+              disabled={isFetchingOriginal}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer border border-slate-200 disabled:opacity-50"
               title="Reenquadrar foto"
               aria-label="Reenquadrar foto"
             >
-              <Crop className="w-3.5 h-3.5" />
+              {isFetchingOriginal ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Crop className="w-3.5 h-3.5" />
+              )}
             </button>
           )}
         </div>

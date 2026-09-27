@@ -20,3 +20,12 @@ export function toStudentPhotoPath(value?: string | null): string | null {
   if (/^(https?:|blob:|data:)/i.test(value)) return null;
   return value;
 }
+
+/**
+ * Caminho fixo onde guardamos a foto original (antes de qualquer recorte),
+ * para permitir reenquadrar sempre a partir da imagem cheia — nunca a partir
+ * de um recorte anterior, que já perdeu pixels fora da área escolhida.
+ */
+export function toStudentOriginalPhotoPath(personId: string): string {
+  return `${personId}/original`;
+}
