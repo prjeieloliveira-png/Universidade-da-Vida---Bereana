@@ -1,7 +1,5 @@
-// Edge Function: cria um novo usuário (login + perfil).
+// Edge Function: edita um usuário existente (email, senha, nome, papel).
 // Só pode ser chamada por coordenação/secretaria já autenticados.
-// Usa a service_role (injetada automaticamente pelo runtime da function,
-// nunca exposta ao navegador) para criar o login via Admin API.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { jsonResponse, requireCoordOrSecCaller } from '../_shared/authGuard.ts';
@@ -9,8 +7,10 @@ import { jsonResponse, requireCoordOrSecCaller } from '../_shared/authGuard.ts';
 const VALID_ROLES = ['coordinator', 'secretary', 'network_leader', 'viewer'] as const;
 type Role = (typeof VALID_ROLES)[number];
 
-interface CreateUserPayload {
+interface UpdateUserPayload {
+  user_id?: string;
   email?: string;
+  /** Só é alterada quando informada; em branco mantém a senha atual. */
   password?: string;
   full_name?: string;
   role?: string;
@@ -36,53 +36,46 @@ Deno.serve(async (req: Request) => {
     const guard = await requireCoordOrSecCaller(req, adminClient);
     if ('errorResponse' in guard) return guard.errorResponse;
 
-    const payload = (await req.json()) as CreateUserPayload;
+    const payload = (await req.json()) as UpdateUserPayload;
+    const userId = payload.user_id;
     const email = payload.email?.trim().toLowerCase();
-    const password = payload.password ?? '';
+    const password = payload.password?.trim();
     const fullName = payload.full_name?.trim();
     const role = payload.role;
 
-    if (!email || !fullName || !isValidRole(role)) {
+    if (!userId || !email || !fullName || !isValidRole(role)) {
       return jsonResponse({ error: 'Preencha nome, email e papel válidos.' }, 400);
     }
-    if (password.length < 6) {
+    if (password && password.length < 6) {
       return jsonResponse({ error: 'A senha precisa ter pelo menos 6 caracteres.' }, 400);
     }
 
-    const { data: created, error: createError } = await adminClient.auth.admin.createUser({
+    const { error: updateAuthError } = await adminClient.auth.admin.updateUserById(userId, {
       email,
-      password,
-      email_confirm: true,
+      ...(password ? { password } : {}),
       user_metadata: { full_name: fullName },
     });
 
-    if (createError || !created?.user) {
-      const message = createError?.message?.includes('already been registered')
-        ? 'Já existe um usuário com esse email.'
-        : createError?.message || 'Não foi possível criar o usuário.';
+    if (updateAuthError) {
+      const message = updateAuthError.message?.includes('already been registered')
+        ? 'Já existe outro usuário com esse email.'
+        : updateAuthError.message || 'Não foi possível atualizar o login.';
       return jsonResponse({ error: message }, 400);
     }
 
-    // Um trigger em auth.users (handle_new_user) já cria a linha em `profiles`
-    // automaticamente com role='viewer'; aqui garantimos que nome/papel corretos
-    // fiquem salvos, sem depender da ordem de execução do trigger.
-    const { error: upsertProfileError } = await adminClient.from('profiles').upsert({
-      id: created.user.id,
-      email,
-      full_name: fullName,
-      role,
-    });
+    const { error: updateProfileError } = await adminClient
+      .from('profiles')
+      .update({ email, full_name: fullName, role })
+      .eq('id', userId);
 
-    if (upsertProfileError) {
-      // Desfaz o login criado para não deixar um usuário órfão sem perfil.
-      await adminClient.auth.admin.deleteUser(created.user.id);
+    if (updateProfileError) {
       return jsonResponse(
-        { error: `Não foi possível salvar o perfil do usuário: ${upsertProfileError.message}` },
+        { error: `Login atualizado, mas não foi possível salvar o perfil: ${updateProfileError.message}` },
         500
       );
     }
 
-    return jsonResponse({ id: created.user.id, email, full_name: fullName, role }, 201);
+    return jsonResponse({ id: userId, email, full_name: fullName, role }, 200);
   } catch (err) {
     return jsonResponse({ error: err instanceof Error ? err.message : 'Erro inesperado.' }, 500);
   }

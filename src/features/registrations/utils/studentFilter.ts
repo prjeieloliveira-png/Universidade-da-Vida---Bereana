@@ -59,3 +59,8 @@ export function filterStudents(
     return true;
   });
 }
+
+/** Ordena por nome (pt-BR), ignorando acentos/maiúsculas — usado na listagem, relatórios e fichas impressas. */
+export function sortStudentsByName(students: StudentRecord[]): StudentRecord[] {
+  return [...students].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+}

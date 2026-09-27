@@ -212,3 +212,21 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] `AttendanceStudentRow.tsx`: chip agora tem 3 estados — verde (presente), vermelho (falta confirmada), neutro (não registrada)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
 - [x] Validado ao vivo em produção: confirmei falta pra Karina na S2, chip ficou vermelho sólido na hora; revertido o dado de teste (DELETE do registro) depois de confirmar
+
+## Inscrições: ordenar alunos em ordem alfabética
+- [x] Botão "A-Z" novo na barra de filtros (`RegistrationFilterBar.tsx`), ativa/desativa ordenação alfabética (pt-BR, ignora acento/maiúscula)
+- [x] `sortStudentsByName` em `studentFilter.ts`, aplicado no `filteredStudents` (fonte única usada pela listagem, Ficha Completa, Lista Resumida e Exportar PDF) — a ordenação vale junto com qualquer filtro ativo (idade, sexo, estado civil, camiseta, pagamento, etc.)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
+- [x] Validado logado (desktop e 390px): ativei A-Z + filtro Pendentes juntos, confirmei que a listagem, a Lista Resumida e a Ficha Completa (25 fichas) seguem a mesma ordem alfabética
+
+## Configurações: editar e excluir usuários
+- [x] Novas Edge Functions `update-user` e `delete-user` (mesmo padrão de `create-user`), só coordenação/secretaria pode chamar
+- [x] `delete-user` bloqueia excluir a própria conta (evita se trancar fora do sistema)
+- [x] `_shared/authGuard.ts` novo: extrai a verificação de "chamador é coord/sec" repetida nas 3 functions
+- [x] `EditUserModal.tsx` (nome, email, papel, senha opcional — em branco mantém a atual) e `DeleteUserDialog.tsx` (confirmação)
+- [x] `SettingsPage.tsx`: botões editar/excluir por usuário; excluir escondido na própria linha ("você")
+- [x] Quality gate: lint ✅ typecheck ✅ tests 104/104 ✅
+- [x] 3 functions publicadas (create-user, update-user, delete-user)
+- [x] Testado ao vivo com usuário de teste dedicado (não usei o "Teste" existente, que tem o email real do usuário): criei, editei email/senha/papel, confirmei login real com a nova senha
+- [x] BUG de teste (não do código): testar login com signInWithPassword usando um client novo sem storageKey próprio sobrescreve a sessão da aba principal (mesmo incidente de antes) — troquei a conta ativa sem querer no meio do teste de exclusão; limpo via SQL, sem afetar o app
+- [ ] Falta confirmar a exclusão pela UI com a sessão do coordenador restaurada (aguardando login)

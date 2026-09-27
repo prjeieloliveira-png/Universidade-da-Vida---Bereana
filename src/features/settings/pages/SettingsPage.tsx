@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Users, ShieldAlert, Tags, ChevronRight } from 'lucide-react';
+import { UserPlus, Users, ShieldAlert, Tags, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { useUserRole } from '@/shared/hooks/useUserRole';
 import { useUsers } from '../hooks/useUsers';
 import { CreateUserModal } from '../components/CreateUserModal';
+import { EditUserModal } from '../components/EditUserModal';
+import { DeleteUserDialog } from '../components/DeleteUserDialog';
+import type { AppUser } from '../types';
 
 const ROLE_LABELS: Record<string, string> = {
   coordinator: 'Coordenação',
@@ -14,9 +17,11 @@ const ROLE_LABELS: Record<string, string> = {
 
 export function SettingsPage() {
   const navigate = useNavigate();
-  const { isCoordOrSec, isLoading: isLoadingRole } = useUserRole();
-  const { users, isLoading, fetchError, createUser } = useUsers();
+  const { isCoordOrSec, isLoading: isLoadingRole, email: currentUserEmail } = useUserRole();
+  const { users, isLoading, fetchError, createUser, updateUser, deleteUser } = useUsers();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const [deletingUser, setDeletingUser] = useState<AppUser | null>(null);
 
   if (!isLoadingRole && !isCoordOrSec) {
     return (
@@ -85,22 +90,60 @@ export function SettingsPage() {
           <div className="p-8 text-center text-slate-400 text-sm">Nenhum usuário cadastrado ainda.</div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {users.map((user) => (
-              <div key={user.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-900 truncate">{user.full_name}</p>
-                  <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            {users.map((user) => {
+              const isSelf = user.email === currentUserEmail;
+              return (
+                <div key={user.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 truncate">
+                      {user.full_name}
+                      {isSelf && <span className="text-slate-400 font-medium"> (você)</span>}
+                    </p>
+                    <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                      {ROLE_LABELS[user.role] ?? user.role}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEditingUser(user)}
+                      className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors cursor-pointer"
+                      title="Editar usuário"
+                      aria-label={`Editar ${user.full_name}`}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    {!isSelf && (
+                      <button
+                        type="button"
+                        onClick={() => setDeletingUser(user)}
+                        className="w-7 h-7 rounded-full bg-rose-50 hover:bg-rose-100 flex items-center justify-center text-rose-600 transition-colors cursor-pointer"
+                        title="Excluir usuário"
+                        aria-label={`Excluir ${user.full_name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 shrink-0">
-                  {ROLE_LABELS[user.role] ?? user.role}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
       <CreateUserModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSuccess={createUser} />
+
+      <EditUserModal user={editingUser} onClose={() => setEditingUser(null)} onSuccess={updateUser} />
+
+      {deletingUser && (
+        <DeleteUserDialog
+          user={deletingUser}
+          onClose={() => setDeletingUser(null)}
+          onConfirm={() => deleteUser(deletingUser.id)}
+        />
+      )}
     </div>
   );
 }

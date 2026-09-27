@@ -4,7 +4,7 @@ import { useRegistrations } from '../hooks/useRegistrations';
 import { useCohortStore } from '@/features/cohorts/store/cohortStore';
 import { useActiveEdition } from '@/shared/hooks/useActiveEdition';
 import { fetchCashSummary, fetchRegistrationPaymentStatuses } from '@/features/financial/data/financialData';
-import { filterStudents } from '../utils/studentFilter';
+import { filterStudents, sortStudentsByName } from '../utils/studentFilter';
 import { isPaidPaymentStatus } from '../api/registrationsApi';
 import { StudentCard } from '../components/StudentCard';
 import { RegistrationEditModal } from '../components/RegistrationEditModal';
@@ -89,6 +89,7 @@ export function RegistrationsPage() {
 
   // Unified Filter State
   const [filters, setFilters] = useState<RegistrationFilterState>(initialRegistrationFilterState);
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
 
   const handleFilterChange = useCallback(
     <K extends keyof RegistrationFilterState>(key: K, value: RegistrationFilterState[K]) => {
@@ -102,8 +103,9 @@ export function RegistrationsPage() {
   }, []);
 
   const filteredStudents = useMemo(() => {
-    return filterStudents(cohortStudents, filters);
-  }, [cohortStudents, filters]);
+    const filtered = filterStudents(cohortStudents, filters);
+    return sortAlphabetically ? sortStudentsByName(filtered) : filtered;
+  }, [cohortStudents, filters, sortAlphabetically]);
 
   // Contadores com fallback resiliente
   const localPaid = useMemo(() => cohortStudents.filter((s) => s.status === 'Pago').length, [cohortStudents]);
@@ -216,6 +218,8 @@ export function RegistrationsPage() {
         onOpenReportModal={() => setIsReportModalOpen(true)}
         onPrintAllDetailed={handleOpenPrintAllDetailed}
         onPrintAllSummary={handleOpenPrintAllSummary}
+        sortAlphabetically={sortAlphabetically}
+        onToggleSortAlphabetically={() => setSortAlphabetically((v) => !v)}
         totalCohortCount={cohortStudents.length}
         paidCount={paidCount}
         pendingCount={pendingCount}

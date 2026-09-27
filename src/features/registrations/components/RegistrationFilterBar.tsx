@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, SlidersHorizontal, FileDown, Printer, ChevronDown, FileText, ListChecks, X } from 'lucide-react';
+import { Search, SlidersHorizontal, FileDown, Printer, ChevronDown, FileText, ListChecks, ArrowDownAZ, X } from 'lucide-react';
 import { StudentRecord, RegistrationFilterState, initialRegistrationFilterState } from '../types';
 import { RegistrationAdvancedFiltersDrawer } from './RegistrationAdvancedFiltersDrawer';
 
@@ -11,6 +11,8 @@ interface RegistrationFilterBarProps {
   onOpenReportModal: () => void;
   onPrintAllDetailed: () => void;
   onPrintAllSummary: () => void;
+  sortAlphabetically: boolean;
+  onToggleSortAlphabetically: () => void;
   totalCohortCount: number;
   paidCount: number;
   pendingCount: number;
@@ -27,6 +29,8 @@ export function RegistrationFilterBar({
   onOpenReportModal,
   onPrintAllDetailed,
   onPrintAllSummary,
+  sortAlphabetically,
+  onToggleSortAlphabetically,
   totalCohortCount,
   paidCount,
   pendingCount,
@@ -139,6 +143,20 @@ export function RegistrationFilterBar({
 
         {/* Botões de ação */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={onToggleSortAlphabetically}
+            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+              sortAlphabetically
+                ? 'bg-[#163242] text-white border-[#163242]'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+            }`}
+            title={sortAlphabetically ? 'Ordenação alfabética ativada (clique para desativar)' : 'Ordenar alunos em ordem alfabética'}
+            aria-pressed={sortAlphabetically}
+          >
+            <ArrowDownAZ className={`w-3.5 h-3.5 ${sortAlphabetically ? 'text-[#58bc75]' : 'text-slate-500'}`} />
+            <span className="hidden sm:inline">A-Z</span>
+          </button>
+
           <button
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
