@@ -163,3 +163,14 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Testes de `AttendanceStudentRow` reescritos para os dois botões
 - [x] Quality gate: lint ✅ typecheck ✅ tests 103/103 ✅
 - [x] Validado logado (390px): confirmação abre para Presente e para Falta, cor muda corretamente após confirmar, contadores atualizam
+
+## Cadastro de usuários (Configurações) + "quem realizou"
+- [x] Migração `20260926000033`: `v_attendance_log` (nova) + `recorded_by_name` em `v_cash_flow` (join com `profiles`)
+- [x] Nova Edge Function `create-user` (Deno, `supabase/functions/create-user`): cria login + perfil via Admin API (service_role só no servidor), só coordenação/secretaria pode chamar
+- [x] BUG encontrado e corrigido: já existia um trigger `handle_new_user` que cria a linha em `profiles` automaticamente ao criar o login — minha function tentava inserir de novo e batia ("duplicate key"). Trocado para `upsert`
+- [x] Testado via console (bypassando a UI): criação de usuário com papel "Líder de Rede" salva certo no banco, login funciona de verdade com a senha cadastrada; usuário de teste removido depois
+- [x] Nova tela `/configuracoes` (engrenagem do AppShell agora abre ela): lista de usuários + botão Novo Usuário; atalho pra Categorias Financeiras continua lá
+- [x] Financeiro: `CashFlowTab` mostra "por Fulano" em cada lançamento
+- [x] Chamada: `AttendanceReportModal` mostra quem marcou e quando (tooltip nos chips S1-S9)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 103/103 ✅
+- [ ] Validação visual final pendente: sessão do navegador de teste ficou inválida durante um teste de login (self-inflicted, não é bug) — preciso logar de novo pra confirmar a tela de Configurações e o cadastro pela UI normal (já confirmado funcionando via console/banco)
