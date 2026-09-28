@@ -14,8 +14,9 @@ import { useAttendanceSync } from '../hooks/useAttendanceSync';
 import { fetchAbsenceCounts, fetchAttendanceLog } from '../api/attendanceApi';
 import { HierarchicalLeaderFilter } from '@/features/registrations/components/HierarchicalLeaderFilter';
 import type { StudentRecord } from '@/features/registrations/types';
+import { sortByName } from '@/shared/utils/sortByName';
 import { WeekNumber, WeekKey } from '../types';
-import { Search, FileSpreadsheet, Smartphone } from 'lucide-react';
+import { Search, FileSpreadsheet, Smartphone, ArrowDownAZ } from 'lucide-react';
 
 export function AttendancePage() {
   const { students } = useStudentStore();
@@ -91,11 +92,12 @@ export function AttendancePage() {
   const [selectedPastor, setSelectedPastor] = useState<string>('ALL');
   const [selectedG12, setSelectedG12] = useState<string>('ALL');
   const [selectedLeader, setSelectedLeader] = useState<string>('ALL');
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
 
   const currentKey = `s${activeWeek}` as WeekKey;
 
   const filteredStudents = useMemo(() => {
-    return cohortStudents.filter((s) => {
+    const filtered = cohortStudents.filter((s) => {
       const matchesSearch =
         searchQuery.trim() === '' ||
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,7 +118,8 @@ export function AttendancePage() {
 
       return matchesSearch && matchesStatus && matchesPastor && matchesG12 && matchesLeader;
     });
-  }, [cohortStudents, searchQuery, statusFilter, currentKey, selectedPastor, selectedG12, selectedLeader]);
+    return sortAlphabetically ? sortByName(filtered, (s) => s.name) : filtered;
+  }, [cohortStudents, searchQuery, statusFilter, currentKey, selectedPastor, selectedG12, selectedLeader, sortAlphabetically]);
 
   const presentCount = useMemo(
     () => filteredStudents.filter((s) => Boolean(s[currentKey])).length,
@@ -232,6 +235,21 @@ export function AttendancePage() {
           </div>
 
           <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <button
+              type="button"
+              onClick={() => setSortAlphabetically((v) => !v)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer border ${
+                sortAlphabetically
+                  ? 'bg-[#163242] text-white border-[#163242]'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent'
+              }`}
+              title={sortAlphabetically ? 'Ordenação alfabética ativada' : 'Ordenar alunos em ordem alfabética'}
+              aria-pressed={sortAlphabetically}
+            >
+              <ArrowDownAZ className={`w-3.5 h-3.5 ${sortAlphabetically ? 'text-[#58bc75]' : 'text-slate-500'}`} />
+              <span>A-Z</span>
+            </button>
+
             <button
               onClick={() => setStatusFilter('ALL')}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${

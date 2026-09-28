@@ -1,4 +1,5 @@
 import type { StudentRecord, RegistrationFilterState } from '../types';
+import { sortByName } from '@/shared/utils/sortByName';
 
 export function filterStudents(
   students: StudentRecord[],
@@ -62,5 +63,5 @@ export function filterStudents(
 
 /** Ordena por nome (pt-BR), ignorando acentos/maiúsculas — usado na listagem, relatórios e fichas impressas. */
 export function sortStudentsByName(students: StudentRecord[]): StudentRecord[] {
-  return [...students].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+  return sortByName(students, (s) => s.name);
 }

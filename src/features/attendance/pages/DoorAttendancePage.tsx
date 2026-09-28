@@ -6,8 +6,9 @@ import { DoorAttendanceCard } from '../components/DoorAttendanceCard';
 import { AttendanceConfirmModal } from '../components/AttendanceConfirmModal';
 import { AttendanceSyncBadge } from '../components/AttendanceSyncBadge';
 import { useAttendanceSync } from '../hooks/useAttendanceSync';
+import { sortByName } from '@/shared/utils/sortByName';
 import { WeekNumber, WeekKey } from '../types';
-import { Search, X, CheckCircle2 } from 'lucide-react';
+import { Search, X, CheckCircle2, ArrowDownAZ } from 'lucide-react';
 
 const WEEKS: WeekNumber[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -28,6 +29,7 @@ export function DoorAttendancePage() {
   const [activeWeek, setActiveWeek] = useState<WeekNumber>(initialWeek);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'PRESENTE' | 'FALTA'>('ALL');
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -43,7 +45,7 @@ export function DoorAttendancePage() {
   const currentKey = `s${activeWeek}` as WeekKey;
 
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
+    const filtered = students.filter((s) => {
       const matchesSearch =
         searchQuery.trim() === '' ||
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,7 +60,8 @@ export function DoorAttendancePage() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [students, searchQuery, filterType, currentKey]);
+    return sortAlphabetically ? sortByName(filtered, (s) => s.name) : filtered;
+  }, [students, searchQuery, filterType, currentKey, sortAlphabetically]);
 
   const presentCount = useMemo(
     () => students.filter((s) => Boolean(s[currentKey])).length,
@@ -189,6 +192,20 @@ export function DoorAttendancePage() {
 
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => setSortAlphabetically((v) => !v)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border ${
+              sortAlphabetically
+                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+            title={sortAlphabetically ? 'Ordenação alfabética ativada' : 'Ordenar alunos em ordem alfabética'}
+            aria-pressed={sortAlphabetically}
+          >
+            <ArrowDownAZ className="w-3.5 h-3.5" />
+            <span>A-Z</span>
+          </button>
           <button
             type="button"
             onClick={() => setFilterType('ALL')}

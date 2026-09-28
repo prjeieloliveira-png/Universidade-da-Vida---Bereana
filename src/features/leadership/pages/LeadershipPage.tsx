@@ -5,6 +5,7 @@ import { LeadershipStatsBar } from '../components/LeadershipStatsBar';
 import { LeadershipFilterBar } from '../components/LeadershipFilterBar';
 import { LeadershipModal, LeadershipModalItem } from '../components/LeadershipModal';
 import { LeadershipItemCard } from '../components/LeadershipItemCard';
+import { sortByName } from '@/shared/utils/sortByName';
 import { CloudCheck, Loader2 } from 'lucide-react';
 
 export interface DisplayLeaderItem {
@@ -43,6 +44,7 @@ export function LeadershipPage() {
   const [cohortFilter, setCohortFilter] = useState<'ALL' | 'COHORT_ONLY'>('ALL');
   const [selectedPastorFilter, setSelectedPastorFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const [editingItem, setEditingItem] = useState<LeadershipModalItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -89,7 +91,7 @@ export function LeadershipPage() {
   }, [pastors, g12s, leaders]);
 
   const filteredItems = useMemo(() => {
-    return allItems.filter((item) => {
+    const filtered = allItems.filter((item) => {
       if (cohortFilter === 'COHORT_ONLY' && !isItemActiveInCohort(item.id)) return false;
       if (activeTab !== 'ALL' && item.role !== activeTab) return false;
 
@@ -109,7 +111,8 @@ export function LeadershipPage() {
 
       return true;
     });
-  }, [allItems, activeTab, cohortFilter, selectedPastorFilter, searchQuery, activeCohort]);
+    return sortAlphabetically ? sortByName(filtered, (item) => item.name) : filtered;
+  }, [allItems, activeTab, cohortFilter, selectedPastorFilter, searchQuery, activeCohort, sortAlphabetically]);
 
   const cohortActiveCount = useMemo(() => {
     return allItems.filter((i) => isItemActiveInCohort(i.id)).length;
@@ -213,6 +216,8 @@ export function LeadershipPage() {
         onPastorFilterChange={setSelectedPastorFilter}
         pastors={pastors}
         activeCohortName={activeCohort.name}
+        sortAlphabetically={sortAlphabetically}
+        onToggleSortAlphabetically={() => setSortAlphabetically((v) => !v)}
         counts={{
           total: allItems.length,
           pastors: pastors.length,

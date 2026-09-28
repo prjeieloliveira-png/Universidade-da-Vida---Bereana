@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Users, ShieldAlert, Tags, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { UserPlus, Users, ShieldAlert, Tags, ChevronRight, Pencil, Trash2, ArrowDownAZ } from 'lucide-react';
 import { useUserRole } from '@/shared/hooks/useUserRole';
+import { sortByName } from '@/shared/utils/sortByName';
 import { useUsers } from '../hooks/useUsers';
 import { CreateUserModal } from '../components/CreateUserModal';
 import { EditUserModal } from '../components/EditUserModal';
@@ -22,6 +23,12 @@ export function SettingsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [deletingUser, setDeletingUser] = useState<AppUser | null>(null);
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
+
+  const displayedUsers = useMemo(
+    () => (sortAlphabetically ? sortByName(users, (u) => u.full_name) : users),
+    [users, sortAlphabetically]
+  );
 
   if (!isLoadingRole && !isCoordOrSec) {
     return (
@@ -70,14 +77,30 @@ export function SettingsPage() {
             <Users className="w-4.5 h-4.5 text-slate-500" />
             <h3 className="text-sm font-bold text-slate-900">Usuários ({users.length})</h3>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            className="px-4 py-2 rounded-full text-xs font-black bg-[#0d7647] hover:bg-[#095a36] active:bg-[#064227] text-white flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Novo Usuário</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSortAlphabetically((v) => !v)}
+              className={`px-3.5 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                sortAlphabetically
+                  ? 'bg-[#163242] text-white border-[#163242]'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+              }`}
+              title={sortAlphabetically ? 'Ordenação alfabética ativada' : 'Ordenar usuários em ordem alfabética'}
+              aria-pressed={sortAlphabetically}
+            >
+              <ArrowDownAZ className={`w-3.5 h-3.5 ${sortAlphabetically ? 'text-[#58bc75]' : 'text-slate-500'}`} />
+              <span className="hidden sm:inline">A-Z</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="px-4 py-2 rounded-full text-xs font-black bg-[#0d7647] hover:bg-[#095a36] active:bg-[#064227] text-white flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Novo Usuário</span>
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -90,7 +113,7 @@ export function SettingsPage() {
           <div className="p-8 text-center text-slate-400 text-sm">Nenhum usuário cadastrado ainda.</div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {users.map((user) => {
+            {displayedUsers.map((user) => {
               const isSelf = user.email === currentUserEmail;
               return (
                 <div key={user.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
