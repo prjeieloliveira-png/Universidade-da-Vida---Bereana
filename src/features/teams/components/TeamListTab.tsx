@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Eye, EyeOff, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, Eye, EyeOff, Loader2, AlertCircle, RefreshCw, ArrowDownAZ } from 'lucide-react';
 import { TeamCard } from './TeamCard';
 import { MoveTeamModal } from './MoveTeamModal';
 import { ToggleMemberActiveModal } from './ToggleMemberActiveModal';
 import { DeleteTeamMemberModal } from './DeleteTeamMemberModal';
 import { unmaskPhone } from '@/shared/utils/phone';
+import { sortByName } from '@/shared/utils/sortByName';
 import type { TeamRoleRow, TeamMemberWithDetails } from '../types/teams';
 import type { useTeamMembers } from '../hooks/useTeamMembers';
 
@@ -36,6 +37,7 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactive, setShowInactive] = useState(false);
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
   const [memberToMove, setMemberToMove] = useState<TeamMemberWithDetails | null>(null);
   const [isToggleModalOpen, setIsToggleModalOpen] = useState(false);
@@ -55,7 +57,7 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
     const q = searchQuery.trim().toLowerCase();
     const cleanQ = unmaskPhone(searchQuery);
 
-    return members.filter((m) => {
+    const filtered = members.filter((m) => {
       // Filtro de inativos
       if (!showInactive && !m.active) return false;
 
@@ -66,7 +68,9 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
       const notesMatches = m.notes?.toLowerCase().includes(q) ?? false;
       return nameMatches || phoneMatches || notesMatches;
     });
-  }, [members, searchQuery, showInactive]);
+
+    return sortAlphabetically ? sortByName(filtered, (m) => m.person.fullName) : filtered;
+  }, [members, searchQuery, showInactive, sortAlphabetically]);
 
   const handleOpenMove = (member: TeamMemberWithDetails) => {
     setMemberToMove(member);
@@ -143,6 +147,22 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
             className="w-full pl-11 pr-4 py-2.5 min-h-[44px] text-xs sm:text-sm bg-slate-50 border border-slate-200/80 rounded-full focus:outline-none focus:ring-2 focus:ring-[#58bc75] focus:bg-white transition-all text-slate-900 placeholder:text-slate-400"
           />
         </div>
+
+        {/* Sort A-Z Toggle */}
+        <button
+          type="button"
+          onClick={() => setSortAlphabetically((v) => !v)}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+            sortAlphabetically
+              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+          }`}
+          title={sortAlphabetically ? 'Ordenação alfabética ativada' : 'Ordenar membros em ordem alfabética'}
+          aria-pressed={sortAlphabetically}
+        >
+          <ArrowDownAZ className={`w-4 h-4 ${sortAlphabetically ? 'text-[#58bc75]' : 'text-slate-400'}`} />
+          <span>A-Z</span>
+        </button>
 
         {/* Toggle Inactive Members Pill Button (touch target >= 44px) */}
         <button

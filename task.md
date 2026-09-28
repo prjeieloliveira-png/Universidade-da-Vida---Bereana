@@ -229,4 +229,14 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] 3 functions publicadas (create-user, update-user, delete-user)
 - [x] Testado ao vivo com usuário de teste dedicado (não usei o "Teste" existente, que tem o email real do usuário): criei, editei email/senha/papel, confirmei login real com a nova senha
 - [x] BUG de teste (não do código): testar login com signInWithPassword usando um client novo sem storageKey próprio sobrescreve a sessão da aba principal (mesmo incidente de antes) — troquei a conta ativa sem querer no meio do teste de exclusão; limpo via SQL, sem afetar o app
-- [ ] Falta confirmar a exclusão pela UI com a sessão do coordenador restaurada (aguardando login)
+- [x] Exclusão confirmada pela UI depois (usuário de teste dedicado, criado/editado/excluído com sucesso, sem tocar nas contas reais)
+
+## Ordenação alfabética em todas as telas com lista de pessoas
+- [x] Novo util compartilhado `src/shared/utils/sortByName.ts` (pt-BR, ignora acento/maiúscula) com teste; `sortStudentsByName` (Inscrições) passa a delegar pra ele, sem mudar comportamento
+- [x] Botão "A-Z" adicionado em: Chamada (`AttendancePage.tsx`), Porta (`DoorAttendancePage.tsx`), Liderança (`LeadershipFilterBar.tsx`), Equipes (`TeamListTab.tsx` — ordena dentro de cada equipe, sem misturar), Configurações/Usuários (`SettingsPage.tsx`)
+- [x] Deixado de fora, com justificativa: Financeiro (extrato é ordenado por data de propósito) e Dashboard (mostra só os 5 cadastros mais recentes, não uma lista pra navegar)
+- [x] Numeração original dos alunos (Nº) preservada — só a ordem de exibição muda, confirmado que não existe numeração fixa em Liderança/Equipes/Usuários pra se preocupar
+- [x] Quality gate: lint ✅ typecheck ✅ tests 106/106 ✅
+- [x] Validado logado (desktop e 390px) nas 5 telas: Chamada, Porta, Liderança, Equipes e Configurações — todas ordenam corretamente ao ativar o botão
+- NOTA: durante a implementação, o verificador de segurança do modo automático (classificador server-side) ficou fora do ar por um tempo, bloqueando todo Bash/Write/Agent — esperei e tentei de novo até voltar, sem tentar contornar
+
