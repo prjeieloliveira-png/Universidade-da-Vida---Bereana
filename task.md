@@ -251,4 +251,15 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Quality gate: lint ✅ typecheck ✅ tests 108/108 ✅
 - [x] Validado no navegador (desktop e 390px): ao abrir `/chamada`, nenhuma pill ativa, sem badge de sync, botões Presente/Falta desabilitados; ao clicar em uma semana, tudo ativa corretamente
 - Fora de escopo (não pedido): tela Porta (`DoorAttendancePage.tsx`) mantém o comportamento de semana pré-selecionada
+- PR #8 mesclado em main, deploy Hostinger confirmado com sucesso
+
+## Replicar todos os filtros de Inscrições na Chamada
+- [x] `AttendancePage.tsx`: estados soltos (`searchQuery`, `selectedPastor`, `selectedG12`, `selectedLeader`) substituídos por um único `filters: RegistrationFilterState` (mesmo tipo de Inscrições), filtrado pela mesma função pura `filterStudents()` — reaproveitamento total, sem duplicar lógica
+- [x] Botão "Mais filtros" (com contador de filtros ativos) abre o mesmo `RegistrationAdvancedFiltersDrawer` de Inscrições, sem modificá-lo: Sexo, Faixa Etária, Estado Civil, Forma de Pagamento, Pastor de Rede, Discípulo G12, Líder de Célula, Camiseta e Saúde/Comorbidade
+- [x] Pills "Pagamento: Todos/Pagos/Pendentes" adicionadas (único filtro de Inscrições que fica fora do drawer)
+- [x] Chips de filtros ativos com "Limpar tudo", igual ao padrão visual de Inscrições
+- [x] Removido `HierarchicalLeaderFilter.tsx` (só era usado na Chamada) — a hierarquia Pastor/G12/Líder passou a vir do mesmo drawer, sem duplicar UI
+- [x] Mantidos intactos: seleção de semana obrigatória, badge de sincronização, filtro Presente/Falta específico da Chamada (não existe em Inscrições)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 107/107 ✅
+- [x] Validado no navegador (390px e desktop): drawer abre e filtra corretamente (testado Sexo e Pastor de Rede em cascata), chips e contador funcionam, "Todos (53)" atualiza para "Todos (29)" ao filtrar por pastor
 
