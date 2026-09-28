@@ -79,6 +79,7 @@ export function AttendancePage() {
   }, [attendanceLog, optimisticFalta]);
 
   const [activeWeek, setActiveWeek] = useState<WeekNumber>(2);
+  const [weekSelected, setWeekSelected] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PRESENTE' | 'FALTA'>('ALL');
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -127,11 +128,18 @@ export function AttendancePage() {
   );
   const absentCount = filteredStudents.length - presentCount;
 
+  const handleSelectWeek = (week: WeekNumber) => {
+    setActiveWeek(week);
+    setWeekSelected(true);
+  };
+
   const handleMarkAllPresent = () => {
+    if (!weekSelected) return;
     markBulkStudentsAttendance(filteredStudents, activeWeek, true);
   };
 
   const handleSelectAction = (student: StudentRecord, action: 'PRESENTE' | 'FALTA') => {
+    if (!weekSelected) return;
     setConfirmModal({ isOpen: true, student, action });
   };
 
@@ -209,14 +217,14 @@ export function AttendancePage() {
       </div>
 
       {/* Week Selector Pills */}
-      <WeekSelectorPills activeWeek={activeWeek} onSelectWeek={setActiveWeek} />
+      <WeekSelectorPills activeWeek={activeWeek} weekSelected={weekSelected} onSelectWeek={handleSelectWeek} />
 
       {/* Attendance Stats Bar */}
       <AttendanceStatsBar
         totalCount={filteredStudents.length}
-        presentCount={presentCount}
-        absentCount={absentCount}
-        onMarkAllPresent={handleMarkAllPresent}
+        presentCount={weekSelected ? presentCount : 0}
+        absentCount={weekSelected ? absentCount : filteredStudents.length}
+        onMarkAllPresent={weekSelected ? handleMarkAllPresent : undefined}
         onOpenReport={() => setIsReportOpen(true)}
       />
 
@@ -261,24 +269,32 @@ export function AttendancePage() {
               Todos ({filteredStudents.length})
             </button>
             <button
-              onClick={() => setStatusFilter('PRESENTE')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                statusFilter === 'PRESENTE'
-                  ? 'bg-[#58bc75] text-white shadow-xs'
-                  : 'bg-[#e8f8ee] text-[#2c814b] hover:bg-[#d6f4df]'
+              onClick={() => weekSelected && setStatusFilter('PRESENTE')}
+              disabled={!weekSelected}
+              title={weekSelected ? undefined : 'Selecione uma semana acima para filtrar por presença'}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
+                !weekSelected
+                  ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                  : statusFilter === 'PRESENTE'
+                  ? 'bg-[#58bc75] text-white shadow-xs cursor-pointer'
+                  : 'bg-[#e8f8ee] text-[#2c814b] hover:bg-[#d6f4df] cursor-pointer'
               }`}
             >
-              Presentes ({presentCount})
+              Presentes ({weekSelected ? presentCount : 0})
             </button>
             <button
-              onClick={() => setStatusFilter('FALTA')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                statusFilter === 'FALTA'
-                  ? 'bg-rose-600 text-white shadow-xs'
-                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+              onClick={() => weekSelected && setStatusFilter('FALTA')}
+              disabled={!weekSelected}
+              title={weekSelected ? undefined : 'Selecione uma semana acima para filtrar por presença'}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
+                !weekSelected
+                  ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                  : statusFilter === 'FALTA'
+                  ? 'bg-rose-600 text-white shadow-xs cursor-pointer'
+                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer'
               }`}
             >
-              Faltas ({absentCount})
+              Faltas ({weekSelected ? absentCount : 0})
             </button>
           </div>
         </div>
@@ -311,6 +327,7 @@ export function AttendancePage() {
               key={student.id}
               student={student}
               activeWeek={activeWeek}
+              weekSelected={weekSelected}
               absenceCount={absenceCountMap.get(student.id) ?? 0}
               recordedAbsentWeeks={recordedAbsentWeeksByStudent.get(student.id)}
               onSelectAction={handleSelectAction}

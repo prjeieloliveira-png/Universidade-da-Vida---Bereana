@@ -1,4 +1,4 @@
-import { CloudCheck, RefreshCw, WifiOff, AlertCircle } from 'lucide-react';
+import { RefreshCw, WifiOff, AlertCircle } from 'lucide-react';
 import type { SyncStatus } from '../hooks/useAttendanceSync';
 
 interface AttendanceSyncBadgeProps {
@@ -78,14 +78,6 @@ export function AttendanceSyncBadge({
     );
   }
 
-  // Status 'synced'
-  return (
-    <div
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs"
-      title="Todas as chamadas estão salvas e seguras no Supabase"
-    >
-      <CloudCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-      <span>{compact ? 'Salvo' : 'Nuvem Sincronizada'}</span>
-    </div>
-  );
+  // Status 'synced' — nada pendente, não precisa de indicador visual
+  return null;
 }

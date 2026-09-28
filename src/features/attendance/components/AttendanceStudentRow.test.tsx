@@ -41,6 +41,7 @@ describe('AttendanceStudentRow', () => {
       <AttendanceStudentRow
         student={mockStudent}
         activeWeek={1}
+        weekSelected
         onSelectAction={handleSelectAction}
       />
     );
@@ -57,6 +58,7 @@ describe('AttendanceStudentRow', () => {
       <AttendanceStudentRow
         student={mockStudent}
         activeWeek={3}
+        weekSelected
         onSelectAction={handleSelectAction}
       />
     );
@@ -71,6 +73,7 @@ describe('AttendanceStudentRow', () => {
       <AttendanceStudentRow
         student={mockStudent}
         activeWeek={3}
+        weekSelected
         onSelectAction={handleSelectAction}
       />
     );
@@ -85,6 +88,7 @@ describe('AttendanceStudentRow', () => {
       <AttendanceStudentRow
         student={mockStudent}
         activeWeek={1}
+        weekSelected
         onSelectAction={handleSelectAction}
       />
     );
@@ -96,6 +100,27 @@ describe('AttendanceStudentRow', () => {
 
     // Clicar no texto da pílula não deve disparar o callback
     fireEvent.click(screen.getByText('S4'));
+    expect(handleSelectAction).not.toHaveBeenCalled();
+  });
+
+  it('disables Presente/Falta buttons and highlights no week pill when weekSelected is false', () => {
+    const handleSelectAction = vi.fn();
+    render(
+      <AttendanceStudentRow
+        student={mockStudent}
+        activeWeek={1}
+        weekSelected={false}
+        onSelectAction={handleSelectAction}
+      />
+    );
+
+    const presenteButton = screen.getByRole('button', { name: /presente/i });
+    const faltaButton = screen.getByRole('button', { name: /^falta$/i });
+    expect(presenteButton).toBeDisabled();
+    expect(faltaButton).toBeDisabled();
+
+    fireEvent.click(presenteButton);
+    fireEvent.click(faltaButton);
     expect(handleSelectAction).not.toHaveBeenCalled();
   });
 });

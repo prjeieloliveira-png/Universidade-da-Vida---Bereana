@@ -6,6 +6,8 @@ import { getAbsenceTintClasses } from '../utils/absenceTint';
 interface AttendanceStudentRowProps {
   student: StudentRecord;
   activeWeek: WeekNumber;
+  /** Se nenhuma semana foi escolhida ainda no seletor acima, nenhum chip fica destacado e as ações ficam bloqueadas. */
+  weekSelected: boolean;
   /** Faltas registradas (real, do Supabase). 2 = amarelo, 3 = laranja, 4+ = vermelho. */
   absenceCount?: number;
   /** Semanas (1-9) com falta de fato confirmada/registrada — distingue de "ainda não registrada". */
@@ -19,12 +21,13 @@ const EMPTY_ABSENT_WEEKS = new Set<number>();
 export function AttendanceStudentRow({
   student,
   activeWeek,
+  weekSelected,
   absenceCount = 0,
   recordedAbsentWeeks = EMPTY_ABSENT_WEEKS,
   onSelectAction,
 }: AttendanceStudentRowProps) {
   const currentKey = `s${activeWeek}` as WeekKey;
-  const isPresentInActiveWeek = Boolean(student[currentKey]);
+  const isPresentInActiveWeek = weekSelected && Boolean(student[currentKey]);
   const absenceTintClasses = getAbsenceTintClasses(absenceCount);
 
   // Calculate total attended out of 9
@@ -90,7 +93,7 @@ export function AttendanceStudentRow({
         >
           {WEEKS.map((w) => {
             const isWeekPresent = Boolean(student[`s${w}`]);
-            const isCurrentWeek = w === activeWeek;
+            const isCurrentWeek = weekSelected && w === activeWeek;
             const statusLabel = isWeekPresent
               ? 'Presente'
               : recordedAbsentWeeks.has(w)
@@ -124,12 +127,15 @@ export function AttendanceStudentRow({
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            title={`Marcar presença na Semana ${activeWeek}`}
+            disabled={!weekSelected}
+            title={weekSelected ? `Marcar presença na Semana ${activeWeek}` : 'Selecione uma semana acima para registrar a chamada'}
             onClick={() => onSelectAction(student, 'PRESENTE')}
-            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 ${
-              isPresentInActiveWeek
-                ? 'bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#3f9a5a] text-white ring-2 ring-[#58bc75]/25'
-                : 'bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 border border-emerald-200/80'
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-black flex items-center gap-1.5 transition-all shrink-0 ${
+              !weekSelected
+                ? 'bg-slate-100 text-slate-400 border border-slate-200/80 cursor-not-allowed'
+                : isPresentInActiveWeek
+                ? 'bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#3f9a5a] text-white ring-2 ring-[#58bc75]/25 cursor-pointer shadow-xs active:scale-95'
+                : 'bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 border border-emerald-200/80 cursor-pointer shadow-xs active:scale-95'
             }`}
           >
             <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -138,12 +144,15 @@ export function AttendanceStudentRow({
 
           <button
             type="button"
-            title={`Marcar falta na Semana ${activeWeek}`}
+            disabled={!weekSelected}
+            title={weekSelected ? `Marcar falta na Semana ${activeWeek}` : 'Selecione uma semana acima para registrar a chamada'}
             onClick={() => onSelectAction(student, 'FALTA')}
-            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 ${
-              !isPresentInActiveWeek
-                ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white ring-2 ring-rose-600/25'
-                : 'bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200/80'
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-black flex items-center gap-1.5 transition-all shrink-0 ${
+              !weekSelected
+                ? 'bg-slate-100 text-slate-400 border border-slate-200/80 cursor-not-allowed'
+                : !isPresentInActiveWeek
+                ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white ring-2 ring-rose-600/25 cursor-pointer shadow-xs active:scale-95'
+                : 'bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200/80 cursor-pointer shadow-xs active:scale-95'
             }`}
           >
             <X className="w-3.5 h-3.5 stroke-[2.5]" />

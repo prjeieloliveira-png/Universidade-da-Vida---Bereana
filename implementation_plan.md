@@ -1,33 +1,41 @@
-# Plano — Cadastro de usuários (login/senha) + "quem realizou"
+# Plano: Ajustes no menu Chamada
 
-## Contexto (o que já existe, confirmado no código)
-- Hoje só existe **um** jeito de criar login: inserir direto em `auth.users` via SQL (só eu ou você conseguem, via `supabase db query`/seed). Não existe tela nem função pra isso.
-- `attendances.marked_by` e `financial_transactions.recorded_by` (e `payments.recorded_by`) **já existem e já são gravados automaticamente** (via `auth.uid()`, dentro das próprias RPCs). O que falta é: (1) contas individuais de verdade pra cada pessoa, e (2) mostrar isso na tela — hoje esses campos nunca aparecem em lugar nenhum da interface.
-- A engrenagem no canto superior direito do `AppShell` já existe, mas hoje só abre `/financeiro?config=categorias` (configuração de categorias do financeiro). Vou transformar isso numa tela de Configurações de verdade, com uma seção de Usuários (e a de Categorias continua acessível de lá).
-- Criar um usuário com email+senha exige a **Admin API do Supabase** (`auth.admin.createUser`), que só funciona com a chave `service_role` — nunca pode ir pro navegador. Então isso precisa de uma **Supabase Edge Function** (não existe nenhuma hoje no projeto). A função roda no servidor, valida que quem está chamando é coordenação/secretaria, e só então cria o login.
+## 1. Remover badge "Nuvem Sincronizada"
+- Arquivo: `src/features/attendance/components/AttendanceSyncBadge.tsx`
+- Quando `status === 'synced'`, o componente passa a retornar `null` (não renderiza nada).
+- Os estados de **offline / pendente / sincronizando / erro** continuam sendo exibidos normalmente — são o indicador obrigatório de fila de sincronização exigido pelo AGENTS.md (item 4, chamada offline) e não podem ser removidos.
+- Trivial, um único arquivo — sem necessidade de plano formal, mas documentado aqui por estar no mesmo pedido.
 
-## ⚠️ Ponto que preciso confirmar com você antes de programar
-Hoje a Porta da Chamada funciona porque **um aparelho fica logado com uma conta só**, e todo mundo que usa aquele tablet marca presença "como" essa mesma conta. Se o objetivo é realmente saber **qual pessoa** marcou cada presença/lançamento, isso só funciona se **cada pessoa logar com a própria conta** no aparelho (ou pelo menos escolher o próprio nome antes de registrar) — senão o campo "quem realizou" vai sempatar sempre com a mesma pessoa (quem logou primeiro no tablet), mesmo sendo outra pessoa mexendo.
+## 2. Nenhuma semana pré-selecionada ao abrir a Chamada
 
-Isso vale tanto pra Chamada (já no ar) quanto pro link do Financeiro que a gente ia fazer depois. Quero confirmar o que você prefere:
-1. Cada colaborador loga com a própria conta (login/senha individual) sempre que for usar — mais preciso, mas dá mais trabalho no dia a dia (login toda vez ou trocar de conta no aparelho compartilhado).
-2. Mantém aparelho compartilhado logado numa conta só, mas antes de cada registro a pessoa escolhe o próprio nome numa lista simples (sem senha) — mais rápido no dia a dia, mas não é "seguro" (qualquer um pode escolher o nome de outro).
+### Problema
+`activeWeek` hoje começa em `2` (`useState<WeekNumber>(2)`) e é usado de forma não-nula em vários pontos (filtro por semana, contagem de presentes/faltas, botões "Marcar presença na Semana X", pill highlight S1-S9). Tornar `activeWeek` totalmente `null` exigiria mudar o tipo em cascata por vários componentes.
 
-## 1. Banco de dados
-- Migração nova `20260926000033_settings_users.sql`... na verdade sem mudança de schema aqui: `profiles`, roles e as policies já servem (qualquer autenticado já pode ler `profiles`; só coordenação/secretaria pode alterar). Vou usar o papel `viewer` (já existe, sem nenhuma permissão extra de escrita nas outras tabelas) pra contas de colaboradores simples — assim não preciso mexer no enum de papéis.
-- **Nova Edge Function `create-user`** (`supabase/functions/create-user/index.ts`): recebe `{ email, password, full_name, role }`; confere no cabeçalho da requisição que quem está chamando é coordenação/secretaria (consulta `profiles` pelo JWT); usa `service_role` (variável de ambiente que o Supabase já injeta sozinho dentro da function, não preciso configurar nada manual) pra criar o login (`auth.admin.createUser`) e a linha em `profiles`; se der erro no meio, desfaz o que já tinha criado. Faço deploy dessa função pelo `supabase functions deploy` (CLI já está logada no seu projeto).
+### Abordagem
+Manter `activeWeek: WeekNumber` internamente (evita refatoração de tipos em cascata), mas adicionar um novo estado `weekSelected: boolean` (inicial `false`). Nenhuma pill aparece "ativa" e os botões Presente/Falta ficam desabilitados até o usuário clicar em uma semana pela primeira vez.
 
-## 2. Frontend — Tela de Configurações
-- Nova rota `/configuracoes` dentro do `AppShell` (só aparece no menu pra coordenação/secretaria, mesmo padrão de Equipes/Financeiro hoje).
-- A engrenagem passa a abrir `/configuracoes` (a configuração de categorias do financeiro continua existindo, só muda o link de entrada).
-- `src/features/settings/pages/SettingsPage.tsx`: lista de usuários (nome, email, papel, data de criação) + botão "Novo Usuário" → formulário simples (nome completo, email, senha, papel) → chama a Edge Function.
-- Sem edição/desativação de usuário por enquanto (não foi pedido) — só cadastrar e listar.
+### Arquivos afetados
+1. **`src/features/attendance/pages/AttendancePage.tsx`**
+   - Adicionar `const [weekSelected, setWeekSelected] = useState(false);`
+   - Novo handler `handleSelectWeek(week) { setActiveWeek(week); setWeekSelected(true); }` passado ao `WeekSelectorPills`.
+   - Repassar `weekSelected` para `WeekSelectorPills` e `AttendanceStudentRow`.
+   - Filtro de status (Presente/Falta) e contagens da `AttendanceStatsBar` continuam funcionando normalmente somente após seleção; antes disso, mostrar estado neutro (ex.: contagens zeradas / mensagem "Selecione uma semana").
 
-## 3. Mostrar "quem realizou"
-- **Financeiro**: nova coluna/etiqueta "registrado por {nome}" em cada lançamento do `CashFlowTab` (join simples de `recorded_by` → `profiles.full_name` numa view).
-- **Chamada**: adiciono "registrado por {nome} às HH:mm" no Relatório (`AttendanceReportModal`), já que ali tem espaço — não vou tentar espremer isso nos chips S1-S9 (ficaria apertado demais no mobile).
+2. **`src/features/attendance/components/WeekSelectorPills.tsx`**
+   - Nova prop `weekSelected: boolean`.
+   - Pill só fica com estilo "ativa" quando `weekSelected && lesson.number === activeWeek`.
+   - Texto "Ativa: Semana X" no cabeçalho só aparece se `weekSelected`; caso contrário, mostrar "Nenhuma semana selecionada".
+   - Banner inferior (tema da semana) mostra estado neutro/placeholder até a seleção.
 
-## 4. Quality Gate e Validação
-- `npm run lint && npm run typecheck && npm run test`
-- Testar a Edge Function em produção: criar um usuário de teste, confirmar login funcionando, depois excluir
-- Validação visual em 390px: tela de Configurações, cadastro de usuário, e "quem realizou" aparecendo no Financeiro e no Relatório da Chamada
+3. **`src/features/attendance/components/AttendanceStudentRow.tsx`**
+   - Nova prop `weekSelected: boolean`.
+   - `isCurrentWeek` passa a ser `weekSelected && w === activeWeek` (nenhum chip S1-S9 destacado como semana atual antes da seleção).
+   - Botões "Presente"/"Falta" ficam desabilitados (`disabled`, estilo acinzentado, tooltip "Selecione uma semana acima para registrar a chamada") enquanto `weekSelected` for `false`.
+
+4. Testes existentes que montam esses componentes (`AttendanceStudentRow`, `WeekSelectorPills`, `AttendancePage` se houver) — ajustar para passar a nova prop / cobrir o novo estado inicial.
+
+### Fora de escopo
+- Tela "Porta" (`DoorAttendancePage.tsx`) não foi mencionada pelo usuário — mantém o comportamento atual (semana pré-selecionada), a menos que seja pedido depois.
+
+---
+CONCLUÍDO — ambos os itens implementados, testados (108/108) e validados no navegador (desktop e 390px). Ver detalhes em `task.md`.
