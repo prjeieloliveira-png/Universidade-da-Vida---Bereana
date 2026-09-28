@@ -1,12 +1,13 @@
 import type { ReactElement } from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AttendanceReportModal } from './AttendanceReportModal';
 import type { StudentRecord } from '@/features/registrations/types';
 
+const fetchAttendanceLogMock = vi.fn().mockResolvedValue([]);
 vi.mock('../api/attendanceApi', () => ({
-  fetchAttendanceLog: vi.fn().mockResolvedValue([]),
+  fetchAttendanceLog: (...args: unknown[]) => fetchAttendanceLogMock(...args),
 }));
 
 function renderWithClient(ui: ReactElement) {
@@ -115,5 +116,33 @@ describe('AttendanceReportModal', () => {
     expect(printSpy).toHaveBeenCalledTimes(1);
 
     printSpy.mockRestore();
+  });
+
+  it('deixa em branco semanas ainda não registradas e só marca "F" para falta confirmada no Supabase', async () => {
+    fetchAttendanceLogMock.mockResolvedValueOnce([
+      {
+        registration_id: 'reg-1',
+        session_number: 3,
+        present: false,
+        marked_at: '2026-09-10T12:00:00Z',
+        marked_by_name: 'Coordenadora Ana',
+      },
+    ]);
+
+    renderWithClient(
+      <AttendanceReportModal isOpen={true} onClose={vi.fn()} students={mockStudents} />
+    );
+
+    await waitFor(() => expect(fetchAttendanceLogMock).toHaveBeenCalled());
+
+    // S3 da Alana foi explicitamente marcada como falta no Supabase → mostra "F"
+    await waitFor(() => {
+      expect(screen.getByTitle(/Registrado por Coordenadora Ana/)).toHaveTextContent('F');
+    });
+
+    // S4..S9 da Alana nunca foram registradas (nem presença, nem falta) → célula em branco
+    const untouchedCells = screen.getAllByTitle('Ainda não registrado — nenhuma chamada feita nesta semana');
+    expect(untouchedCells.length).toBeGreaterThan(0);
+    untouchedCells.forEach((cell) => expect(cell).toHaveTextContent(''));
   });
 });

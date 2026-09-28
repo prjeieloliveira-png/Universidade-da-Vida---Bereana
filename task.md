@@ -262,4 +262,15 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Mantidos intactos: seleção de semana obrigatória, badge de sincronização, filtro Presente/Falta específico da Chamada (não existe em Inscrições)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 107/107 ✅
 - [x] Validado no navegador (390px e desktop): drawer abre e filtra corretamente (testado Sexo e Pastor de Rede em cascata), chips e contador funcionam, "Todos (53)" atualiza para "Todos (29)" ao filtrar por pastor
+- PR #9 mesclado em main, deploy Hostinger confirmado com sucesso
+
+## Relatório de Chamada: não marcar "F" em semana nunca registrada
+- Bug reportado com print: a tabela detalhada do Relatório de Frequência (`AttendanceReportModal.tsx`) marcava "F" (falta) em toda semana com `Boolean(student[week])` false — mas isso também é verdade pra semanas que nunca tiveram chamada feita, não só faltas de fato confirmadas
+- [x] `authorMap` agora guarda também `present` (vindo do `attendanceLog`/`v_attendance_log`, fonte real do Supabase), não só autor/data
+- [x] Célula da tabela: só mostra "✓" (presente) ou "F" (falta) quando existe registro real (local otimista de presença OU entrada no `attendanceLog`); semana nunca registrada fica em branco (sem símbolo), com tooltip "Ainda não registrado — nenhuma chamada feita nesta semana"
+- [x] Mesma correção aplicada no export CSV (`handleExportCSV`): coluna da semana fica vazia (`''`) em vez de forçar "FALTA" quando não há registro
+- [x] Legenda do rodapé atualizada: "✓: Presente | F: Falta confirmada | Em branco: semana ainda não registrada"
+- [x] Novo teste em `AttendanceReportModal.test.tsx` cobrindo os 3 estados (presente, falta confirmada via log mockado, e semana em branco)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 108/108 ✅
+- [x] Validado no navegador (desktop e 390px): abri o Relatório Completo de Chamada e confirmei visualmente que semanas sem chamada aparecem em branco, só semanas com registro real mostram ✓/F
 

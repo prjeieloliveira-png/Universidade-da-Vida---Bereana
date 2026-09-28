@@ -29,9 +29,10 @@ export function AttendanceReportModal({
   });
 
   const authorMap = useMemo(() => {
-    const map = new Map<string, { markedByName: string | null; markedAt: string | null }>();
+    const map = new Map<string, { present: boolean; markedByName: string | null; markedAt: string | null }>();
     attendanceLog?.forEach((entry) => {
       map.set(`${entry.registration_id}-${entry.session_number}`, {
+        present: entry.present,
         markedByName: entry.marked_by_name,
         markedAt: entry.marked_at,
       });
@@ -64,7 +65,13 @@ export function AttendanceReportModal({
         `"${s.pastor}"`,
         `"${s.g12}"`,
         `"${s.leader}"`,
-        ...lessons.map((l) => (s[l.key] ? 'PRESENTE' : 'FALTA')),
+        ...lessons.map((l) => {
+          const entry = authorMap.get(`${s.id}-${l.number}`);
+          const isPresent = Boolean(s[l.key]) || entry?.present === true;
+          if (isPresent) return 'PRESENTE';
+          if (entry !== undefined) return 'FALTA';
+          return '';
+        }),
         `${presCount}/${numWeeks}`,
         `${pct}%`,
       ].join(';');
@@ -217,12 +224,14 @@ export function AttendanceReportModal({
                       </td>
                       <td className="py-2 px-3 text-slate-600 hidden md:table-cell truncate max-w-[130px]">{student.pastor}</td>
                       {lessons.map((l) => {
-                        const isPresent = Boolean(student[l.key]);
-                        const author = authorMap.get(`${student.id}-${l.number}`);
-                        const authorLabel = author?.markedByName
-                          ? `Registrado por ${author.markedByName}${
-                              author.markedAt
-                                ? ` em ${new Date(author.markedAt).toLocaleString('pt-BR', {
+                        const entry = authorMap.get(`${student.id}-${l.number}`);
+                        const isPresent = Boolean(student[l.key]) || entry?.present === true;
+                        // Só existe registro (presença ou falta) se o Supabase (ou o marcador otimista local) confirmar
+                        const isRegistered = isPresent || entry !== undefined;
+                        const authorLabel = entry?.markedByName
+                          ? `Registrado por ${entry.markedByName}${
+                              entry.markedAt
+                                ? ` em ${new Date(entry.markedAt).toLocaleString('pt-BR', {
                                     day: '2-digit',
                                     month: '2-digit',
                                     hour: '2-digit',
@@ -230,16 +239,20 @@ export function AttendanceReportModal({
                                   })}`
                                 : ''
                             }`
-                          : 'Ainda sem registro no Supabase para esta semana';
+                          : isRegistered
+                          ? 'Registrado'
+                          : 'Ainda não registrado — nenhuma chamada feita nesta semana';
                         return (
                           <td key={l.number} className="py-2 px-1 text-center" title={authorLabel}>
-                            <span
-                              className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black ${
-                                isPresent ? 'bg-[#58bc75] text-white' : 'bg-rose-100 text-rose-700'
-                              }`}
-                            >
-                              {isPresent ? <Check className="w-3 h-3 stroke-[3]" /> : 'F'}
-                            </span>
+                            {isRegistered ? (
+                              <span
+                                className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black ${
+                                  isPresent ? 'bg-[#58bc75] text-white' : 'bg-rose-100 text-rose-700'
+                                }`}
+                              >
+                                {isPresent ? <Check className="w-3 h-3 stroke-[3]" /> : 'F'}
+                              </span>
+                            ) : null}
                           </td>
                         );
                       })}
@@ -264,7 +277,7 @@ export function AttendanceReportModal({
           </div>
 
           <div className="text-center text-[10px] text-slate-400 pt-1 border-t border-slate-100">
-            Relatório gerado automaticamente pelo Sistema Universidade da Vida Bereana • P: Presente | F: Falta
+            Relatório gerado automaticamente pelo Sistema Universidade da Vida Bereana • ✓: Presente | F: Falta confirmada | Em branco: semana ainda não registrada
           </div>
         </div>
       </div>
