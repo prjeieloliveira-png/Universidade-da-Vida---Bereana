@@ -239,4 +239,16 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Quality gate: lint ✅ typecheck ✅ tests 106/106 ✅
 - [x] Validado logado (desktop e 390px) nas 5 telas: Chamada, Porta, Liderança, Equipes e Configurações — todas ordenam corretamente ao ativar o botão
 - NOTA: durante a implementação, o verificador de segurança do modo automático (classificador server-side) ficou fora do ar por um tempo, bloqueando todo Bash/Write/Agent — esperei e tentei de novo até voltar, sem tentar contornar
+- PR #7 mesclado em main, deploy Hostinger confirmado com sucesso
+
+## Ajustes no menu Chamada: remover badge "Nuvem Sincronizada" + nenhuma semana pré-selecionada
+- [x] `AttendanceSyncBadge.tsx`: quando `status === 'synced'` agora retorna `null` (não exibe nada); estados offline/pendente/sincronizando/erro continuam aparecendo normalmente (indicador obrigatório da fila offline, AGENTS.md item 4)
+- [x] Novo estado `weekSelected` (inicia `false`) em `AttendancePage.tsx`: nenhuma pill S1-S9 aparece destacada ao abrir a Chamada
+- [x] `WeekSelectorPills.tsx`: nova prop `weekSelected`; sem seleção mostra "Nenhuma semana selecionada" no lugar de "Ativa: Semana X", nenhuma pill com estilo ativo, banner de tema não diz "Chamada Oficial" até escolher
+- [x] `AttendanceStudentRow.tsx`: nova prop `weekSelected`; sem seleção nenhum chip S1-S9 é destacado como semana atual, e os botões Presente/Falta ficam desabilitados (cinza, `cursor-not-allowed`) até o usuário escolher uma semana
+- [x] Filtro Presentes/Faltas e botão "Todos Presentes" na `AttendanceStatsBar` também ficam bloqueados/zerados até a seleção de semana, pra não aplicar ações na semana errada por engano
+- [x] Testes ajustados: `AttendanceSyncBadge.test.tsx` (2 casos agora verificam que nada é renderizado quando sincronizado), `AttendanceStudentRow.test.tsx` (+1 teste cobrindo botões desabilitados sem semana selecionada)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 108/108 ✅
+- [x] Validado no navegador (desktop e 390px): ao abrir `/chamada`, nenhuma pill ativa, sem badge de sync, botões Presente/Falta desabilitados; ao clicar em uma semana, tudo ativa corretamente
+- Fora de escopo (não pedido): tela Porta (`DoorAttendancePage.tsx`) mantém o comportamento de semana pré-selecionada
 

@@ -7,10 +7,11 @@ import { EditLessonThemeModal } from './EditLessonThemeModal';
 
 interface WeekSelectorPillsProps {
   activeWeek: WeekNumber;
+  weekSelected: boolean;
   onSelectWeek: (week: WeekNumber) => void;
 }
 
-export function WeekSelectorPills({ activeWeek, onSelectWeek }: WeekSelectorPillsProps) {
+export function WeekSelectorPills({ activeWeek, weekSelected, onSelectWeek }: WeekSelectorPillsProps) {
   const { lessons } = useLessonStore();
   const { saveLesson, isSavingLesson, saveLessonError } = useLessonsSync();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -35,13 +36,19 @@ export function WeekSelectorPills({ activeWeek, onSelectWeek }: WeekSelectorPill
             Semanas de Aulas (9 no Total)
           </span>
           <span className="text-[11px] text-slate-500 font-medium">
-            Ativa: <strong>Semana {activeWeek}</strong>
+            {weekSelected ? (
+              <>
+                Ativa: <strong>Semana {activeWeek}</strong>
+              </>
+            ) : (
+              <span className="text-amber-600 font-semibold">Nenhuma semana selecionada</span>
+            )}
           </span>
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
           {lessons.map((lesson) => {
-            const isActive = lesson.number === activeWeek;
+            const isActive = weekSelected && lesson.number === activeWeek;
             const isDefined = lesson.theme !== 'A Definir';
             return (
               <button
@@ -99,7 +106,7 @@ export function WeekSelectorPills({ activeWeek, onSelectWeek }: WeekSelectorPill
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#20693a] uppercase tracking-wider">
                 <Sparkles className="w-3 h-3 text-[#2e844b]" />
-                Chamada Oficial • {currentLesson.title}
+                {weekSelected ? `Chamada Oficial • ${currentLesson.title}` : currentLesson.title}
               </span>
               <span className="text-[11px] text-slate-500 flex items-center gap-1">
                 <Calendar className="w-3 h-3 text-[#2e844b]" />

@@ -3,14 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AttendanceSyncBadge } from './AttendanceSyncBadge';
 
 describe('AttendanceSyncBadge', () => {
-  it('renders correctly when synced', () => {
-    render(<AttendanceSyncBadge status="synced" pendingCount={0} />);
-    expect(screen.getByText('Nuvem Sincronizada')).toBeInTheDocument();
+  it('renders nothing when synced', () => {
+    const { container } = render(<AttendanceSyncBadge status="synced" pendingCount={0} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it('renders correctly in compact mode when synced', () => {
-    render(<AttendanceSyncBadge status="synced" pendingCount={0} compact />);
-    expect(screen.getByText('Salvo')).toBeInTheDocument();
+  it('renders nothing in compact mode when synced', () => {
+    const { container } = render(<AttendanceSyncBadge status="synced" pendingCount={0} compact />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('renders syncing state with pending count', () => {
