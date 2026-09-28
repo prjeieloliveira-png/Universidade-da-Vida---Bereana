@@ -1,41 +1,28 @@
-# Plano: Ajustes no menu Chamada
+# Plano: Replicar todos os filtros de Inscrições na Chamada
 
-## 1. Remover badge "Nuvem Sincronizada"
-- Arquivo: `src/features/attendance/components/AttendanceSyncBadge.tsx`
-- Quando `status === 'synced'`, o componente passa a retornar `null` (não renderiza nada).
-- Os estados de **offline / pendente / sincronizando / erro** continuam sendo exibidos normalmente — são o indicador obrigatório de fila de sincronização exigido pelo AGENTS.md (item 4, chamada offline) e não podem ser removidos.
-- Trivial, um único arquivo — sem necessidade de plano formal, mas documentado aqui por estar no mesmo pedido.
+## Situação atual
+- **Inscrições** (`RegistrationsPage.tsx` + `RegistrationFilterBar.tsx` + `RegistrationAdvancedFiltersDrawer.tsx`) usa um estado único `filters: RegistrationFilterState` (`src/features/registrations/types.ts`) com: `searchQuery`, `status` (Pago/Pendente), `paymentMethod`, `gender`, `ageRange`, `maritalStatus`, `shirtSize`, `comorbidity`, `pastor`, `g12`, `leader`. A filtragem em si é feita pela função pura `filterStudents()` (`registrations/utils/studentFilter.ts`), já testada e reaproveitável.
+- **Chamada** (`AttendancePage.tsx`) hoje só tem: busca por texto, hierarquia Pastor/G12/Líder (via `HierarchicalLeaderFilter.tsx`, único lugar do app que usa esse componente) e o filtro de Presença/Falta da semana (que é específico da Chamada e não existe em Inscrições — deve ser mantido do jeito que está).
+- Faltam em Chamada: Sexo, Faixa Etária, Estado Civil, Camiseta, Forma de Pagamento, Saúde/Comorbidade e Situação de Pagamento (Pago/Pendente).
 
-## 2. Nenhuma semana pré-selecionada ao abrir a Chamada
+## Abordagem
+Reaproveitar exatamente o que já existe em Inscrições (mesmo tipo de dado `StudentRecord`, mesma função `filterStudents`, mesmo componente `RegistrationAdvancedFiltersDrawer`), em vez de duplicar código:
 
-### Problema
-`activeWeek` hoje começa em `2` (`useState<WeekNumber>(2)`) e é usado de forma não-nula em vários pontos (filtro por semana, contagem de presentes/faltas, botões "Marcar presença na Semana X", pill highlight S1-S9). Tornar `activeWeek` totalmente `null` exigiria mudar o tipo em cascata por vários componentes.
+1. **`AttendancePage.tsx`**
+   - Trocar os estados soltos `searchQuery`, `selectedPastor`, `selectedG12`, `selectedLeader` por um único `const [filters, setFilters] = useState<RegistrationFilterState>(initialRegistrationFilterState)`.
+   - Trocar a filtragem manual (matchesSearch/matchesPastor/matchesG12/matchesLeader) por `filterStudents(cohortStudents, filters)`, mantendo por cima o filtro específico de Chamada (Presente/Falta na semana ativa).
+   - Remover o uso de `HierarchicalLeaderFilter` (fica redundante — a hierarquia Pastor/G12/Líder passa a vir do mesmo drawer usado em Inscrições) e apagar o arquivo `HierarchicalLeaderFilter.tsx` (não é usado em nenhum outro lugar).
+   - Adicionar botão "Mais filtros" (com contador de filtros ativos, igual ao de Inscrições) que abre o `RegistrationAdvancedFiltersDrawer` reaproveitado sem modificações — cobre Sexo, Idade, Estado Civil, Pagamento (forma), Pastor, G12, Líder, Camiseta e Saúde de uma vez.
+   - Adicionar grupo de pills "Pagamento: Todos / Pago / Pendente" (único filtro de Inscrições que não está no drawer — lá ele é uma pill separada), ao lado do grupo já existente "Todos/Presentes/Faltas" (que continua sendo sobre presença na semana, filtro exclusivo da Chamada).
+   - Chips de filtros ativos (mesmo padrão visual de Inscrições) com botão "Limpar tudo".
 
-### Abordagem
-Manter `activeWeek: WeekNumber` internamente (evita refatoração de tipos em cascata), mas adicionar um novo estado `weekSelected: boolean` (inicial `false`). Nenhuma pill aparece "ativa" e os botões Presente/Falta ficam desabilitados até o usuário clicar em uma semana pela primeira vez.
+2. **Arquivo removido:** `src/features/registrations/components/HierarchicalLeaderFilter.tsx` (sem teste associado, sem outros usos).
 
-### Arquivos afetados
-1. **`src/features/attendance/pages/AttendancePage.tsx`**
-   - Adicionar `const [weekSelected, setWeekSelected] = useState(false);`
-   - Novo handler `handleSelectWeek(week) { setActiveWeek(week); setWeekSelected(true); }` passado ao `WeekSelectorPills`.
-   - Repassar `weekSelected` para `WeekSelectorPills` e `AttendanceStudentRow`.
-   - Filtro de status (Presente/Falta) e contagens da `AttendanceStatsBar` continuam funcionando normalmente somente após seleção; antes disso, mostrar estado neutro (ex.: contagens zeradas / mensagem "Selecione uma semana").
-
-2. **`src/features/attendance/components/WeekSelectorPills.tsx`**
-   - Nova prop `weekSelected: boolean`.
-   - Pill só fica com estilo "ativa" quando `weekSelected && lesson.number === activeWeek`.
-   - Texto "Ativa: Semana X" no cabeçalho só aparece se `weekSelected`; caso contrário, mostrar "Nenhuma semana selecionada".
-   - Banner inferior (tema da semana) mostra estado neutro/placeholder até a seleção.
-
-3. **`src/features/attendance/components/AttendanceStudentRow.tsx`**
-   - Nova prop `weekSelected: boolean`.
-   - `isCurrentWeek` passa a ser `weekSelected && w === activeWeek` (nenhum chip S1-S9 destacado como semana atual antes da seleção).
-   - Botões "Presente"/"Falta" ficam desabilitados (`disabled`, estilo acinzentado, tooltip "Selecione uma semana acima para registrar a chamada") enquanto `weekSelected` for `false`.
-
-4. Testes existentes que montam esses componentes (`AttendanceStudentRow`, `WeekSelectorPills`, `AttendancePage` se houver) — ajustar para passar a nova prop / cobrir o novo estado inicial.
+3. **Testes:** ajustar/gerar testes conforme necessário para `AttendancePage` (se houver) e garantir que os 108 testes existentes continuem passando.
 
 ### Fora de escopo
-- Tela "Porta" (`DoorAttendancePage.tsx`) não foi mencionada pelo usuário — mantém o comportamento atual (semana pré-selecionada), a menos que seja pedido depois.
+- Não mexe em Inscrições, no drawer compartilhado, nem no `filterStudents`/tipos — são reaproveitados como estão.
+- Mantém intactos: seleção de semana (`weekSelected`), badge de sincronização, filtro Presente/Falta específico da Chamada.
 
 ---
-CONCLUÍDO — ambos os itens implementados, testados (108/108) e validados no navegador (desktop e 390px). Ver detalhes em `task.md`.
+CONCLUÍDO — implementado, testado (107/107) e validado no navegador (desktop e 390px). Ver detalhes em `task.md`.

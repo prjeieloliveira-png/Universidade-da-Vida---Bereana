@@ -12,11 +12,16 @@ import { AttendanceSyncBadge } from '../components/AttendanceSyncBadge';
 import { AttendanceConfirmModal } from '../components/AttendanceConfirmModal';
 import { useAttendanceSync } from '../hooks/useAttendanceSync';
 import { fetchAbsenceCounts, fetchAttendanceLog } from '../api/attendanceApi';
-import { HierarchicalLeaderFilter } from '@/features/registrations/components/HierarchicalLeaderFilter';
-import type { StudentRecord } from '@/features/registrations/types';
+import { RegistrationAdvancedFiltersDrawer } from '@/features/registrations/components/RegistrationAdvancedFiltersDrawer';
+import { filterStudents } from '@/features/registrations/utils/studentFilter';
+import {
+  StudentRecord,
+  RegistrationFilterState,
+  initialRegistrationFilterState,
+} from '@/features/registrations/types';
 import { sortByName } from '@/shared/utils/sortByName';
 import { WeekNumber, WeekKey } from '../types';
-import { Search, FileSpreadsheet, Smartphone, ArrowDownAZ } from 'lucide-react';
+import { Search, FileSpreadsheet, Smartphone, ArrowDownAZ, SlidersHorizontal, X } from 'lucide-react';
 
 export function AttendancePage() {
   const { students } = useStudentStore();
@@ -80,7 +85,8 @@ export function AttendancePage() {
 
   const [activeWeek, setActiveWeek] = useState<WeekNumber>(2);
   const [weekSelected, setWeekSelected] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<RegistrationFilterState>(initialRegistrationFilterState);
+  const [isFiltersDrawerOpen, setIsFiltersDrawerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PRESENTE' | 'FALTA'>('ALL');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -90,37 +96,66 @@ export function AttendancePage() {
     action: 'PRESENTE' | 'FALTA' | null;
   }>({ isOpen: false, student: null, action: null });
 
-  const [selectedPastor, setSelectedPastor] = useState<string>('ALL');
-  const [selectedG12, setSelectedG12] = useState<string>('ALL');
-  const [selectedLeader, setSelectedLeader] = useState<string>('ALL');
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
+
+  const handleFilterChange = <K extends keyof RegistrationFilterState>(
+    key: K,
+    value: RegistrationFilterState[K]
+  ) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleResetFilters = () => setFilters(initialRegistrationFilterState);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filters.status !== 'ALL') count++;
+    if (filters.paymentMethod !== 'ALL') count++;
+    if (filters.gender !== 'ALL') count++;
+    if (filters.ageRange !== 'ALL') count++;
+    if (filters.maritalStatus !== 'ALL') count++;
+    if (filters.shirtSize !== 'ALL') count++;
+    if (filters.comorbidity !== 'ALL') count++;
+    if (filters.pastor !== 'ALL') count++;
+    if (filters.g12 !== 'ALL') count++;
+    if (filters.leader !== 'ALL') count++;
+    return count;
+  }, [filters]);
+
+  const activeChips = useMemo(() => {
+    const list: { key: keyof RegistrationFilterState; label: string; value: string }[] = [];
+    if (filters.status !== 'ALL') list.push({ key: 'status', label: 'Pagamento', value: filters.status });
+    if (filters.gender !== 'ALL') list.push({ key: 'gender', label: 'Sexo', value: filters.gender });
+    if (filters.ageRange !== 'ALL') {
+      const val = filters.ageRange === 'under18' ? '<18' : filters.ageRange;
+      list.push({ key: 'ageRange', label: 'Idade', value: val });
+    }
+    if (filters.maritalStatus !== 'ALL') list.push({ key: 'maritalStatus', label: 'Est. Civil', value: filters.maritalStatus });
+    if (filters.paymentMethod !== 'ALL') list.push({ key: 'paymentMethod', label: 'Forma Pgto', value: filters.paymentMethod });
+    if (filters.shirtSize !== 'ALL') list.push({ key: 'shirtSize', label: 'Camiseta', value: filters.shirtSize });
+    if (filters.pastor !== 'ALL') list.push({ key: 'pastor', label: 'Pastor', value: filters.pastor });
+    if (filters.g12 !== 'ALL') list.push({ key: 'g12', label: 'G12', value: filters.g12 });
+    if (filters.leader !== 'ALL') list.push({ key: 'leader', label: 'Líder', value: filters.leader });
+    if (filters.comorbidity !== 'ALL') {
+      list.push({ key: 'comorbidity', label: 'Saúde', value: filters.comorbidity === 'SIM' ? 'Com restrição' : 'Sem restrição' });
+    }
+    return list;
+  }, [filters]);
 
   const currentKey = `s${activeWeek}` as WeekKey;
 
   const filteredStudents = useMemo(() => {
-    const filtered = cohortStudents.filter((s) => {
-      const matchesSearch =
-        searchQuery.trim() === '' ||
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.pastor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.g12.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.leader.toLowerCase().includes(searchQuery.toLowerCase());
-
+    const base = filterStudents(cohortStudents, filters);
+    const filtered = base.filter((s) => {
       const isPresent = Boolean(s[currentKey]);
-      const matchesStatus =
+      return (
         statusFilter === 'ALL' ||
         (statusFilter === 'PRESENTE' && isPresent) ||
-        (statusFilter === 'FALTA' && !isPresent);
-
-      const matchesPastor = selectedPastor === 'ALL' || s.pastor === selectedPastor;
-      const matchesG12 = selectedG12 === 'ALL' || s.g12 === selectedG12;
-      const matchesLeader = selectedLeader === 'ALL' || s.leader === selectedLeader;
-
-      return matchesSearch && matchesStatus && matchesPastor && matchesG12 && matchesLeader;
+        (statusFilter === 'FALTA' && !isPresent)
+      );
     });
     return sortAlphabetically ? sortByName(filtered, (s) => s.name) : filtered;
-  }, [cohortStudents, searchQuery, statusFilter, currentKey, selectedPastor, selectedG12, selectedLeader, sortAlphabetically]);
+  }, [cohortStudents, filters, statusFilter, currentKey, sortAlphabetically]);
 
   const presentCount = useMemo(
     () => filteredStudents.filter((s) => Boolean(s[currentKey])).length,
@@ -154,21 +189,24 @@ export function AttendancePage() {
     setConfirmModal({ isOpen: false, student: null, action: null });
   };
 
-  const handleResetHierarchy = () => {
-    setSelectedPastor('ALL');
-    setSelectedG12('ALL');
-    setSelectedLeader('ALL');
-  };
-
   const activeFiltersDesc = useMemo(() => {
     const parts: string[] = [];
-    if (selectedPastor !== 'ALL') parts.push(`Pastor: ${selectedPastor}`);
-    if (selectedG12 !== 'ALL') parts.push(`G12: ${selectedG12}`);
-    if (selectedLeader !== 'ALL') parts.push(`Líder: ${selectedLeader}`);
-    if (statusFilter !== 'ALL') parts.push(`Status: ${statusFilter === 'PRESENTE' ? 'Presentes' : 'Faltas'} na S${activeWeek}`);
-    if (searchQuery.trim()) parts.push(`Busca: "${searchQuery.trim()}"`);
+    if (filters.pastor !== 'ALL') parts.push(`Pastor: ${filters.pastor}`);
+    if (filters.g12 !== 'ALL') parts.push(`G12: ${filters.g12}`);
+    if (filters.leader !== 'ALL') parts.push(`Líder: ${filters.leader}`);
+    if (filters.status !== 'ALL') parts.push(`Pagamento: ${filters.status}`);
+    if (filters.paymentMethod !== 'ALL') parts.push(`Forma Pgto: ${filters.paymentMethod}`);
+    if (filters.gender !== 'ALL') parts.push(`Sexo: ${filters.gender}`);
+    if (filters.ageRange !== 'ALL') parts.push(`Idade: ${filters.ageRange}`);
+    if (filters.maritalStatus !== 'ALL') parts.push(`Est. Civil: ${filters.maritalStatus}`);
+    if (filters.shirtSize !== 'ALL') parts.push(`Camiseta: ${filters.shirtSize}`);
+    if (filters.comorbidity !== 'ALL') {
+      parts.push(`Saúde: ${filters.comorbidity === 'SIM' ? 'Com restrição' : 'Sem restrição'}`);
+    }
+    if (statusFilter !== 'ALL') parts.push(`Chamada: ${statusFilter === 'PRESENTE' ? 'Presentes' : 'Faltas'} na S${activeWeek}`);
+    if (filters.searchQuery.trim()) parts.push(`Busca: "${filters.searchQuery.trim()}"`);
     return parts.join(' | ');
-  }, [selectedPastor, selectedG12, selectedLeader, statusFilter, activeWeek, searchQuery]);
+  }, [filters, statusFilter, activeWeek]);
 
   return (
     <div className="space-y-6">
@@ -228,15 +266,15 @@ export function AttendancePage() {
         onOpenReport={() => setIsReportOpen(true)}
       />
 
-      {/* Search & Hierarchical Leadership Filters */}
+      {/* Busca, ordenação e filtros (mesmo conjunto de filtros de Inscrições) */}
       <div className="bg-white border border-slate-200/80 rounded-[28px] p-4 shadow-xs space-y-3">
         <div className="flex flex-col md:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={filters.searchQuery}
+              onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
               placeholder="Buscar aluno por nome, telefone, pastor ou líder..."
               className="w-full pl-11 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200/80 rounded-full focus:outline-none focus:ring-2 focus:ring-[#58bc75] focus:bg-white transition-all text-slate-900 placeholder:text-slate-400"
             />
@@ -256,6 +294,24 @@ export function AttendancePage() {
             >
               <ArrowDownAZ className={`w-3.5 h-3.5 ${sortAlphabetically ? 'text-[#58bc75]' : 'text-slate-500'}`} />
               <span>A-Z</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsFiltersDrawerOpen((v) => !v)}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer border ${
+                isFiltersDrawerOpen || activeFiltersCount > 0
+                  ? 'bg-[#163242] text-white border-[#163242]'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#58bc75]" />
+              <span>Mais filtros</span>
+              {activeFiltersCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-[#58bc75] text-[#163242] text-[10px] font-black flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -299,16 +355,77 @@ export function AttendancePage() {
           </div>
         </div>
 
-        <HierarchicalLeaderFilter
-          students={cohortStudents}
-          selectedPastor={selectedPastor}
-          selectedG12={selectedG12}
-          selectedLeader={selectedLeader}
-          onSelectPastor={setSelectedPastor}
-          onSelectG12={setSelectedG12}
-          onSelectLeader={setSelectedLeader}
-          onResetHierarchy={handleResetHierarchy}
-        />
+        {/* Situação de pagamento — único filtro de Inscrições fora do drawer de filtros avançados */}
+        <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-100">
+          <span className="text-[11px] font-semibold text-slate-400 shrink-0">Pagamento:</span>
+          <button
+            onClick={() => handleFilterChange('status', 'ALL')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+              filters.status === 'ALL'
+                ? 'bg-[#163242] text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => handleFilterChange('status', 'Pago')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+              filters.status === 'Pago'
+                ? 'bg-[#58bc75] text-white'
+                : 'bg-[#e8f8ee] text-[#2c814b] hover:bg-[#d6f4df]'
+            }`}
+          >
+            Pagos
+          </button>
+          <button
+            onClick={() => handleFilterChange('status', 'Pendente')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+              filters.status === 'Pendente'
+                ? 'bg-amber-500 text-white'
+                : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+            }`}
+          >
+            Pendentes
+          </button>
+        </div>
+
+        {/* Chips de filtros avançados ativos */}
+        {activeChips.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-100">
+            <span className="text-[11px] font-semibold text-slate-400">Ativos:</span>
+            {activeChips.map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#163242]/8 text-[#163242] text-[11px] font-medium"
+              >
+                <span className="text-slate-400 font-normal">{chip.label}:</span>
+                <strong>{chip.value}</strong>
+                <button
+                  onClick={() => handleFilterChange(chip.key, initialRegistrationFilterState[chip.key])}
+                  className="hover:text-rose-600 transition-colors cursor-pointer ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            <button
+              onClick={handleResetFilters}
+              className="text-[11px] font-semibold text-rose-500 hover:text-rose-700 hover:underline cursor-pointer ml-1"
+            >
+              Limpar tudo
+            </button>
+          </div>
+        )}
+
+        {isFiltersDrawerOpen && (
+          <RegistrationAdvancedFiltersDrawer
+            students={cohortStudents}
+            filters={filters}
+            onChange={handleFilterChange}
+            onReset={handleResetFilters}
+          />
+        )}
       </div>
 
       {/* Student Rows List */}
