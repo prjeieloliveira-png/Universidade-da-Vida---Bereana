@@ -32,7 +32,6 @@ export function AttendancePage() {
     pendingCount,
     flushQueue,
     markAttendance,
-    markBulkStudentsAttendance,
   } = useAttendanceSync();
 
   const cohortStudents = useMemo(() => {
@@ -168,11 +167,6 @@ export function AttendancePage() {
     setWeekSelected(true);
   };
 
-  const handleMarkAllPresent = () => {
-    if (!weekSelected) return;
-    markBulkStudentsAttendance(filteredStudents, activeWeek, true);
-  };
-
   const handleSelectAction = (student: StudentRecord, action: 'PRESENTE' | 'FALTA') => {
     if (!weekSelected) return;
     setConfirmModal({ isOpen: true, student, action });
@@ -262,7 +256,6 @@ export function AttendancePage() {
         totalCount={filteredStudents.length}
         presentCount={weekSelected ? presentCount : 0}
         absentCount={weekSelected ? absentCount : filteredStudents.length}
-        onMarkAllPresent={weekSelected ? handleMarkAllPresent : undefined}
         onOpenReport={() => setIsReportOpen(true)}
       />
 
