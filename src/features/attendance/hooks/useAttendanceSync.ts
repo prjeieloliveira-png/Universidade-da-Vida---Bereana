@@ -51,7 +51,7 @@ export function useAttendanceSync() {
     activeCohort?.id === 'turma-01'
       ? '33333333-3333-3333-3333-333333333333'
       : activeCohort?.id || '33333333-3333-3333-3333-333333333333';
-  const { setAttendance, setBulkAttendance } = useStudentStore();
+  const { setAttendance } = useStudentStore();
 
   const [queue, setQueue] = useState<AttendanceQueueItem[]>(loadQueue);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => {
@@ -174,51 +174,11 @@ export function useAttendanceSync() {
     [setAttendance, flushQueue]
   );
 
-  // Marcação em lote de presença (ex: "Marcar Todos Presentes")
-  const markBulkStudentsAttendance = useCallback(
-    (students: StudentRecord[], week: WeekNumber, present: boolean) => {
-      const ids = students.map((s) => s.id);
-      setBulkAttendance(ids, week, present);
-
-      const currentQueue = loadQueue();
-      const newItems: AttendanceQueueItem[] = students.map((student) => ({
-        id: `${student.id}-w${week}-${Date.now()}`,
-        studentId: student.id,
-        fullName: student.name,
-        birthDate: student.birthDate,
-        sessionNumber: week,
-        present,
-        timestamp: Date.now(),
-      }));
-
-      // Mescla com a fila existente substituindo duplicados
-      const mergedMap = new Map<string, AttendanceQueueItem>();
-      for (const item of currentQueue) {
-        mergedMap.set(`${item.fullName}-w${item.sessionNumber}`, item);
-      }
-      for (const item of newItems) {
-        mergedMap.set(`${item.fullName}-w${item.sessionNumber}`, item);
-      }
-
-      const updatedQueue = Array.from(mergedMap.values());
-      saveQueue(updatedQueue);
-      setQueue(updatedQueue);
-
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        flushQueue();
-      } else {
-        setSyncStatus('offline');
-      }
-    },
-    [setBulkAttendance, flushQueue]
-  );
-
   return {
     syncStatus,
     pendingCount: queue.length,
     lastSyncTime,
     flushQueue,
     markAttendance,
-    markBulkStudentsAttendance,
   };
 }

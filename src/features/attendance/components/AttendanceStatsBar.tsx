@@ -1,10 +1,9 @@
-import { UserCheck, UserX, CheckCircle2, FileSpreadsheet } from 'lucide-react';
+import { UserCheck, UserX, FileSpreadsheet } from 'lucide-react';
 
 interface AttendanceStatsBarProps {
   totalCount: number;
   presentCount: number;
   absentCount: number;
-  onMarkAllPresent?: () => void;
   onOpenReport?: () => void;
 }
 
@@ -12,7 +11,6 @@ export function AttendanceStatsBar({
   totalCount,
   presentCount,
   absentCount,
-  onMarkAllPresent,
   onOpenReport,
 }: AttendanceStatsBarProps) {
   const presenceRate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
@@ -75,16 +73,6 @@ export function AttendanceStatsBar({
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-[#58bc75]" />
               <span>Relatório Completo</span>
-            </button>
-          )}
-
-          {onMarkAllPresent && totalCount > 0 && (
-            <button
-              onClick={onMarkAllPresent}
-              className="flex-1 sm:flex-initial px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#2e844b]" />
-              <span>Todos Presentes</span>
             </button>
           )}
         </div>

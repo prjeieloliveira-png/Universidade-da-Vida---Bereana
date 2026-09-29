@@ -273,4 +273,12 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Novo teste em `AttendanceReportModal.test.tsx` cobrindo os 3 estados (presente, falta confirmada via log mockado, e semana em branco)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 108/108 ✅
 - [x] Validado no navegador (desktop e 390px): abri o Relatório Completo de Chamada e confirmei visualmente que semanas sem chamada aparecem em branco, só semanas com registro real mostram ✓/F
+- PR #10 mesclado em main, deploy Hostinger confirmado com sucesso
+
+## Remover botão "Todos Presentes" da Chamada
+- [x] Botão removido de `AttendanceStatsBar.tsx` (e a prop `onMarkAllPresent`)
+- [x] Handler `handleMarkAllPresent` removido de `AttendancePage.tsx`
+- [x] `markBulkStudentsAttendance` removido de `useAttendanceSync.ts` (ficou sem nenhum outro uso no app após a remoção do botão)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 108/108 ✅
+- [x] Validado no navegador (desktop e 390px): botão não aparece mais, resta só "Relatório Completo" na barra de estatísticas
 
