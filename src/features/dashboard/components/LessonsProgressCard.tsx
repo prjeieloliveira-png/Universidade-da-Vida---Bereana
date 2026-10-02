@@ -30,7 +30,7 @@ export function LessonsProgressCard({ onStartAttendance }: LessonsProgressCardPr
     let peakWeekNumber = -1;
     let highestPercent = -1;
 
-    const items = LESSON_WEEKS.map((lesson) => {
+    const items = lessons.map((lesson) => {
       const presentCount = cohortStudents.filter((s) => Boolean(s[lesson.key])).length;
       const percent = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
       const hasOccurred = presentCount > 0;
@@ -48,7 +48,7 @@ export function LessonsProgressCard({ onStartAttendance }: LessonsProgressCardPr
       const badge = isPeak ? `${w.percent}%` : undefined;
       return { ...w, isPeak, badge };
     });
-  }, [cohortStudents, totalStudents]);
+  }, [cohortStudents, totalStudents, lessons]);
 
   const completedWeeks = weeklyData.filter((w) => w.hasOccurred);
   const averagePresence = completedWeeks.length > 0

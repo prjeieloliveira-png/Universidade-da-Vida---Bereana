@@ -293,5 +293,13 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] `TeamsPage.tsx`: botão "Nova Equipe" no cabeçalho, ao lado de "Novo Membro"; liga tudo às novas mutações
 - [x] Único call site existente de `useTeamRoles` (`TeamsPage.tsx`) atualizado pro novo formato de retorno; teste `TeamsPage.test.tsx` ajustado (mock do hook) + 2 testes novos (abrir modal de nova equipe, botões renomear/excluir aparecem)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 110/110 ✅
-- [ ] Validação visual no navegador (desktop e 390px) **pendente**: a sessão do navegador da ferramenta expirou (caiu pra tela de login) e não tenho a senha real do usuário pra logar; pedi pro usuário logar de novo e aguardando
+- [x] PR #12 mesclado em main, deploy Hostinger confirmado com sucesso
+- NOTA: a validação visual específica da tela de Equipes (criar/renomear/excluir) não chegou a ser feita no navegador antes do merge — a sessão da ferramenta caiu pra tela de login durante o desenvolvimento e o usuário pediu pra subir e mesclar antes de eu conseguir logar de novo e confirmar visualmente
+
+## Dashboard: card "Taxa de Frequência" mostrava nomes de aula errados
+- Usuário reportou e pediu pra verificar: no card da home (`LessonsProgressCard.tsx`), os nomes de cada semana (S1, S2, S3, S4...) na visão "Geral" não batiam com os nomes reais cadastrados/editados na Chamada
+- Investigação confirmou: as porcentagens estavam corretas (conferido direto contra a view `v_edition_attendance_matrix` no Supabase via console do navegador: S1 22/46=48%, S2 37/46=80%, S3 36/46=78%, S4 33/46=72%, tudo batendo). O problema era só o **nome** de cada semana: o card usava a constante fixa `LESSON_WEEKS` (os temas padrão de fábrica, ex. "O Encontro com Deus") em vez de `lessons` do `useLessonStore` (os temas reais editados, ex. "Aprendendo com os erros"), que é a mesma fonte que o rodapé do card ("Fazer Chamada") já usava corretamente
+- [x] `LessonsProgressCard.tsx`: trocado `LESSON_WEEKS.map(...)` por `lessons.map(...)` (vindo do hook, já em uso no resto do componente) + adicionado `lessons` nas dependências do `useMemo`
+- [x] Quality gate: lint ✅ typecheck ✅ tests 110/110 ✅ (teste existente não mudou, pois o estado inicial do `lessonStore` é igual a `LESSON_WEEKS` até ser hidratado do Supabase)
+- [x] Validado no navegador logado (desktop e 390px): visão "Geral" agora mostra "S1 • Aprendendo com os erros", "S2 • O melhor negócio da sua vida" etc., batendo com os nomes reais da Chamada
 
