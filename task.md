@@ -303,3 +303,10 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Quality gate: lint ✅ typecheck ✅ tests 110/110 ✅ (teste existente não mudou, pois o estado inicial do `lessonStore` é igual a `LESSON_WEEKS` até ser hidratado do Supabase)
 - [x] Validado no navegador logado (desktop e 390px): visão "Geral" agora mostra "S1 • Aprendendo com os erros", "S2 • O melhor negócio da sua vida" etc., batendo com os nomes reais da Chamada
 
+- PR #13 mesclado em main, deploy Hostinger confirmado com sucesso
+
+## Semana 4 "todo mundo presente ao atualizar a página"
+- Diagnóstico: o banco (RPC `sync_attendances_rpc`, upsert por aluno+aula) está correto. O bug era no cliente: `studentStore.setStudents` mesclava `banco || local`, então um "presente" antigo guardado no localStorage do navegador (resíduo do botão "Todos Presentes" removido) sempre vencia a falta gravada no banco e voltava a cada refresh
+- [x] `setStudents` agora trata o banco como verdade e só preserva marcações ainda pendentes na fila offline (`bereana_attendance_queue_v2`); testes ajustados (+1) — lint ✅ typecheck ✅ tests 111/111 ✅
+- Dados: na S4 há um lote de 33 presenças gravadas no mesmo minuto (28/09 21:44, 33P/0F) = clique em "Todos Presentes"; S1–S3 não têm lotes. As 33 presenças atuais da S4 são, na prática, esse lote + 13 faltas individuais — precisa o usuário conferir a S4 real. NÃO alterei dados de produção.
+- [ ] Commit/push/merge dessa correção aguardando aprovação do usuário
