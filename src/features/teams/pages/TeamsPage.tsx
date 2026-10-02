@@ -10,7 +10,9 @@ import { MeetingListTab } from '../components/MeetingListTab';
 import { TeamMemberModal } from '../components/TeamMemberModal';
 import { CopyTeamsModal } from '../components/CopyTeamsModal';
 import { TeamsPrintModal } from '../components/TeamsPrintModal';
-import type { TeamMemberWithDetails } from '../types/teams';
+import { TeamRoleFormModal } from '../components/TeamRoleFormModal';
+import { DeleteTeamRoleModal } from '../components/DeleteTeamRoleModal';
+import type { TeamMemberWithDetails, TeamRoleRow } from '../types/teams';
 
 type ActiveTab = 'membros' | 'reunioes';
 
@@ -28,9 +30,20 @@ export function TeamsPage() {
   }>({ isOpen: false });
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [roleFormModal, setRoleFormModal] = useState<{
+    isOpen: boolean;
+    initialRole: TeamRoleRow | null;
+  }>({ isOpen: false, initialRole: null });
+  const [roleToDelete, setRoleToDelete] = useState<TeamRoleRow | null>(null);
 
   // Queries e Hooks
-  const { data: roles = [], isLoading: isRolesLoading } = useTeamRoles();
+  const {
+    roles,
+    isLoading: isRolesLoading,
+    createRole,
+    renameRole,
+    deleteRole,
+  } = useTeamRoles();
   const teamMembersHook = useTeamMembers(editionId);
   const teamMeetingsHook = useTeamMeetings(editionId);
 
@@ -90,6 +103,18 @@ export function TeamsPage() {
     setMemberModal((prev) => ({ ...prev, isOpen: false }));
   };
 
+  const handleOpenCreateRole = () => {
+    setRoleFormModal({ isOpen: true, initialRole: null });
+  };
+
+  const handleOpenEditRole = (role: TeamRoleRow) => {
+    setRoleFormModal({ isOpen: true, initialRole: role });
+  };
+
+  const handleCloseRoleFormModal = () => {
+    setRoleFormModal((prev) => ({ ...prev, isOpen: false }));
+  };
+
   return (
     <div className="space-y-5 animate-in fade-in duration-150">
       {/* Top Header */}
@@ -130,6 +155,16 @@ export function TeamsPage() {
             <Copy className="w-4 h-4 text-slate-500" />
             <span className="hidden sm:inline">Copiar Equipes</span>
             <span className="sm:hidden">Copiar</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenCreateRole}
+            className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full text-xs font-bold bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200/90 text-slate-700 transition-colors shadow-2xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-slate-500" />
+            <span className="hidden sm:inline">Nova Equipe</span>
+            <span className="sm:hidden">Equipe</span>
           </button>
 
           <button
@@ -180,6 +215,8 @@ export function TeamsPage() {
           teamMembersHook={teamMembersHook}
           onAddMember={handleOpenAddMember}
           onEditMember={handleOpenEditMember}
+          onEditRole={handleOpenEditRole}
+          onDeleteRole={setRoleToDelete}
         />
       ) : (
         <MeetingListTab roles={roles} editionId={editionId} teamMeetingsHook={teamMeetingsHook} />
@@ -208,6 +245,21 @@ export function TeamsPage() {
         roles={roles}
         members={teamMembersHook.members}
         editionName={edition.name}
+      />
+
+      <TeamRoleFormModal
+        isOpen={roleFormModal.isOpen}
+        onClose={handleCloseRoleFormModal}
+        initialRole={roleFormModal.initialRole}
+        onCreate={createRole}
+        onRename={renameRole}
+      />
+
+      <DeleteTeamRoleModal
+        isOpen={roleToDelete !== null}
+        onClose={() => setRoleToDelete(null)}
+        role={roleToDelete}
+        onConfirmDelete={deleteRole}
       />
     </div>
   );

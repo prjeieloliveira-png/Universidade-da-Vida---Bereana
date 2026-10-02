@@ -32,11 +32,20 @@ vi.mock('@/shared/hooks/useActiveEdition', () => ({
 
 vi.mock('../hooks/useTeamRoles', () => ({
   useTeamRoles: () => ({
-    data: [
+    roles: [
       { id: 'r-1', name: 'Presidente', sort_order: 1, active: true, created_at: '' },
       { id: 'r-2', name: 'Coordenador(a)', sort_order: 2, active: true, created_at: '' },
     ],
     isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+    createRole: vi.fn(),
+    isCreating: false,
+    renameRole: vi.fn(),
+    isRenaming: false,
+    deleteRole: vi.fn(),
+    isDeleting: false,
   }),
 }));
 
@@ -87,5 +96,39 @@ describe('TeamsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Novo Membro da Equipe')).toBeInTheDocument();
     });
+  });
+
+  it('deve abrir o modal de nova equipe ao clicar em "Nova Equipe"', async () => {
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <TeamsPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(screen.queryByText('Nova Equipe', { selector: 'h3' })).not.toBeInTheDocument();
+
+    const newRoleBtn = screen.getByRole('button', { name: /Nova Equipe/i });
+    fireEvent.click(newRoleBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Nova Equipe', { selector: 'h3' })).toBeInTheDocument();
+    });
+  });
+
+  it('deve renderizar as equipes com botões de renomear e excluir', () => {
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <TeamsPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByLabelText('Renomear equipe Presidente')).toBeInTheDocument();
+    expect(screen.getByLabelText('Excluir equipe Presidente')).toBeInTheDocument();
   });
 });
