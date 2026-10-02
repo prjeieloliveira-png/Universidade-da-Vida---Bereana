@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Plus, Users } from 'lucide-react';
+import { ChevronDown, Plus, Users, Pencil, Trash2 } from 'lucide-react';
 import { TeamMemberRow } from './TeamMemberRow';
 import type { TeamRoleRow, TeamMemberWithDetails } from '../types/teams';
 
@@ -12,6 +12,8 @@ interface TeamCardProps {
   onMoveMember: (member: TeamMemberWithDetails) => void;
   onToggleActiveMember: (member: TeamMemberWithDetails) => void;
   onDeleteMember?: (member: TeamMemberWithDetails) => void;
+  onEditRole?: (role: TeamRoleRow) => void;
+  onDeleteRole?: (role: TeamRoleRow) => void;
 }
 
 export const TeamCard: React.FC<TeamCardProps> = ({
@@ -23,6 +25,8 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   onMoveMember,
   onToggleActiveMember,
   onDeleteMember,
+  onEditRole,
+  onDeleteRole,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -79,6 +83,36 @@ export const TeamCard: React.FC<TeamCardProps> = ({
             <Plus className="w-3.5 h-3.5 text-[#58bc75]" />
             <span className="hidden sm:inline">Adicionar</span>
           </button>
+
+          {onEditRole && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditRole(role);
+              }}
+              className="w-11 h-11 rounded-full bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-slate-800 shadow-2xs flex items-center justify-center transition-all cursor-pointer"
+              title="Renomear equipe"
+              aria-label={`Renomear equipe ${role.name}`}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {onDeleteRole && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteRole(role);
+              }}
+              className="w-11 h-11 rounded-full bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 shadow-2xs flex items-center justify-center transition-all cursor-pointer"
+              title="Excluir equipe"
+              aria-label={`Excluir equipe ${role.name}`}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           <button
             type="button"

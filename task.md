@@ -281,4 +281,17 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] `markBulkStudentsAttendance` removido de `useAttendanceSync.ts` (ficou sem nenhum outro uso no app após a remoção do botão)
 - [x] Quality gate: lint ✅ typecheck ✅ tests 108/108 ✅
 - [x] Validado no navegador (desktop e 390px): botão não aparece mais, resta só "Relatório Completo" na barra de estatísticas
+- PR #11 mesclado em main, deploy Hostinger confirmado com sucesso
+
+## Criar/editar/excluir equipes no menu Equipes
+- "Equipe" no banco é a tabela `team_roles` (name UNIQUE, sort_order); antes só existia leitura (`useTeamRoles` era um `useQuery` puro, sem nenhuma mutação em lugar nenhum do app). RLS já permitia insert/update/delete pra coordenação/secretaria, não precisou de migração.
+- [x] `useTeamRoles.ts` reescrito no padrão do `useTeamMembers.ts`: agora retorna `{ roles, isLoading, createRole, renameRole, deleteRole, ... }` com 3 mutações novas. `createRole` calcula `sort_order = max atual + 1`; erro de nome duplicado (`23505`) e exclusão bloqueada por membros vinculados (`23503`, FK `ON DELETE RESTRICT` em `team_members.team_role_id`) viram mensagens amigáveis em vez do erro cru do Postgres
+- [x] `TeamRoleFormModal.tsx` (novo): modal único pra criar e renomear equipe (mesmo padrão do `EditUserModal`)
+- [x] `DeleteTeamRoleModal.tsx` (novo): confirmação de exclusão, mesmo padrão visual do `DeleteTeamMemberModal.tsx`
+- [x] `TeamCard.tsx`: botões de lápis (renomear) e lixeira (excluir) no cabeçalho de cada equipe
+- [x] `TeamListTab.tsx`: repassa `onEditRole`/`onDeleteRole` pros cards
+- [x] `TeamsPage.tsx`: botão "Nova Equipe" no cabeçalho, ao lado de "Novo Membro"; liga tudo às novas mutações
+- [x] Único call site existente de `useTeamRoles` (`TeamsPage.tsx`) atualizado pro novo formato de retorno; teste `TeamsPage.test.tsx` ajustado (mock do hook) + 2 testes novos (abrir modal de nova equipe, botões renomear/excluir aparecem)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 110/110 ✅
+- [ ] Validação visual no navegador (desktop e 390px) **pendente**: a sessão do navegador da ferramenta expirou (caiu pra tela de login) e não tenho a senha real do usuário pra logar; pedi pro usuário logar de novo e aguardando
 

@@ -15,6 +15,8 @@ interface TeamListTabProps {
   teamMembersHook: ReturnType<typeof useTeamMembers>;
   onAddMember: (roleId?: string) => void;
   onEditMember: (member: TeamMemberWithDetails) => void;
+  onEditRole?: (role: TeamRoleRow) => void;
+  onDeleteRole?: (role: TeamRoleRow) => void;
 }
 
 export const TeamListTab: React.FC<TeamListTabProps> = ({
@@ -23,6 +25,8 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
   teamMembersHook,
   onAddMember,
   onEditMember,
+  onEditRole,
+  onDeleteRole,
 }) => {
   const {
     members,
@@ -204,6 +208,8 @@ export const TeamListTab: React.FC<TeamListTabProps> = ({
               onMoveMember={handleOpenMove}
               onToggleActiveMember={handleOpenToggleActive}
               onDeleteMember={handleOpenDelete}
+              onEditRole={onEditRole}
+              onDeleteRole={onDeleteRole}
             />
           );
         })}
