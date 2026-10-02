@@ -100,22 +100,30 @@ describe('useStudentStore', () => {
     expect(updated?.s5).toBe(false);
   });
 
-  it('hydrates store with setStudents while preserving local attendance markings', () => {
+  it('hydrates store with setStudents using the server as source of truth for attendance', () => {
     const original = useStudentStore.getState().students[0]!;
     useStudentStore.getState().setAttendance(original.id, 1, true);
 
-    const remoteBatch = [
-      {
-        ...original,
-        name: 'Nome Atualizado do Supabase',
-        s1: false, // remote has false
-      },
-    ];
-
-    useStudentStore.getState().setStudents(remoteBatch);
+    useStudentStore.getState().setStudents([
+      { ...original, name: 'Nome Atualizado do Supabase', s1: false },
+    ]);
     const hydrated = useStudentStore.getState().students.find((s) => s.id === original.id);
     expect(hydrated?.name).toBe('Nome Atualizado do Supabase');
-    // Local attendance mark should be preserved
-    expect(hydrated?.s1).toBe(true);
+    // "presente" antigo guardado só no navegador não pode sobrepor a falta do banco
+    expect(hydrated?.s1).toBe(false);
+  });
+
+  it('keeps marks still pending in the offline queue when hydrating', () => {
+    const original = useStudentStore.getState().students[0]!;
+    localStorage.setItem(
+      'bereana_attendance_queue_v2',
+      JSON.stringify([{ studentId: original.id, sessionNumber: 4, present: true }])
+    );
+
+    useStudentStore.getState().setStudents([{ ...original, s4: false }]);
+    const hydrated = useStudentStore.getState().students.find((s) => s.id === original.id);
+    expect(hydrated?.s4).toBe(true);
+
+    localStorage.removeItem('bereana_attendance_queue_v2');
   });
 });

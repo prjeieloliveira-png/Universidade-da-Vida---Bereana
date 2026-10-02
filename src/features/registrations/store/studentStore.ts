@@ -21,6 +21,22 @@ function calculateAge(birthDateStr: string): number {
   return Math.max(0, age);
 }
 
+const ATTENDANCE_QUEUE_KEY = 'bereana_attendance_queue_v2';
+
+/** Marcações de presença ainda não sincronizadas (fila offline), por `studentId:semana`. */
+function readPendingAttendance(): Map<string, boolean> {
+  const pending = new Map<string, boolean>();
+  try {
+    const raw = localStorage.getItem(ATTENDANCE_QUEUE_KEY);
+    if (!raw) return pending;
+    const items = JSON.parse(raw) as { studentId: string; sessionNumber: number; present: boolean }[];
+    items.forEach((i) => pending.set(`${i.studentId}:${i.sessionNumber}`, i.present));
+  } catch {
+    // fila ilegível: ignora e confia no servidor
+  }
+  return pending;
+}
+
 function mapRawToRecord(raw: (typeof studentsList)[0] & { cohortId?: string }): StudentRecord {
   return {
     id: `reg-${raw.num}`,
@@ -125,33 +141,19 @@ export const useStudentStore = create<StudentStoreState>()(
           return { students: [created, ...state.students] };
         }),
       setStudents: (incomingStudents) =>
-        set((state) => {
-          const attendanceMap = new Map<string, Partial<StudentRecord>>();
-          state.students.forEach((s) => {
-            const att = {
-              s1: s.s1, s2: s.s2, s3: s.s3, s4: s.s4,
-              s5: s.s5, s6: s.s6, s7: s.s7, s8: s.s8, s9: s.s9,
-            };
-            attendanceMap.set(s.id, att);
-            if (s.personId) attendanceMap.set(s.personId, att);
-          });
-
+        set(() => {
+          // O banco é a fonte da verdade; só marcações ainda pendentes na fila offline
+          // (não sincronizadas) sobrescrevem o que veio do servidor.
+          const pending = readPendingAttendance();
           const merged = incomingStudents.map((inc) => {
-            const localAtt = attendanceMap.get(inc.id) || (inc.personId ? attendanceMap.get(inc.personId) : undefined);
-            return {
-              ...inc,
-              s1: inc.s1 || (localAtt?.s1 ?? false),
-              s2: inc.s2 || (localAtt?.s2 ?? false),
-              s3: inc.s3 || (localAtt?.s3 ?? false),
-              s4: inc.s4 || (localAtt?.s4 ?? false),
-              s5: inc.s5 || (localAtt?.s5 ?? false),
-              s6: inc.s6 || (localAtt?.s6 ?? false),
-              s7: inc.s7 || (localAtt?.s7 ?? false),
-              s8: inc.s8 || (localAtt?.s8 ?? false),
-              s9: inc.s9 || (localAtt?.s9 ?? false),
-            };
+            const next = { ...inc };
+            for (let w = 1; w <= 9; w++) {
+              const key = `s${w}` as WeekKey;
+              const override = pending.get(`${inc.id}:${w}`);
+              next[key] = override ?? Boolean(inc[key]);
+            }
+            return next;
           });
-
           return { students: merged };
         }),
       setAttendance: (studentId, week, present) =>
