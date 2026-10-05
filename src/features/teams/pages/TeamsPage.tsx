@@ -219,7 +219,12 @@ export function TeamsPage() {
           onDeleteRole={setRoleToDelete}
         />
       ) : (
-        <MeetingListTab roles={roles} editionId={editionId} teamMeetingsHook={teamMeetingsHook} />
+        <MeetingListTab
+          roles={roles}
+          editionId={editionId}
+          editionName={edition.name}
+          teamMeetingsHook={teamMeetingsHook}
+        />
       )}
 
       {/* Global Modals */}

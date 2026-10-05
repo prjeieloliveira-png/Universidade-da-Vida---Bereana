@@ -320,3 +320,10 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Quality gate: lint ✅ typecheck ✅ tests 111/111 ✅
 - [ ] Validação visual em 390px pendente (sessão do navegador da ferramenta deslogada)
 - Próximas etapas: relatório/CSV da equipe; link da porta da equipe (opção A: exige login no aparelho, como nos alunos)
+- PR #15 mesclado em main, deploy ok (etapa 1)
+
+## Chamada da equipe — etapas 2 e 3
+- [x] Etapa 2: `TeamsAttendanceReportModal` (membros × reuniões, ✓/F/em branco, tooltip com autor e justificativa, total, imprimir e CSV com BOM) + botão "Relatório" em Reuniões (`MeetingListTab`); +1 teste
+- [x] Etapa 3 (opção A, exige login no aparelho): `ShareDoorLinkModal` generalizado (path/título/instruções/WhatsApp); botão "Link da Porta" na chamada da reunião; rota `/equipes/porta?reuniao=ID` dentro de `ProtectedRoute` (sem AppShell) → `TeamDoorAttendancePage` reaproveita o mesmo `MeetingAttendanceSheet` (procedimento idêntico); bloqueia quem não é coord/sec
+- [x] Quality gate: lint ✅ typecheck ✅ tests 112/112 ✅
+- [ ] Validação visual (390px) das etapas 1–3 pendente — sessão do navegador da ferramenta deslogada
