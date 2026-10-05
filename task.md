@@ -310,3 +310,13 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] `setStudents` agora trata o banco como verdade e só preserva marcações ainda pendentes na fila offline (`bereana_attendance_queue_v2`); testes ajustados (+1) — lint ✅ typecheck ✅ tests 111/111 ✅
 - Dados: na S4 há um lote de 33 presenças gravadas no mesmo minuto (28/09 21:44, 33P/0F) = clique em "Todos Presentes"; S1–S3 não têm lotes. As 33 presenças atuais da S4 são, na prática, esse lote + 13 faltas individuais — precisa o usuário conferir a S4 real. NÃO alterei dados de produção.
 - [ ] Commit/push/merge dessa correção aguardando aprovação do usuário
+
+## Chamada da equipe igual à dos alunos — etapa 1
+- Migração `20261003000001_team_attendance_parity.sql` aplicada pelo usuário no banco: coluna `team_meeting_attendances.note`, RPC `sync_team_attendances_rpc` (só authenticated, coord/sec) e view `v_team_attendance_log` (com autor). CLI estava logado na conta errada (403), por isso o usuário aplicou o SQL manualmente
+- [x] `AttendanceConfirmModal` generalizado (subjectName/label/noun/contextLabel/details); AttendancePage e DoorAttendancePage adaptadas
+- [x] `useTeamAttendanceSync` (fila `bereana_team_attendance_queue_v1`) + `useTeamAttendance` em 3 estados (presente / falta confirmada / não registrado), lendo `v_team_attendance_log`
+- [x] `MeetingAttendanceSheet` + `MeetingAttendanceRow` + `MeetingAttendanceToolbar`: botões Presente/Falta com confirmação e justificativa, quadradinho verde/vermelho/branco, selo de sync, busca, A-Z, filtro Presentes/Faltas; botões em lote removidos
+- [x] `database.ts` editado à mão (note, v_team_attendance_log, sync_team_attendances_rpc) — regenerar com `npm run db:types` quando o CLI tiver acesso ao projeto
+- [x] Quality gate: lint ✅ typecheck ✅ tests 111/111 ✅
+- [ ] Validação visual em 390px pendente (sessão do navegador da ferramenta deslogada)
+- Próximas etapas: relatório/CSV da equipe; link da porta da equipe (opção A: exige login no aparelho, como nos alunos)

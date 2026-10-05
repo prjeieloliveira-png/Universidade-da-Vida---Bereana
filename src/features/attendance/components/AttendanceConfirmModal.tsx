@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, XCircle, X } from 'lucide-react';
-import type { StudentRecord } from '@/features/registrations/types';
-import type { WeekNumber } from '../types';
 
 interface AttendanceConfirmModalProps {
   isOpen: boolean;
-  student: StudentRecord | null;
-  week: WeekNumber;
+  /** Identificador de quem está sendo marcado (zera a justificativa ao trocar). */
+  subjectId: string | null;
+  subjectName: string | null;
+  /** Rótulo acima do nome, ex.: "Aluno(a) selecionado(a):". */
+  subjectLabel: string;
+  /** Substantivo usado na pergunta de confirmação, ex.: "aluno" ou "membro". */
+  subjectNoun: string;
+  /** Selo do contexto, ex.: "Aula • Semana 4". */
+  contextLabel: string;
+  /** Pares rótulo/valor exibidos abaixo do nome (ex.: Pastor, G12 / Líder). */
+  details?: { label: string; value: string }[];
   action: 'PRESENTE' | 'FALTA' | null;
   onConfirm: (note?: string) => void;
   onClose: () => void;
@@ -14,8 +21,12 @@ interface AttendanceConfirmModalProps {
 
 export function AttendanceConfirmModal({
   isOpen,
-  student,
-  week,
+  subjectId,
+  subjectName,
+  subjectLabel,
+  subjectNoun,
+  contextLabel,
+  details = [],
   action,
   onConfirm,
   onClose,
@@ -25,9 +36,9 @@ export function AttendanceConfirmModal({
   // Limpa a observação ao abrir para um novo aluno/ação
   useEffect(() => {
     if (isOpen) setNote('');
-  }, [isOpen, student?.id, action]);
+  }, [isOpen, subjectId, action]);
 
-  if (!isOpen || !student || !action) return null;
+  if (!isOpen || !subjectName || !action) return null;
 
   const isPresent = action === 'PRESENTE';
 
@@ -78,30 +89,28 @@ export function AttendanceConfirmModal({
                 isPresent ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
               }`}
             >
-              Aula • Semana {week}
+              {contextLabel}
             </span>
           </div>
         </div>
 
-        {/* Student Details Card */}
+        {/* Subject Details Card */}
         <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mb-6">
-          <p className="text-xs text-slate-400 font-medium">Aluno(a) selecionado(a):</p>
+          <p className="text-xs text-slate-400 font-medium">{subjectLabel}</p>
           <h4 className="text-base font-black text-slate-900 mt-0.5 leading-snug">
-            {student.name}
+            {subjectName}
           </h4>
 
-          <div className="mt-3 pt-3 border-t border-slate-200/60 grid grid-cols-2 gap-2 text-xs text-slate-500">
-            <div>
-              <span className="block text-[10px] text-slate-400 uppercase font-semibold">Pastor</span>
-              <span className="font-semibold text-slate-700 truncate block">{student.pastor}</span>
+          {details.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-200/60 grid grid-cols-2 gap-2 text-xs text-slate-500">
+              {details.map((d) => (
+                <div key={d.label}>
+                  <span className="block text-[10px] text-slate-400 uppercase font-semibold">{d.label}</span>
+                  <span className="font-semibold text-slate-700 truncate block">{d.value}</span>
+                </div>
+              ))}
             </div>
-            <div>
-              <span className="block text-[10px] text-slate-400 uppercase font-semibold">G12 / Líder</span>
-              <span className="font-semibold text-slate-700 truncate block">
-                {student.g12 || student.leader || '—'}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Confirmation Question */}
@@ -110,7 +119,7 @@ export function AttendanceConfirmModal({
           <strong className={isPresent ? 'text-emerald-700' : 'text-rose-700'}>
             {isPresent ? 'PRESENÇA' : 'FALTA'}
           </strong>{' '}
-          para este aluno hoje?
+          para este {subjectNoun} hoje?
         </p>
 
         {/* Justificativa opcional, apenas para falta */}

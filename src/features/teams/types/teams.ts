@@ -65,8 +65,11 @@ export interface TeamMemberAttendanceItem {
   personPhone: string;
   teamRoleId: string;
   teamRoleName: string;
-  present: boolean;
+  /** null = ainda não registrado (diferente de falta confirmada). */
+  present: boolean | null;
   markedAt: string | null;
+  note: string | null;
+  markedByName: string | null;
 }
 
 export interface CreateTeamMemberInput {

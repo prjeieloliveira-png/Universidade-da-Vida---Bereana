@@ -1,6 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/shared/lib/supabase';
 import type { TeamMemberAttendanceItem } from '../types/teams';
+import { readPendingTeamAttendance, useTeamAttendanceSync } from './useTeamAttendanceSync';
 
 interface UseTeamAttendanceParams {
   meetingId: string;
@@ -58,24 +60,30 @@ export function useTeamAttendance({ meetingId, editionId }: UseTeamAttendancePar
 
       if (membersError) throw membersError;
 
-      // 3. Buscar presenças existentes marcadas para esta reunião
-      const { data: rawAttendances, error: attendancesError } = await supabase
-        .from('team_meeting_attendances')
-        .select('team_member_id, present, marked_at')
+      // 3. Registros reais (presença E falta confirmada) — sem linha = não registrado
+      const { data: rawLog, error: logError } = await supabase
+        .from('v_team_attendance_log')
+        .select('team_member_id, present, note, marked_at, marked_by_name')
         .eq('meeting_id', meetingId);
 
-      if (attendancesError) throw attendancesError;
+      if (logError) throw logError;
 
-      const attendanceMap = new Map<string, { present: boolean; markedAt: string | null }>();
-      (rawAttendances ?? []).forEach((att) => {
-        attendanceMap.set(att.team_member_id, {
-          present: att.present,
-          markedAt: att.marked_at,
+      const logMap = new Map<
+        string,
+        { present: boolean; note: string | null; markedAt: string | null; markedByName: string | null }
+      >();
+      (rawLog ?? []).forEach((row) => {
+        if (!row.team_member_id || row.present === null) return;
+        logMap.set(row.team_member_id, {
+          present: row.present,
+          note: row.note,
+          markedAt: row.marked_at,
+          markedByName: row.marked_by_name,
         });
       });
 
       const membersList = ((rawMembers ?? []) as unknown as RawMemberInfo[]).map((m) => {
-        const att = attendanceMap.get(m.id);
+        const att = logMap.get(m.id);
         return {
           memberId: m.id,
           personName: m.people?.full_name ?? 'Sem nome',
@@ -83,8 +91,10 @@ export function useTeamAttendance({ meetingId, editionId }: UseTeamAttendancePar
           teamRoleId: m.team_role_id,
           teamRoleName: m.team_roles?.name ?? 'Equipe',
           sortOrder: m.team_roles?.sort_order ?? 999,
-          present: att?.present ?? false,
+          present: att ? att.present : null,
           markedAt: att?.markedAt ?? null,
+          note: att?.note ?? null,
+          markedByName: att?.markedByName ?? null,
         };
       });
 
@@ -100,146 +110,37 @@ export function useTeamAttendance({ meetingId, editionId }: UseTeamAttendancePar
     staleTime: 10_000,
   });
 
-  // Mutação individual com Optimistic Update
-  const toggleAttendanceMutation = useMutation({
-    mutationFn: async ({ memberId, present }: { memberId: string; present: boolean }) => {
-      const { error } = await supabase.from('team_meeting_attendances').upsert(
-        {
-          meeting_id: meetingId,
-          team_member_id: memberId,
-          present,
-          marked_at: new Date().toISOString(),
-        },
-        { onConflict: 'meeting_id,team_member_id' }
-      );
-
-      if (error) throw error;
-    },
-    onMutate: async ({ memberId, present }) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previousData = queryClient.getQueryData<TeamMemberAttendanceItem[]>(queryKey);
-
-      if (previousData) {
-        queryClient.setQueryData<TeamMemberAttendanceItem[]>(
-          queryKey,
-          previousData.map((item) =>
-            item.memberId === memberId
-              ? { ...item, present, markedAt: new Date().toISOString() }
-              : item
-          )
-        );
-      }
-
-      return { previousData };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(queryKey, context.previousData);
-      }
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey });
-      void queryClient.invalidateQueries({ queryKey: ['team-meetings', editionId] });
-      void queryClient.invalidateQueries({ queryKey: ['team-members', editionId] });
-    },
-  });
-
-  // Marcação em lote usando a RPC atômica mark_team_attendance_batch
-  const batchAttendanceMutation = useMutation({
-    mutationFn: async (records: { team_member_id: string; present: boolean }[]) => {
-      const { error } = await (
-        supabase as unknown as {
-          rpc: (
-            fn: string,
-            args: { p_meeting_id: string; p_records: typeof records }
-          ) => Promise<{ data: unknown; error: unknown }>;
-        }
-      ).rpc('mark_team_attendance_batch', {
-        p_meeting_id: meetingId,
-        p_records: records,
-      });
-
-      if (error) throw error as Error;
-    },
-    onMutate: async (records) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previousData = queryClient.getQueryData<TeamMemberAttendanceItem[]>(queryKey);
-
-      if (previousData) {
-        const updateMap = new Map<string, boolean>();
-        records.forEach((r) => updateMap.set(r.team_member_id, r.present));
-
-        queryClient.setQueryData<TeamMemberAttendanceItem[]>(
-          queryKey,
-          previousData.map((item) => {
-            if (updateMap.has(item.memberId)) {
-              return {
-                ...item,
-                present: updateMap.get(item.memberId)!,
-                markedAt: new Date().toISOString(),
-              };
-            }
-            return item;
-          })
-        );
-      }
-
-      return { previousData };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(queryKey, context.previousData);
-      }
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey });
-      void queryClient.invalidateQueries({ queryKey: ['team-meetings', editionId] });
-      void queryClient.invalidateQueries({ queryKey: ['team-members', editionId] });
-    },
-  });
-
-  // Helper para marcar todos presentes de uma equipe específica
-  const markTeamAllPresent = (teamRoleId: string) => {
-    const list = attendanceQuery.data ?? [];
-    const teamMembers = list.filter((m) => m.teamRoleId === teamRoleId);
-    const records = teamMembers.map((m) => ({
-      team_member_id: m.memberId,
-      present: true,
-    }));
-    return batchAttendanceMutation.mutateAsync(records);
+  const invalidateSummaries = () => {
+    void queryClient.invalidateQueries({ queryKey });
+    void queryClient.invalidateQueries({ queryKey: ['team-meetings', editionId] });
+    void queryClient.invalidateQueries({ queryKey: ['team-members', editionId] });
   };
 
-  // Helper para marcar todos presentes da reunião inteira
-  const markAllPresent = () => {
-    const list = attendanceQuery.data ?? [];
-    const records = list.map((m) => ({
-      team_member_id: m.memberId,
-      present: true,
-    }));
-    return batchAttendanceMutation.mutateAsync(records);
-  };
+  const { syncStatus, pendingCount, flushQueue, markAttendance } =
+    useTeamAttendanceSync(invalidateSummaries);
 
-  // Helper para marcar todos ausentes
-  const markAllAbsent = () => {
-    const list = attendanceQuery.data ?? [];
-    const records = list.map((m) => ({
-      team_member_id: m.memberId,
-      present: false,
-    }));
-    return batchAttendanceMutation.mutateAsync(records);
-  };
+  // Marcações ainda pendentes (offline) aparecem na hora por cima do que veio do banco
+  const items = useMemo(() => {
+    const base = attendanceQuery.data ?? [];
+    if (pendingCount === 0) return base;
+    const pending = readPendingTeamAttendance(meetingId);
+    return base.map((item) => {
+      const p = pending.get(item.memberId);
+      return p
+        ? { ...item, present: p.present, note: p.note ?? null, markedAt: new Date(p.timestamp).toISOString() }
+        : item;
+    });
+  }, [attendanceQuery.data, pendingCount, meetingId, syncStatus]);
 
   return {
-    items: attendanceQuery.data ?? [],
+    items,
     isLoading: attendanceQuery.isLoading,
     isError: attendanceQuery.isError,
     error: attendanceQuery.error,
-    toggleAttendance: toggleAttendanceMutation.mutateAsync,
-    isToggling: toggleAttendanceMutation.isPending,
-    batchAttendance: batchAttendanceMutation.mutateAsync,
-    isBatching: batchAttendanceMutation.isPending,
-    markTeamAllPresent,
-    markAllPresent,
-    markAllAbsent,
+    syncStatus,
+    pendingCount,
+    flushQueue,
+    markAttendance: (memberId: string, present: boolean, note?: string) =>
+      markAttendance(meetingId, memberId, present, note),
   };
 }

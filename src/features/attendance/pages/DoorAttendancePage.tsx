@@ -264,8 +264,22 @@ export function DoorAttendancePage() {
       {/* Confirmation Modal */}
       <AttendanceConfirmModal
         isOpen={confirmModal.isOpen}
-        student={confirmModal.student}
-        week={activeWeek}
+        subjectId={confirmModal.student?.id ?? null}
+        subjectName={confirmModal.student?.name ?? null}
+        subjectLabel="Aluno(a) selecionado(a):"
+        subjectNoun="aluno"
+        contextLabel={`Aula • Semana ${activeWeek}`}
+        details={
+          confirmModal.student
+            ? [
+                { label: 'Pastor', value: confirmModal.student.pastor },
+                {
+                  label: 'G12 / Líder',
+                  value: confirmModal.student.g12 || confirmModal.student.leader || '—',
+                },
+              ]
+            : []
+        }
         action={confirmModal.action}
         onConfirm={handleConfirmAction}
         onClose={() => setConfirmModal({ isOpen: false, student: null, action: null })}
