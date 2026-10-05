@@ -879,6 +879,7 @@ export type Database = {
           marked_at: string | null
           marked_by: string | null
           meeting_id: string
+          note: string | null
           present: boolean
           team_member_id: string
         }
@@ -887,6 +888,7 @@ export type Database = {
           marked_at?: string | null
           marked_by?: string | null
           meeting_id: string
+          note?: string | null
           present?: boolean
           team_member_id: string
         }
@@ -895,6 +897,7 @@ export type Database = {
           marked_at?: string | null
           marked_by?: string | null
           meeting_id?: string
+          note?: string | null
           present?: boolean
           team_member_id?: string
         }
@@ -1491,6 +1494,17 @@ export type Database = {
           },
         ]
       }
+      v_team_attendance_log: {
+        Row: {
+          marked_at: string | null
+          marked_by_name: string | null
+          meeting_id: string | null
+          note: string | null
+          present: boolean | null
+          team_member_id: string | null
+        }
+        Relationships: []
+      }
       v_team_member_attendance: {
         Row: {
           active: boolean | null
@@ -1661,6 +1675,10 @@ export type Database = {
       }
       sync_attendances_rpc: {
         Args: { p_edition_id: string; p_items: Json }
+        Returns: Json
+      }
+      sync_team_attendances_rpc: {
+        Args: { p_items: Json; p_meeting_id: string }
         Returns: Json
       }
       sync_students_from_local: {

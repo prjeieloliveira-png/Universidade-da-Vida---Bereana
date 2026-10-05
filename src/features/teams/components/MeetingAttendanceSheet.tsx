@@ -1,8 +1,11 @@
-import React, { useMemo } from 'react';
-import { ArrowLeft, Check, CheckCheck, Loader2, MessageCircle, XCircle } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useTeamAttendance } from '../hooks/useTeamAttendance';
-import { formatPhone, getWhatsAppLink } from '@/shared/utils/phone';
-import type { TeamMeetingWithDetails } from '../types/teams';
+import { MeetingAttendanceToolbar, type MeetingStatusFilter } from './MeetingAttendanceToolbar';
+import { AttendanceConfirmModal } from '@/features/attendance/components/AttendanceConfirmModal';
+import { sortByName } from '@/shared/utils/sortByName';
+import { MeetingAttendanceRow } from './MeetingAttendanceRow';
+import type { TeamMeetingWithDetails, TeamMemberAttendanceItem } from '../types/teams';
 
 interface MeetingAttendanceSheetProps {
   meeting: TeamMeetingWithDetails;
@@ -15,25 +18,39 @@ export const MeetingAttendanceSheet: React.FC<MeetingAttendanceSheetProps> = ({
   editionId,
   onBack,
 }) => {
-  const {
-    items,
-    isLoading,
-    isError,
-    error,
-    toggleAttendance,
-    markTeamAllPresent,
-    markAllPresent,
-    markAllAbsent,
-    isBatching,
-  } = useTeamAttendance({ meetingId: meeting.id, editionId });
+  const { items, isLoading, isError, error, syncStatus, pendingCount, flushQueue, markAttendance } =
+    useTeamAttendance({ meetingId: meeting.id, editionId });
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<MeetingStatusFilter>('ALL');
+  const [sortAlphabetically, setSortAlphabetically] = useState(false);
+  const [confirm, setConfirm] = useState<{
+    member: TeamMemberAttendanceItem | null;
+    action: 'PRESENTE' | 'FALTA' | null;
+  }>({ member: null, action: null });
 
   const totalCalled = items.length;
-  const totalAttended = items.filter((i) => i.present).length;
+  const totalAttended = items.filter((i) => i.present === true).length;
+  const totalAbsent = items.filter((i) => i.present === false).length;
   const percentage = totalCalled > 0 ? Math.round((totalAttended / totalCalled) * 100) : 0;
+
+  const visibleItems = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = items.filter((i) => {
+      const matchesSearch =
+        !q || i.personName.toLowerCase().includes(q) || i.personPhone.includes(q);
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'PRESENTE' && i.present === true) ||
+        (statusFilter === 'FALTA' && i.present === false);
+      return matchesSearch && matchesStatus;
+    });
+    return sortAlphabetically ? sortByName(filtered, (i) => i.personName) : filtered;
+  }, [items, searchQuery, statusFilter, sortAlphabetically]);
 
   const groupedByTeam = useMemo(() => {
     const map = new Map<string, { roleName: string; members: typeof items }>();
-    items.forEach((item) => {
+    visibleItems.forEach((item) => {
       const existing = map.get(item.teamRoleId);
       if (existing) existing.members.push(item);
       else map.set(item.teamRoleId, { roleName: item.teamRoleName, members: [item] });
@@ -43,7 +60,7 @@ export const MeetingAttendanceSheet: React.FC<MeetingAttendanceSheetProps> = ({
       roleName: group.roleName,
       members: group.members,
     }));
-  }, [items]);
+  }, [visibleItems]);
 
   const formattedDate = meeting.meetingDate
     ? new Date(meeting.meetingDate + 'T00:00:00').toLocaleDateString('pt-BR')
@@ -89,32 +106,20 @@ export const MeetingAttendanceSheet: React.FC<MeetingAttendanceSheetProps> = ({
           </div>
         </div>
 
-        {/* Global Batch Action Buttons */}
-        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs text-slate-500">
-            Toque nos membros para alternar presença e falta:
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void markAllAbsent()}
-              disabled={isBatching}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-            >
-              <XCircle className="w-4 h-4 text-slate-400" />
-              <span>Marcar Ausentes</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => void markAllPresent()}
-              disabled={isBatching}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 min-h-[44px] rounded-full text-xs font-bold bg-[#58bc75] hover:bg-[#4caa68] text-white transition-colors shadow-xs cursor-pointer"
-            >
-              <CheckCheck className="w-4 h-4" />
-              <span>Marcar Presentes</span>
-            </button>
-          </div>
-        </div>
+        <MeetingAttendanceToolbar
+          syncStatus={syncStatus}
+          pendingCount={pendingCount}
+          onForceSync={() => void flushQueue()}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          sortAlphabetically={sortAlphabetically}
+          onToggleSort={() => setSortAlphabetically((v) => !v)}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          totalCalled={totalCalled}
+          totalAttended={totalAttended}
+          totalAbsent={totalAbsent}
+        />
       </div>
 
       {isLoading && (
@@ -139,7 +144,7 @@ export const MeetingAttendanceSheet: React.FC<MeetingAttendanceSheetProps> = ({
       <div className="space-y-4">
         {groupedByTeam.map((group) => {
           const teamTotal = group.members.length;
-          const teamAttended = group.members.filter((m) => m.present).length;
+          const teamAttended = group.members.filter((m) => m.present === true).length;
 
           return (
             <div
@@ -155,79 +160,39 @@ export const MeetingAttendanceSheet: React.FC<MeetingAttendanceSheetProps> = ({
                     {teamAttended}/{teamTotal} presentes
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void markTeamAllPresent(group.roleId)}
-                  disabled={isBatching}
-                  className="text-xs font-bold text-[#20693a] hover:underline cursor-pointer min-h-[44px] flex items-center"
-                >
-                  Marcar equipe presente
-                </button>
               </div>
 
               <div className="p-3 sm:p-4 divide-y divide-slate-100">
-                {group.members.map((member) => {
-                  const waLink = getWhatsAppLink(member.personPhone);
-                  return (
-                    <div
-                      key={member.memberId}
-                      className="py-2.5 sm:py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-sm text-slate-900 truncate">
-                          {member.personName}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                          <span className="font-mono">{formatPhone(member.personPhone)}</span>
-                          {waLink && (
-                            <a
-                              href={waLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-emerald-600 hover:text-emerald-700 p-1"
-                              title="WhatsApp"
-                            >
-                              <MessageCircle className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void toggleAttendance({
-                            memberId: member.memberId,
-                            present: !member.present,
-                          })
-                        }
-                        className={`min-h-[44px] px-4 py-2 rounded-full font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95 ${
-                          member.present
-                            ? 'bg-[#58bc75] hover:bg-[#4caa68] text-white shadow-[#58bc75]/25'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-500'
-                        }`}
-                        aria-label={`Presença de ${member.personName}: ${member.present ? 'Presente' : 'Ausente'}`}
-                      >
-                        {member.present ? (
-                          <>
-                            <Check className="w-4 h-4 stroke-[3]" />
-                            <span>Presente</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="w-2 h-2 rounded-full bg-slate-300" />
-                            <span>Ausente</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  );
-                })}
+                {group.members.map((member) => (
+                  <MeetingAttendanceRow
+                    key={member.memberId}
+                    member={member}
+                    onSelectAction={(m, action) => setConfirm({ member: m, action })}
+                  />
+                ))}
               </div>
             </div>
           );
         })}
       </div>
+
+      <AttendanceConfirmModal
+        isOpen={confirm.member !== null}
+        subjectId={confirm.member?.memberId ?? null}
+        subjectName={confirm.member?.personName ?? null}
+        subjectLabel="Membro selecionado:"
+        subjectNoun="membro"
+        contextLabel={`Reunião • ${formattedDate}`}
+        details={confirm.member ? [{ label: 'Equipe', value: confirm.member.teamRoleName }] : []}
+        action={confirm.action}
+        onConfirm={(note) => {
+          if (confirm.member && confirm.action) {
+            markAttendance(confirm.member.memberId, confirm.action === 'PRESENTE', note);
+          }
+          setConfirm({ member: null, action: null });
+        }}
+        onClose={() => setConfirm({ member: null, action: null })}
+      />
     </div>
   );
 };
