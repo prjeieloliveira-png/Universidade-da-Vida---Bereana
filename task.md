@@ -335,3 +335,6 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Quality gate: lint ✅ typecheck ✅ tests 112/112 ✅
 - [x] Migração aplicada pelo usuário e conferida: extrato = saldo (R$ 6.708,10), 5 linhas "Equipe" (R$ 500,00) aparecem no banco e na tela
 - [ ] Estorno de pagamento de equipe ainda não testado (dinheiro real)
+- PR #16 mesclado em main, deploy Hostinger ok
+- [x] Usuário validou em produção a chamada da equipe (etapas 1–3) e o extrato com pagamentos da equipe
+- Pendências conhecidas: regenerar `database.ts` com `npm run db:types` quando o Supabase CLI tiver acesso ao projeto Bereana (hoje editado à mão); `AttendancePage.tsx` passou de 400 linhas (limite do AGENTS.md) e merece ser dividida; 33 presenças em lote da Semana 4 (28/09 21:44) aguardam decisão do usuário
