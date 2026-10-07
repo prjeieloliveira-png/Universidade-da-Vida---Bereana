@@ -9,6 +9,7 @@ import { LeadershipPage } from '@/features/leadership/pages/LeadershipPage';
 import { DashboardPlaceholder } from './pages/DashboardPlaceholder';
 import { FinancialPage } from '@/features/financial/pages/FinancialPage';
 import { TeamsPage } from '@/features/teams/pages/TeamsPage';
+import { TeamDoorAttendancePage } from '@/features/teams/pages/TeamDoorAttendancePage';
 import { SettingsPage } from '@/features/settings/pages/SettingsPage';
 
 export function AppRoutes() {
@@ -18,6 +19,16 @@ export function AppRoutes() {
 
       {/* Rota pública mobile para os colaboradores na porta da igreja */}
       <Route path="/chamada/porta" element={<DoorAttendancePage />} />
+
+      {/* Modo porta da chamada da equipe: exige login no aparelho (gravação restrita a coord/sec) */}
+      <Route
+        path="/equipes/porta"
+        element={
+          <ProtectedRoute>
+            <TeamDoorAttendancePage />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/"

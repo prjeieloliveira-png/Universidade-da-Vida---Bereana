@@ -28,7 +28,7 @@ export const PAYMENT_STATUS_LABELS: Record<RegistrationPaymentStatus, string> = 
 export interface CashFlowEntry {
   transaction_id: string;
   date: string;
-  source: 'payment' | 'manual';
+  source: 'payment' | 'team_payment' | 'manual';
   flow_type: 'in' | 'out';
   amount_cents: number;
   payment_method: string;

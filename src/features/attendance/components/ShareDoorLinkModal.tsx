@@ -1,18 +1,27 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Copy, Check, MessageCircle, ExternalLink, QrCode } from 'lucide-react';
-import type { WeekNumber } from '../types';
 
 interface ShareDoorLinkModalProps {
   isOpen: boolean;
   onClose: () => void;
-  activeWeek: WeekNumber;
+  /** Caminho interno do modo porta, ex.: /chamada/porta?semana=3 */
+  path: string;
+  title: string;
+  subtitle: string;
+  instructions: string;
+  /** Texto enviado pelo WhatsApp (o link é anexado ao final). */
+  whatsappIntro: string;
 }
 
 export function ShareDoorLinkModal({
   isOpen,
   onClose,
-  activeWeek,
+  path,
+  title,
+  subtitle,
+  instructions,
+  whatsappIntro,
 }: ShareDoorLinkModalProps) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
@@ -20,7 +29,7 @@ export function ShareDoorLinkModal({
   if (!isOpen) return null;
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const doorUrl = `${origin}/chamada/porta?semana=${activeWeek}`;
+  const doorUrl = `${origin}${path}`;
 
   const handleCopy = async () => {
     try {
@@ -34,7 +43,7 @@ export function ShareDoorLinkModal({
   };
 
   const whatsappMessage = encodeURIComponent(
-    `Olá! Segue o link para fazer a chamada na porta da igreja (Semana ${activeWeek} - Universidade da Vida):\n\n${doorUrl}`
+    `${whatsappIntro}\n\n${doorUrl}`
   );
   const whatsappUrl = `https://api.whatsapp.com/send?text=${whatsappMessage}`;
 
@@ -70,18 +79,17 @@ export function ShareDoorLinkModal({
           </div>
           <div>
             <h3 id="share-link-title" className="text-lg font-black text-slate-900 leading-tight">
-              Chamada na Porta da Igreja
+              {title}
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Link para os colaboradores na recepção • Semana {activeWeek}
+              {subtitle}
             </p>
           </div>
         </div>
 
         {/* Instructions */}
         <p className="text-xs text-slate-600 mb-4 leading-relaxed">
-          Envie este link para os voluntários na portaria. Ao abrir no celular, eles poderão
-          pesquisar o aluno por nome e registrar presença ou falta com confirmação.
+          {instructions}
         </p>
 
         {/* Link Box */}
@@ -130,7 +138,7 @@ export function ShareDoorLinkModal({
             type="button"
             onClick={() => {
               onClose();
-              navigate(`/chamada/porta?semana=${activeWeek}`);
+              navigate(path);
             }}
             className="w-full py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
           >

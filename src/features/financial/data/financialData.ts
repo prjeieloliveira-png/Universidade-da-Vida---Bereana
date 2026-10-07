@@ -154,7 +154,9 @@ export async function fetchCashFlow(editionId: string): Promise<CashFlowEntry[]>
       description:
         row.source === 'manual'
           ? (row.transaction_id ? descMap.get(row.transaction_id) : null) ?? row.category
-          : row.person_name ? `Inscrição: ${row.person_name}` : row.category,
+          : row.person_name
+          ? `${row.source === 'team_payment' ? 'Equipe' : 'Inscrição'}: ${row.person_name}`
+          : row.category,
     })) as CashFlowEntry[];
   } catch {
     return [];
@@ -206,6 +208,9 @@ export async function voidCashFlowEntry(
 ): Promise<void> {
   if (entry.source === 'payment') {
     return voidPayment(entry.transaction_id, reason);
+  }
+  if (entry.source === 'team_payment') {
+    return voidTeamMemberPayment(entry.transaction_id, reason);
   }
   return voidTransaction(entry.transaction_id, reason);
 }

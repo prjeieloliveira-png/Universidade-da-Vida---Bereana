@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Calendar, Loader2, AlertCircle, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { MeetingCard } from './MeetingCard';
 import { MeetingModal } from './MeetingModal';
 import { DeleteMeetingModal } from './DeleteMeetingModal';
 import { MeetingAttendanceSheet } from './MeetingAttendanceSheet';
+import { TeamsAttendanceReportModal } from './TeamsAttendanceReportModal';
 import type { TeamRoleRow, TeamMeetingWithDetails } from '../types/teams';
 import type { useTeamMeetings } from '../hooks/useTeamMeetings';
 
 interface MeetingListTabProps {
   roles: TeamRoleRow[];
   editionId: string | undefined;
+  editionName: string;
   teamMeetingsHook: ReturnType<typeof useTeamMeetings>;
 }
 
 export const MeetingListTab: React.FC<MeetingListTabProps> = ({
   roles,
   editionId,
+  editionName,
   teamMeetingsHook,
 }) => {
   const {
@@ -32,6 +35,7 @@ export const MeetingListTab: React.FC<MeetingListTabProps> = ({
   const [activeAttendanceMeeting, setActiveAttendanceMeeting] =
     useState<TeamMeetingWithDetails | null>(null);
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<TeamMeetingWithDetails | null>(null);
   const [meetingToDelete, setMeetingToDelete] = useState<TeamMeetingWithDetails | null>(null);
 
@@ -102,14 +106,25 @@ export const MeetingListTab: React.FC<MeetingListTabProps> = ({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenNew}
-          className="inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-full text-xs font-bold bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#419a5c] text-white transition-colors shadow-sm cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nova Reunião</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsReportOpen(true)}
+            disabled={meetings.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-full text-xs font-bold bg-[#163242] hover:bg-[#1f4358] text-white transition-colors shadow-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-[#58bc75]" />
+            <span>Relatório</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenNew}
+            className="inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-full text-xs font-bold bg-[#58bc75] hover:bg-[#4caa68] active:bg-[#419a5c] text-white transition-colors shadow-sm cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nova Reunião</span>
+          </button>
+        </div>
       </div>
 
       {/* Meetings List */}
@@ -163,6 +178,14 @@ export const MeetingListTab: React.FC<MeetingListTabProps> = ({
         onClose={() => setMeetingToDelete(null)}
         meeting={meetingToDelete}
         onConfirmDelete={deleteMeeting}
+      />
+
+      <TeamsAttendanceReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        editionId={editionId}
+        editionName={editionName}
+        meetings={meetings}
       />
     </div>
   );

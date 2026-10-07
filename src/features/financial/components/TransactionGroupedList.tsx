@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import {
   GraduationCap,
+  Users,
   Building2,
   Utensils,
   BookOpen,
@@ -28,6 +29,9 @@ function getCategoryIcon(category: string, flowType: 'in' | 'out') {
   const norm = category.toLowerCase();
   if (norm.includes('inscrição') || norm.includes('inscricao')) {
     return { icon: GraduationCap, bg: 'bg-emerald-50 text-[#0d7647]' };
+  }
+  if (norm === 'equipe') {
+    return { icon: Users, bg: 'bg-indigo-50 text-indigo-600' };
   }
   if (norm.includes('sítio') || norm.includes('sitio') || norm.includes('locação') || norm.includes('locacao')) {
     return { icon: Building2, bg: 'bg-amber-50 text-amber-700' };

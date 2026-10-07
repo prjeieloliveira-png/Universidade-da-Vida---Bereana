@@ -458,7 +458,11 @@ export function AttendancePage() {
       <ShareDoorLinkModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
-        activeWeek={activeWeek}
+        path={`/chamada/porta?semana=${activeWeek}`}
+        title="Chamada na Porta da Igreja"
+        subtitle={`Link para os colaboradores na recepção • Semana ${activeWeek}`}
+        instructions="Envie este link para os voluntários na portaria. Ao abrir no celular, eles poderão pesquisar o aluno por nome e registrar presença ou falta com confirmação."
+        whatsappIntro={`Olá! Segue o link para fazer a chamada na porta da igreja (Semana ${activeWeek} - Universidade da Vida):`}
       />
 
       {/* Confirmação antes de aplicar Presente/Falta */}

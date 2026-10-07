@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Smartphone } from 'lucide-react';
+import { ShareDoorLinkModal } from '@/features/attendance/components/ShareDoorLinkModal';
 import { useTeamAttendance } from '../hooks/useTeamAttendance';
 import { MeetingAttendanceToolbar, type MeetingStatusFilter } from './MeetingAttendanceToolbar';
 import { AttendanceConfirmModal } from '@/features/attendance/components/AttendanceConfirmModal';
@@ -21,6 +22,7 @@ export const MeetingAttendanceSheet: React.FC<MeetingAttendanceSheetProps> = ({
   const { items, isLoading, isError, error, syncStatus, pendingCount, flushQueue, markAttendance } =
     useTeamAttendance({ meetingId: meeting.id, editionId });
 
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<MeetingStatusFilter>('ALL');
   const [sortAlphabetically, setSortAlphabetically] = useState(false);
@@ -92,6 +94,15 @@ export const MeetingAttendanceSheet: React.FC<MeetingAttendanceSheetProps> = ({
               </h2>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIsShareOpen(true)}
+            className="px-4 py-2.5 rounded-full text-xs font-black bg-[#58bc75] hover:bg-[#4caa68] text-white flex items-center gap-2 shadow-xs cursor-pointer active:scale-95 self-start sm:self-auto"
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>Link da Porta</span>
+          </button>
 
           <div className="flex items-center gap-2.5 px-4 py-2 bg-slate-50 border border-slate-200/80 rounded-2xl self-start sm:self-auto">
             <div className="text-right">
@@ -192,6 +203,16 @@ export const MeetingAttendanceSheet: React.FC<MeetingAttendanceSheetProps> = ({
           setConfirm({ member: null, action: null });
         }}
         onClose={() => setConfirm({ member: null, action: null })}
+      />
+
+      <ShareDoorLinkModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        path={`/equipes/porta?reuniao=${meeting.id}`}
+        title="Chamada da Equipe na Porta"
+        subtitle={`Link da reunião de ${formattedDate}`}
+        instructions="Envie este link para quem fará a chamada. Ao abrir no celular (com login ativo no aparelho), eles marcam presença ou falta de cada membro com confirmação."
+        whatsappIntro={`Olá! Segue o link para fazer a chamada da equipe (reunião de ${formattedDate} - Universidade da Vida):`}
       />
     </div>
   );
