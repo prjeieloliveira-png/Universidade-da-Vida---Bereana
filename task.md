@@ -354,3 +354,5 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
   - saldo íntegro após os testes (extrato = resumo = R$ 5.558,10); sobraram só linhas estornadas de teste (excluídas do caixa) e linhas no log
   - UI: modal de edição abre pré-preenchido em 390px (testado com pagamento de equipe, cancelado sem salvar)
 - [ ] Commit local feito; falta push/merge (aguardando o usuário)
+- PR #17 mesclado em main, deploy ok
+- Bug reportado em produção: editar pagamento de equipe para R$ 100,01 mostrava só "Falha ao salvar a edição." — o banco recusou corretamente (taxa da equipe = R$ 100,00), mas o erro do Supabase é um objeto simples (não `Error`) e o modal caía no texto genérico. [x] `updateCashFlowEntry` agora relança `new Error(error.message)`; teste ajustado para usar objeto simples como o Supabase. lint ✅ typecheck ✅ tests 116/116 ✅. [ ] push/merge pendente
