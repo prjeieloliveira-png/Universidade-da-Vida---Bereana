@@ -76,6 +76,9 @@ export function FinancialPage() {
     onSuccess: (_, entry) => {
       queryClient.invalidateQueries({ queryKey: ['cash-flow', editionId] });
       queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+      if (entry.source === 'team_payment') {
+        queryClient.invalidateQueries({ queryKey: ['team-member-payment-statuses', editionId] });
+      }
       if (entry.source === 'payment') {
         queryClient.invalidateQueries({ queryKey: ['payments', editionId] });
         queryClient.invalidateQueries({ queryKey: ['reg-payment-statuses', editionId] });

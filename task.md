@@ -327,3 +327,11 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Etapa 3 (opção A, exige login no aparelho): `ShareDoorLinkModal` generalizado (path/título/instruções/WhatsApp); botão "Link da Porta" na chamada da reunião; rota `/equipes/porta?reuniao=ID` dentro de `ProtectedRoute` (sem AppShell) → `TeamDoorAttendancePage` reaproveita o mesmo `MeetingAttendanceSheet` (procedimento idêntico); bloqueia quem não é coord/sec
 - [x] Quality gate: lint ✅ typecheck ✅ tests 112/112 ✅
 - [ ] Validação visual (390px) das etapas 1–3 pendente — sessão do navegador da ferramenta deslogada
+
+## Financeiro: pagamentos da equipe no extrato
+- Verificação (banco real): `team_member_payments` tinha 5 pagamentos (R$ 500,00); `v_cash_summary` já somava (entradas R$ 6.828,00 = alunos 6.328 + equipe 500; saldo R$ 6.708,10), mas `v_cash_flow` (extrato) só trazia pagamentos de inscrição + lançamentos manuais → extrato somava R$ 6.208,10, R$ 500 abaixo do saldo
+- [x] Migração `20261007000001_cash_flow_include_team_payments.sql` (a aplicar pelo usuário): `v_cash_flow` ganha ramo `source='team_payment'` (categoria "Equipe", nome do membro, forma, autor via `created_by`), mesmas colunas, `security_invoker`
+- [x] App: `CashFlowEntry.source` aceita `'team_payment'`; descrição "Equipe: Nome"; estorno chama `voidTeamMemberPayment` (antes cairia em `voidTransaction`); invalida status de pagamento da equipe; ícone de "Equipe"
+- [x] Quality gate: lint ✅ typecheck ✅ tests 112/112 ✅
+- [x] Migração aplicada pelo usuário e conferida: extrato = saldo (R$ 6.708,10), 5 linhas "Equipe" (R$ 500,00) aparecem no banco e na tela
+- [ ] Estorno de pagamento de equipe ainda não testado (dinheiro real)
