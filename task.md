@@ -347,3 +347,10 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Quality gate: lint ✅ typecheck ✅ tests 116/116 ✅ (+4 testes)
 - [ ] ATENÇÃO: `fetchCashFlow` devolve [] em erro — só fazer merge/deploy DEPOIS de aplicar a migração (a view nova precisa das colunas novas)
 - [ ] Aplicar SQL, validar no navegador (editar de teste e conferir log e saldo) e então commit/push/merge
+- [x] Migração `20261008000001` aplicada pelo usuário e TESTADA no banco real (via console do navegador logado):
+  - manual: criado lançamento de teste (R$ 0,01), validações recusaram valor 0 e forma inválida; edição de tipo/categoria/valor/forma/descrição/data/comprovante funcionou, `v_cash_flow` refletiu (data real, `last_edited_*`), `financial_edit_log` gravou antes/depois; estorno tirou do extrato e nova edição foi recusada
+  - aluno: pagamento de 1 centavo em aluno pendente editado (valor/forma/data/observação) e estornado; edição acima da taxa recusada ("valor máximo: 20000")
+  - equipe: pagamento de 1 centavo em membro pendente editado e estornado; acima de R$ 100 recusado
+  - saldo íntegro após os testes (extrato = resumo = R$ 5.558,10); sobraram só linhas estornadas de teste (excluídas do caixa) e linhas no log
+  - UI: modal de edição abre pré-preenchido em 390px (testado com pagamento de equipe, cancelado sem salvar)
+- [ ] Commit local feito; falta push/merge (aguardando o usuário)
