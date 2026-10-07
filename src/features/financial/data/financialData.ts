@@ -218,7 +218,7 @@ export async function updateCashFlowEntry(
       p_date: input.date,
       p_receipt_url: input.receipt_url ?? undefined,
     });
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return;
   }
 
@@ -232,7 +232,7 @@ export async function updateCashFlowEntry(
       p_notes: input.notes ?? undefined,
     }
   );
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function voidCashFlowEntry(

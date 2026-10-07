@@ -165,7 +165,7 @@ describe('financialData - update entries', () => {
   it('propaga o erro do banco', async () => {
     (supabase.rpc as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: null,
-      error: new Error('Pagamento excede o valor da taxa'),
+      error: { message: 'Pagamento excede o valor da taxa' },
     });
     await expect(
       updateCashFlowEntry(base, { amount_cents: 999999, payment_method: 'pix', date: '2026-09-27' })
