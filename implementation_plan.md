@@ -1,40 +1,33 @@
-# Plano: Chamada da equipe idêntica à chamada dos alunos
+# Plano: editar lançamentos do Financeiro (alunos, equipe e manuais)
 
-## Diferenças encontradas (equipe hoje vs. alunos)
-| Item | Alunos (alvo) | Equipe hoje |
+## Verificação — hoje NÃO dá para editar
+Todo lançamento do extrato só tem "Estornar" (void). Não existe nenhuma tela, função ou RPC de edição. Hoje, para corrigir um valor errado, é preciso estornar e lançar de novo.
+
+| Tipo | Tabela | Campos editáveis |
 |---|---|---|
-| Marcar | 2 botões Presente/Falta + modal de confirmação (com justificativa na falta) | 1 pílula que alterna na hora, sem confirmar |
-| Falta | chip vermelho (falta confirmada) vs. branco (não registrado) | "ausente" cinza, igual a não registrado |
-| Seleção | nenhuma semana pré-selecionada, ações bloqueadas até escolher | usuário abre a reunião pelo card (ok) |
-| Offline | fila persistida + selo de sincronização | só online; falha silenciosa |
-| Autoria | "quem registrou" | `marked_by` só preenchido no lote |
-| Filtros | busca, A-Z, "Mais filtros", filtro Presentes/Faltas | nenhum |
-| Relatório | modal + CSV (em branco = não registrado) | não existe |
-| Link | "Link da Porta" público (`/chamada/porta`) | não existe |
-| Lote | removido ("Todos Presentes") | "Marcar Presentes/Ausentes/equipe" |
+| Inscrição de aluno | `payments` | valor, forma de pagamento, data do pagamento, observação (e comprovante) |
+| Pagamento de equipe | `team_member_payments` | valor, forma, data, observação |
+| Entrada/saída manual | `financial_transactions` | tipo (entrada/saída), categoria, valor, forma, descrição, data, comprovante |
 
-## Banco (precisa de migração nova)
-- `team_meeting_attendances`: **sem linha = não registrado** (já funciona, não precisa mudar o modelo); adicionar coluna `note text`.
-- Nova RPC `record_team_attendance_rpc(meeting_id, team_member_id, present, note)` e `sync_team_attendances_rpc(p_items jsonb)` (SECURITY DEFINER, só `authenticated`, exige `is_coord_or_sec()`), preenchendo `marked_by = auth.uid()`; usada pela fila offline.
-- Nova view `v_team_attendance_log` (como `v_attendance_log`): reunião, membro, present, note, marked_at, `marked_by_name`, `security_invoker`.
-- Remover o uso de `mark_team_attendance_batch` no app (a função pode ficar no banco).
-- Migração aplicada com `supabase db push` somente com sua aprovação explícita.
+Não editáveis: lançamentos já estornados, e "de quem" é o pagamento (trocar o aluno/membro de um pagamento) — para isso continua estorno + novo lançamento.
+
+## Banco (migração nova — a aplicar por você)
+1. **3 RPCs** `SECURITY DEFINER`, só `authenticated` com `is_coord_or_sec()`, recusam lançamento estornado:
+   - `update_payment(id, amount, method, date, notes)` — revalida o limite da taxa (soma dos outros pagamentos do aluno + novo valor ≤ taxa), pois o gatilho atual só vale em INSERT.
+   - `update_team_member_payment(id, amount, method, date, notes)` — mesma regra (taxa de R$ 100,00 da equipe).
+   - `update_financial_transaction(id, type, category, amount, method, description, date, receipt_url)`.
+2. **Valor sempre em centavos inteiros e > 0**, forma de pagamento só entre as aceitas (pix, débito, crédito, dinheiro).
+3. **Trilha de auditoria** (recomendado, pois é dinheiro): tabela `financial_edit_log` (entidade, id, quem editou, quando, valores antes/depois em JSON), com RLS (leitura só coord/sec). Cada RPC grava uma linha.
+4. **Data do extrato:** hoje `v_cash_flow` mostra a data de criação do registro (`created_at`), não a data informada. Para a edição de data ter efeito, a view passa a usar a data do pagamento/lançamento.
 
 ## App
-1. `useTeamAttendanceSync` (cópia adaptada de `useAttendanceSync`): fila `bereana_team_attendance_queue_v1`, chave `(meetingId, memberId)`, selo `AttendanceSyncBadge` reaproveitado.
-2. `useTeamAttendance`: estado de 3 valores (presente / falta confirmada / sem registro) lido de `v_team_attendance_log`.
-3. `MeetingAttendanceSheet`: linhas no mesmo padrão (botões Presente/Falta, chip vermelho para falta, bloqueio sem reunião escolhida), `AttendanceConfirmModal` generalizado para aceitar nome + rótulo (aluno/semana ou membro/reunião), busca + A-Z + filtro Presentes/Faltas, remoção dos botões de lote.
-4. Relatório da equipe (membros × reuniões, em branco = não registrado, CSV), no mesmo molde do `AttendanceReportModal`.
-5. Link da equipe: reaproveitar `ShareDoorLinkModal` (recebe URL/tipo) + página `/equipes/porta?reuniao=ID` nos moldes do `DoorAttendancePage`.
+- Botão de lápis em cada linha do extrato (ao lado do estorno), abrindo `EditCashFlowEntryModal` com os campos do tipo daquele lançamento (valor, forma, data, observação; e categoria/descrição/tipo nos manuais). Reaproveita o padrão dos modais existentes.
+- Funções em `financialData.ts` chamando as RPCs; atualização do extrato, resumo do caixa e status de pagamento (alunos/equipe) após salvar.
+- Selo "Editado" na linha (com quem e quando, vindo do log) — se você aprovar a auditoria.
+- Testes do modal e das funções; quality gate; validação em 390px.
 
-## Decisão sua antes do passo 5 (link)
-Hoje o anon está bloqueado nas RPCs de chamada (migração `lockdown_anon_access`): o link da porta de **alunos** só funciona em aparelho com login ativo. Para equipe, duas opções:
-- **A (recomendada):** manter o mesmo comportamento — o link abre a chamada, mas exige login do aparelho (padrão idêntico ao dos alunos).
-- **B:** liberar escrita anônima — contraria o lockdown de segurança, não recomendo.
+## Decisões suas antes de começar
+1. **Auditoria (item 3):** recomendo sim (rastreia quem alterou valores). Se não quiser, tiro o log e o selo.
+2. **Data do extrato (item 4):** recomendo passar a usar a data real do pagamento. Isso pode reordenar lançamentos antigos cujo dia informado difere do dia em que foram digitados.
 
-## Ordem de entrega (cada etapa com lint/typecheck/test + validação em 390px)
-1. Migração + hook/fila + confirmação + chip vermelho + bloqueio (núcleo do pedido)
-2. Busca/A-Z/filtros + relatório/CSV
-3. Link da porta da equipe
-
-Aguardando aprovação (e a escolha A/B do link).
+Aguardando aprovação.

@@ -10,6 +10,7 @@ import {
   Heart,
   Music,
   Trash2,
+  Pencil,
   ArrowDownLeft,
   ArrowUpRight,
   Receipt,
@@ -21,6 +22,7 @@ import { formatCentsToBRL } from '@/shared/utils/currency';
 interface TransactionGroupedListProps {
   entries: CashFlowEntry[];
   onVoid?: (entry: CashFlowEntry) => void;
+  onEdit?: (entry: CashFlowEntry) => void;
   isLoading?: boolean;
   isVoiding?: boolean;
 }
@@ -85,6 +87,7 @@ function formatGroupDate(dateStr: string): string {
 export function TransactionGroupedList({
   entries,
   onVoid,
+  onEdit,
   isLoading,
   isVoiding,
 }: TransactionGroupedListProps) {
@@ -177,6 +180,14 @@ export function TransactionGroupedList({
                           <span className="font-semibold text-slate-600">{entry.category}</span>
                           <span className="mx-1.5">•</span>
                           <span>{methodLabel}</span>
+                          {entry.last_edited_at && (
+                            <span
+                              className="ml-1.5 px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold"
+                              title={`Editado${entry.last_edited_by_name ? ` por ${entry.last_edited_by_name}` : ''} em ${new Date(entry.last_edited_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}`}
+                            >
+                              Editado
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -191,6 +202,18 @@ export function TransactionGroupedList({
                         {isIn ? '+' : '−'}
                         {formatCentsToBRL(entry.amount_cents)}
                       </span>
+
+                      {onEdit && (
+                        <button
+                          type="button"
+                          onClick={() => onEdit(entry)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-slate-100 text-slate-300 hover:text-slate-700 cursor-pointer"
+                          title="Editar lançamento"
+                          aria-label="Editar lançamento"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
                       {onVoid && (
                         <button

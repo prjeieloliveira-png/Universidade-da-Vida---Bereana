@@ -335,3 +335,22 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Quality gate: lint ✅ typecheck ✅ tests 112/112 ✅
 - [x] Migração aplicada pelo usuário e conferida: extrato = saldo (R$ 6.708,10), 5 linhas "Equipe" (R$ 500,00) aparecem no banco e na tela
 - [ ] Estorno de pagamento de equipe ainda não testado (dinheiro real)
+- PR #16 mesclado em main, deploy Hostinger ok
+- [x] Usuário validou em produção a chamada da equipe (etapas 1–3) e o extrato com pagamentos da equipe
+- Pendências conhecidas: regenerar `database.ts` com `npm run db:types` quando o Supabase CLI tiver acesso ao projeto Bereana (hoje editado à mão); `AttendancePage.tsx` passou de 400 linhas (limite do AGENTS.md) e merece ser dividida; 33 presenças em lote da Semana 4 (28/09 21:44) aguardam decisão do usuário
+- PR #16 e validação em produção registrados acima
+
+## Financeiro: editar lançamentos (alunos, equipe e manuais) com auditoria
+- Verificação: antes só existia estorno; nenhuma tela/RPC de edição
+- [x] Migração `20261008000001_edit_financial_entries.sql` (a aplicar pelo usuário): tabela `financial_edit_log` (RLS, leitura coord/sec), RPCs `update_payment`, `update_team_member_payment` (revalidam limite da taxa; equipe R$ 100) e `update_financial_transaction` (tipo/categoria/valor/forma/descrição/data/comprovante), todas coord/sec, recusam estornados e gravam antes/depois no log; `v_cash_flow` passa a usar a data real do pagamento/lançamento (meio-dia p/ não virar o dia) e ganha colunas `last_edited_at`, `last_edited_by_name`, `notes`, `receipt_url`
+- [x] App: `EditCashFlowEntryModal` (campos conforme o tipo), lápis em cada linha do extrato, selo "Editado" (com quem/quando no tooltip), `updateCashFlowEntry`, invalidação de extrato/caixa/status; `database.ts` editado à mão (view, funções)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 116/116 ✅ (+4 testes)
+- [ ] ATENÇÃO: `fetchCashFlow` devolve [] em erro — só fazer merge/deploy DEPOIS de aplicar a migração (a view nova precisa das colunas novas)
+- [ ] Aplicar SQL, validar no navegador (editar de teste e conferir log e saldo) e então commit/push/merge
+- [x] Migração `20261008000001` aplicada pelo usuário e TESTADA no banco real (via console do navegador logado):
+  - manual: criado lançamento de teste (R$ 0,01), validações recusaram valor 0 e forma inválida; edição de tipo/categoria/valor/forma/descrição/data/comprovante funcionou, `v_cash_flow` refletiu (data real, `last_edited_*`), `financial_edit_log` gravou antes/depois; estorno tirou do extrato e nova edição foi recusada
+  - aluno: pagamento de 1 centavo em aluno pendente editado (valor/forma/data/observação) e estornado; edição acima da taxa recusada ("valor máximo: 20000")
+  - equipe: pagamento de 1 centavo em membro pendente editado e estornado; acima de R$ 100 recusado
+  - saldo íntegro após os testes (extrato = resumo = R$ 5.558,10); sobraram só linhas estornadas de teste (excluídas do caixa) e linhas no log
+  - UI: modal de edição abre pré-preenchido em 390px (testado com pagamento de equipe, cancelado sem salvar)
+- [ ] Commit local feito; falta push/merge (aguardando o usuário)

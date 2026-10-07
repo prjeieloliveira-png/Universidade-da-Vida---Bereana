@@ -1263,8 +1263,12 @@ export type Database = {
           date: string | null
           edition_id: string | null
           flow_type: string | null
+          last_edited_at: string | null
+          last_edited_by_name: string | null
+          notes: string | null
           payment_method: string | null
           person_name: string | null
+          receipt_url: string | null
           recorded_by_name: string | null
           registration_id: string | null
           source: string | null
@@ -1680,6 +1684,39 @@ export type Database = {
       sync_team_attendances_rpc: {
         Args: { p_items: Json; p_meeting_id: string }
         Returns: Json
+      }
+      update_financial_transaction: {
+        Args: {
+          p_amount_cents: number
+          p_category: string
+          p_date: string
+          p_description: string
+          p_id: string
+          p_method: string
+          p_receipt_url?: string
+          p_type: string
+        }
+        Returns: undefined
+      }
+      update_payment: {
+        Args: {
+          p_amount_cents: number
+          p_date: string
+          p_method: string
+          p_notes?: string
+          p_payment_id: string
+        }
+        Returns: undefined
+      }
+      update_team_member_payment: {
+        Args: {
+          p_amount_cents: number
+          p_date: string
+          p_method: string
+          p_notes?: string
+          p_payment_id: string
+        }
+        Returns: undefined
       }
       sync_students_from_local: {
         Args: { p_data: Json; p_edition_id: string }
