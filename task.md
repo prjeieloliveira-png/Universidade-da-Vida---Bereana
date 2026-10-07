@@ -338,3 +338,12 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - PR #16 mesclado em main, deploy Hostinger ok
 - [x] Usuário validou em produção a chamada da equipe (etapas 1–3) e o extrato com pagamentos da equipe
 - Pendências conhecidas: regenerar `database.ts` com `npm run db:types` quando o Supabase CLI tiver acesso ao projeto Bereana (hoje editado à mão); `AttendancePage.tsx` passou de 400 linhas (limite do AGENTS.md) e merece ser dividida; 33 presenças em lote da Semana 4 (28/09 21:44) aguardam decisão do usuário
+- PR #16 e validação em produção registrados acima
+
+## Financeiro: editar lançamentos (alunos, equipe e manuais) com auditoria
+- Verificação: antes só existia estorno; nenhuma tela/RPC de edição
+- [x] Migração `20261008000001_edit_financial_entries.sql` (a aplicar pelo usuário): tabela `financial_edit_log` (RLS, leitura coord/sec), RPCs `update_payment`, `update_team_member_payment` (revalidam limite da taxa; equipe R$ 100) e `update_financial_transaction` (tipo/categoria/valor/forma/descrição/data/comprovante), todas coord/sec, recusam estornados e gravam antes/depois no log; `v_cash_flow` passa a usar a data real do pagamento/lançamento (meio-dia p/ não virar o dia) e ganha colunas `last_edited_at`, `last_edited_by_name`, `notes`, `receipt_url`
+- [x] App: `EditCashFlowEntryModal` (campos conforme o tipo), lápis em cada linha do extrato, selo "Editado" (com quem/quando no tooltip), `updateCashFlowEntry`, invalidação de extrato/caixa/status; `database.ts` editado à mão (view, funções)
+- [x] Quality gate: lint ✅ typecheck ✅ tests 116/116 ✅ (+4 testes)
+- [ ] ATENÇÃO: `fetchCashFlow` devolve [] em erro — só fazer merge/deploy DEPOIS de aplicar a migração (a view nova precisa das colunas novas)
+- [ ] Aplicar SQL, validar no navegador (editar de teste e conferir log e saldo) e então commit/push/merge

@@ -4,6 +4,7 @@ import type {
   RegistrationPaymentStatusRow,
   PaymentRecord,
   CashFlowEntry,
+  EditCashFlowInput,
   CashCategory,
   CreateTransactionInput,
   TeamMemberPaymentStatus,
@@ -129,7 +130,7 @@ export async function fetchCashFlow(editionId: string): Promise<CashFlowEntry[]>
       supabase
         .from('v_cash_flow')
         .select(
-          'transaction_id, date, source, flow_type, amount_cents, payment_method, category, registration_id, edition_id, person_name, recorded_by_name'
+          'transaction_id, date, source, flow_type, amount_cents, payment_method, category, registration_id, edition_id, person_name, recorded_by_name, last_edited_at, last_edited_by_name, notes, receipt_url'
         )
         .eq('edition_id', editionId)
         .order('date', { ascending: false }),
@@ -199,6 +200,38 @@ export async function voidTransaction(transactionId: string, reason: string): Pr
     })
     .eq('id', transactionId);
 
+  if (error) throw error;
+}
+
+export async function updateCashFlowEntry(
+  entry: CashFlowEntry,
+  input: EditCashFlowInput
+): Promise<void> {
+  if (entry.source === 'manual') {
+    const { error } = await supabase.rpc('update_financial_transaction', {
+      p_id: entry.transaction_id,
+      p_type: input.type ?? (entry.flow_type === 'in' ? 'revenue' : 'expense'),
+      p_category: input.category ?? entry.category,
+      p_amount_cents: input.amount_cents,
+      p_method: input.payment_method,
+      p_description: input.description ?? entry.description ?? entry.category,
+      p_date: input.date,
+      p_receipt_url: input.receipt_url ?? undefined,
+    });
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await supabase.rpc(
+    entry.source === 'team_payment' ? 'update_team_member_payment' : 'update_payment',
+    {
+      p_payment_id: entry.transaction_id,
+      p_amount_cents: input.amount_cents,
+      p_method: input.payment_method,
+      p_date: input.date,
+      p_notes: input.notes ?? undefined,
+    }
+  );
   if (error) throw error;
 }
 

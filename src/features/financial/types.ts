@@ -38,6 +38,10 @@ export interface CashFlowEntry {
   person_name: string | null;
   description?: string | null;
   recorded_by_name: string | null;
+  last_edited_at: string | null;
+  last_edited_by_name: string | null;
+  notes: string | null;
+  receipt_url: string | null;
 }
 
 // Categoria de fluxo de caixa
@@ -56,6 +60,19 @@ export interface CreateTransactionInput {
   payment_method: string;
   description: string;
   transaction_date: string;
+  receipt_url?: string;
+}
+
+// Campos editáveis de um lançamento (os de "manual" também aceitam tipo, categoria, descrição e comprovante)
+export interface EditCashFlowInput {
+  amount_cents: number;
+  payment_method: string;
+  /** yyyy-mm-dd */
+  date: string;
+  notes?: string;
+  type?: 'revenue' | 'expense';
+  category?: string;
+  description?: string;
   receipt_url?: string;
 }
 

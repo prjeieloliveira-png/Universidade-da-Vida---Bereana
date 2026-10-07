@@ -8,6 +8,7 @@ import {
   fetchCategories,
   createTransaction,
   voidCashFlowEntry,
+  updateCashFlowEntry,
   createCategory,
   deleteCategory,
 } from '../data/financialData';
@@ -16,10 +17,11 @@ import { FinancialMetricCards } from '../components/FinancialMetricCards';
 import { FinancialFilterBar, FlowTypeFilter } from '../components/FinancialFilterBar';
 import { TransactionGroupedList } from '../components/TransactionGroupedList';
 import { AddTransactionModal } from '../components/AddTransactionModal';
+import { EditCashFlowEntryModal } from '../components/EditCashFlowEntryModal';
 import { CategoryManagementModal } from '../components/CategoryManagementModal';
 import { ReceivePaymentModal } from '../components/ReceivePaymentModal';
 import { ReceiveTeamPaymentModal } from '../components/ReceiveTeamPaymentModal';
-import type { CashFlowEntry, CreateTransactionInput } from '../types';
+import type { CashFlowEntry, CreateTransactionInput, EditCashFlowInput } from '../types';
 
 export function FinancialPage() {
   const queryClient = useQueryClient();
@@ -68,6 +70,25 @@ export function FinancialPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-flow', editionId] });
       queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+    },
+  });
+
+  const [editingEntry, setEditingEntry] = useState<CashFlowEntry | null>(null);
+
+  const editTxMutation = useMutation({
+    mutationFn: ({ entry, input }: { entry: CashFlowEntry; input: EditCashFlowInput }) =>
+      updateCashFlowEntry(entry, input),
+    onSuccess: (_, { entry }) => {
+      queryClient.invalidateQueries({ queryKey: ['cash-flow', editionId] });
+      queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+      if (entry.source === 'team_payment') {
+        queryClient.invalidateQueries({ queryKey: ['team-member-payment-statuses', editionId] });
+      }
+      if (entry.source === 'payment') {
+        queryClient.invalidateQueries({ queryKey: ['payments', editionId] });
+        queryClient.invalidateQueries({ queryKey: ['reg-payment-statuses', editionId] });
+        queryClient.invalidateQueries({ queryKey: ['registrations', editionId] });
+      }
     },
   });
 
@@ -196,6 +217,7 @@ export function FinancialPage() {
         entries={filteredEntries}
         isLoading={isLoading}
         isVoiding={voidTxMutation.isPending}
+        onEdit={setEditingEntry}
         onVoid={(entry) => {
           if (window.confirm(`Deseja realmente estornar este lançamento de ${entry.category}?`)) {
             voidTxMutation.mutate(entry);
@@ -216,6 +238,15 @@ export function FinancialPage() {
           }}
         />
       )}
+
+      <EditCashFlowEntryModal
+        entry={editingEntry}
+        categories={categories}
+        onClose={() => setEditingEntry(null)}
+        onSave={async (entry, input) => {
+          await editTxMutation.mutateAsync({ entry, input });
+        }}
+      />
 
       <CategoryManagementModal
         isOpen={isCategoryModalOpen}
