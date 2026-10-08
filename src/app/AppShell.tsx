@@ -12,6 +12,7 @@ import {
   Search,
   Bell,
   MoreHorizontal,
+  FileBarChart,
 } from 'lucide-react';
 import { supabase } from '@/shared/lib/supabase';
 import { CohortSelector } from '@/features/cohorts/components/CohortSelector';
@@ -48,6 +49,7 @@ export function AppShell() {
       ? [
           { to: '/equipes', label: 'Equipes', icon: Briefcase },
           { to: '/financeiro', label: 'Financeiro', icon: DollarSign },
+          { to: '/relatorios', label: 'Relatórios', icon: FileBarChart },
         ]
       : []),
   ];
@@ -66,6 +68,7 @@ export function AppShell() {
   const mobileMoreItems: MobileMoreItem[] = [
     { to: '/liderancas', label: 'Liderança', icon: ShieldCheck, desc: 'Catálogo de pastores, G12s e líderes' },
     { to: '/financeiro', label: 'Financeiro', icon: DollarSign, desc: 'Gestão de caixa, pagamentos e fluxo' },
+    { to: '/relatorios', label: 'Relatórios', icon: FileBarChart, desc: 'Frequência, financeiro e alunos em A4' },
   ];
 
   const isMoreItemActive = mobileMoreItems.some((item) => location.pathname === item.to);

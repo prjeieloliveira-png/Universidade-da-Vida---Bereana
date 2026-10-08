@@ -1,10 +1,10 @@
 import type { StudentRecord, RegistrationFilterState } from '../types';
 import { sortByName } from '@/shared/utils/sortByName';
 
-export function filterStudents(
-  students: StudentRecord[],
+export function filterStudents<T extends StudentRecord>(
+  students: T[],
   filters: RegistrationFilterState
-): StudentRecord[] {
+): T[] {
   return students.filter((s) => {
     // 1. Text Search
     if (filters.searchQuery.trim()) {

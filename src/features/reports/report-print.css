@@ -1,0 +1,52 @@
+/* Impressão dos relatórios: a cópia do relatório vive em #report-print-root (fora de #root).
+   Na tela ela fica oculta; ao imprimir, o app some e só o relatório aparece. */
+#report-print-root {
+  display: none;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  #root {
+    display: none !important;
+  }
+
+  #report-print-root {
+    display: block !important;
+  }
+
+  #report-print-root .report-sheet {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  #report-print-root thead {
+    display: table-header-group;
+  }
+
+  #report-print-root tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #report-print-root .report-group-row {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  @page {
+    margin: 12mm;
+
+    @bottom-right {
+      content: 'Página ' counter(page) ' de ' counter(pages);
+      font-size: 9px;
+      color: #64748b;
+    }
+  }
+}
