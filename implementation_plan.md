@@ -1,33 +1,32 @@
-# Plano: editar lançamentos do Financeiro (alunos, equipe e manuais)
+# Plano: taxa editável por pessoa + "Quitação concluída" (com abatimento)
 
-## Verificação — hoje NÃO dá para editar
-Todo lançamento do extrato só tem "Estornar" (void). Não existe nenhuma tela, função ou RPC de edição. Hoje, para corrigir um valor errado, é preciso estornar e lançar de novo.
+## Decisões já tomadas (suas respostas)
+1. **Taxa editável por pessoa:** cada aluno/membro pode ter valor de inscrição próprio; o padrão segue R$ 200 (aluno) e R$ 100 (equipe).
+2. **Quitação concluída = abatimento:** quem pagou só parte fica como **Pago**, o restante sai do "a receber" e vira um abatimento registrado (quanto, quem e quando), com opção de desfazer.
 
-| Tipo | Tabela | Campos editáveis |
-|---|---|---|
-| Inscrição de aluno | `payments` | valor, forma de pagamento, data do pagamento, observação (e comprovante) |
-| Pagamento de equipe | `team_member_payments` | valor, forma, data, observação |
-| Entrada/saída manual | `financial_transactions` | tipo (entrada/saída), categoria, valor, forma, descrição, data, comprovante |
-
-Não editáveis: lançamentos já estornados, e "de quem" é o pagamento (trocar o aluno/membro de um pagamento) — para isso continua estorno + novo lançamento.
+## Como está hoje
+- A taxa do aluno vem de `editions.registration_fee_cents` (igual para todos) e a da equipe está fixa em 10000 (R$ 100) dentro de 2 views, 1 RPC de edição e na meta do resumo.
+- Status (Pago/Parcial/Pendente) é **derivado** da soma dos pagamentos (regra do AGENTS.md: nunca salvar status em coluna) — vamos manter isso: o status passa a considerar a taxa da pessoa e a quitação.
+- O gatilho `prevent_overpayment` e as RPCs de edição travam em "soma ≤ taxa".
 
 ## Banco (migração nova — a aplicar por você)
-1. **3 RPCs** `SECURITY DEFINER`, só `authenticated` com `is_coord_or_sec()`, recusam lançamento estornado:
-   - `update_payment(id, amount, method, date, notes)` — revalida o limite da taxa (soma dos outros pagamentos do aluno + novo valor ≤ taxa), pois o gatilho atual só vale em INSERT.
-   - `update_team_member_payment(id, amount, method, date, notes)` — mesma regra (taxa de R$ 100,00 da equipe).
-   - `update_financial_transaction(id, type, category, amount, method, description, date, receipt_url)`.
-2. **Valor sempre em centavos inteiros e > 0**, forma de pagamento só entre as aceitas (pix, débito, crédito, dinheiro).
-3. **Trilha de auditoria** (recomendado, pois é dinheiro): tabela `financial_edit_log` (entidade, id, quem editou, quando, valores antes/depois em JSON), com RLS (leitura só coord/sec). Cada RPC grava uma linha.
-4. **Data do extrato:** hoje `v_cash_flow` mostra a data de criação do registro (`created_at`), não a data informada. Para a edição de data ter efeito, a view passa a usar a data do pagamento/lançamento.
+1. **Colunas novas** (sem apagar nada): `registrations.fee_cents` e `team_members.fee_cents` (opcional; vazio = taxa padrão); `settled_at`, `settled_by`, `waived_cents` (abatimento) nas duas tabelas.
+2. **Views** `v_registration_payment_status` e `v_team_member_payment_status` (CREATE OR REPLACE, mesmas colunas, novas ao final): taxa efetiva = taxa da pessoa ou padrão; **status 'paid' se pagou o total OU está quitada**; `outstanding_cents` = 0 quando quitada; expõem `waived_cents` e `settled_at`.
+3. **Resumo do caixa** (`v_cash_summary`): meta = soma das taxas efetivas **menos os abatimentos**; "a receber" deixa de contar o abatido; meta de equipe passa a somar a taxa de cada membro ativo (hoje é ativos × R$ 100).
+4. **RPCs** (só coord/sec, SECURITY DEFINER, gravam em `financial_edit_log`):
+   - `set_payment_fee(tipo, id, valor)` — altera a taxa da pessoa (recusa valor menor que o já pago).
+   - `settle_payment_obligation(tipo, id, observação)` — marca quitação concluída e grava o abatimento (= taxa − pago).
+   - `unsettle_payment_obligation(tipo, id)` — desfaz a quitação.
+5. `prevent_overpayment`, `update_payment` e `update_team_member_payment` passam a usar a **taxa efetiva da pessoa** em vez da fixa; se a taxa mudar depois, pagamentos antigos não são alterados.
 
 ## App
-- Botão de lápis em cada linha do extrato (ao lado do estorno), abrindo `EditCashFlowEntryModal` com os campos do tipo daquele lançamento (valor, forma, data, observação; e categoria/descrição/tipo nos manuais). Reaproveita o padrão dos modais existentes.
-- Funções em `financialData.ts` chamando as RPCs; atualização do extrato, resumo do caixa e status de pagamento (alunos/equipe) após salvar.
-- Selo "Editado" na linha (com quem e quando, vindo do log) — se você aprovar a auditoria.
-- Testes do modal e das funções; quality gate; validação em 390px.
+- **Receber inscrição / Receber pagamento da equipe:** em cada modal, campo "Valor da inscrição" editável (salva a taxa daquela pessoa) e botão **"Quitação concluída"** (pede confirmação mostrando quanto será abatido); para quem já está quitado com abatimento, mostra "Quitado (abatimento de R$ X)" e **"Desfazer quitação"**.
+- Status e rótulos (listas de busca, selos em Inscrições, Dashboard) passam a refletir quitação/abatimento; a meta e o "a receber" do resumo seguem o novo cálculo.
+- Funções em `financialData.ts`, tipos em `database.ts` (editado à mão até o CLI voltar), testes e validação em 390px.
 
-## Decisões suas antes de começar
-1. **Auditoria (item 3):** recomendo sim (rastreia quem alterou valores). Se não quiser, tiro o log e o selo.
-2. **Data do extrato (item 4):** recomendo passar a usar a data real do pagamento. Isso pode reordenar lançamentos antigos cujo dia informado difere do dia em que foram digitados.
+## Cuidados
+- Mudar a taxa muda a **meta** e o **status** de quem já pagou (ex.: baixar a taxa para o que a pessoa já pagou deixa como Pago). Isso é o comportamento esperado, mas altera números do dashboard.
+- Quitação não cria nem apaga pagamento; só muda o status e registra o abatimento.
+- Ordem: você aplica o SQL → eu testo no banco real (com registros de teste estornados, como antes) → só então commit/push/merge.
 
 Aguardando aprovação.

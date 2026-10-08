@@ -116,6 +116,9 @@ export interface RegistrationPaymentStatusRow {
   status: RegistrationPaymentStatus;
   payment_count: number;
   last_payment_at: string | null;
+  waived_cents: number;
+  settled_at: string | null;
+  settled_note: string | null;
 }
 
 // Dados para a aba de pagamentos (join com people)
@@ -143,5 +146,11 @@ export interface TeamMemberPaymentStatus {
   status: 'paid' | 'partial' | 'pending';
   payment_count: number;
   last_payment_at: string | null;
+  waived_cents: number;
+  settled_at: string | null;
+  settled_note: string | null;
 }
 
+
+// Tipo da obrigação de pagamento: inscrição de aluno ou membro de equipe
+export type PaymentObligationKind = 'registration' | 'team';

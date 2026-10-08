@@ -76,6 +76,8 @@ export function useReceivePayment(isOpen: boolean, editionId: string, onClose: (
           outstanding_cents: st?.outstanding_cents ?? 0,
           registration_fee_cents: st?.registration_fee_cents ?? 0,
           total_paid_cents: st?.total_paid_cents ?? 0,
+          waived_cents: st?.waived_cents ?? 0,
+          settled_at: st?.settled_at ?? null,
           status: st?.status ?? 'pending',
         } as PersonOption;
       });
@@ -164,7 +166,18 @@ export function useReceivePayment(isOpen: boolean, editionId: string, onClose: (
     setAmountCents(0);
   }
 
+  // Após alterar a taxa ou concluir/desfazer a quitação: recarrega e volta para a busca
+  function handleSettlementChanged() {
+    void queryClient.invalidateQueries({ queryKey: ['reg-payment-statuses', editionId] });
+    void queryClient.invalidateQueries({ queryKey: ['people-for-receive-payment', editionId] });
+    void queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+    void queryClient.invalidateQueries({ queryKey: ['registrations'] });
+    void queryClient.invalidateQueries({ queryKey: ['students'] });
+    handleReceiveAnother();
+  }
+
   return {
+    handleSettlementChanged,
     step,
     selected,
     searchQuery,

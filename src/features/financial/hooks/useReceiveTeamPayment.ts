@@ -76,7 +76,10 @@ export function useReceiveTeamPayment(isOpen: boolean, editionId: string) {
         phone: person?.phone ?? '',
         team_role_name: role?.name ?? '—',
         outstanding_cents: st?.outstanding_cents ?? DEFAULT_AMOUNT_CENTS,
+        registration_fee_cents: st?.registration_fee_cents ?? DEFAULT_AMOUNT_CENTS,
         total_paid_cents: st?.total_paid_cents ?? 0,
+        waived_cents: st?.waived_cents ?? 0,
+        settled_at: st?.settled_at ?? null,
         status: st?.status ?? 'pending',
       };
     });
@@ -127,6 +130,13 @@ export function useReceiveTeamPayment(isOpen: boolean, editionId: string) {
     setSearchQuery('');
   }
 
+  // Após alterar a taxa ou concluir/desfazer a quitação: recarrega e volta para a busca
+  function handleSettlementChanged() {
+    queryClient.invalidateQueries({ queryKey: ['team-member-payment-statuses', editionId] });
+    queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+    handleRegisterAnother();
+  }
+
   const isLoading = isLoadingStatuses || isLoadingMembers;
   const canSubmit =
     step === 'form' &&
@@ -157,5 +167,6 @@ export function useReceiveTeamPayment(isOpen: boolean, editionId: string) {
     canSubmit,
     handleSelectMember,
     handleRegisterAnother,
+    handleSettlementChanged,
   };
 }
