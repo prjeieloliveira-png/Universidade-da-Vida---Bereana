@@ -11,6 +11,7 @@ import { FinancialPage } from '@/features/financial/pages/FinancialPage';
 import { TeamsPage } from '@/features/teams/pages/TeamsPage';
 import { TeamDoorAttendancePage } from '@/features/teams/pages/TeamDoorAttendancePage';
 import { SettingsPage } from '@/features/settings/pages/SettingsPage';
+import { ReportsPage } from '@/features/reports/pages/ReportsPage';
 
 export function AppRoutes() {
   return (
@@ -45,6 +46,7 @@ export function AppRoutes() {
         <Route path="liderancas" element={<LeadershipPage />} />
         <Route path="equipes" element={<TeamsPage />} />
         <Route path="financeiro" element={<FinancialPage />} />
+        <Route path="relatorios" element={<ReportsPage />} />
         <Route path="configuracoes" element={<SettingsPage />} />
       </Route>
 

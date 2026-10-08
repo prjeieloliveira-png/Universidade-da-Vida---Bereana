@@ -387,3 +387,14 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Teste de regressão `useReceivePayment.test.tsx` (falha no código antigo, passa no novo). Quality gate: lint ✅ typecheck ✅ tests 125/125 ✅
 - [x] Validado na tela com aluno real pendente: salvar 150,00 → lista mostrou saldo R$ 150,00 e, ao reabrir, o campo mostrou 150,00; banco confirmou 15000; depois restaurado para o padrão (`fee_cents` NULL → R$ 200,00)
 - [ ] push/merge pendente
+- PR #21 mesclado em main, deploy ok (taxa editada aparece após salvar)
+
+## Página de Relatórios — etapa 1 (base + aba Alunos)
+- Decisões do usuário: 3 abas (Frequência alunos+equipe / Financeiro / Alunos), tudo personalizável e pronto para A4; acesso só coord/sec; modelos salvos no navegador incluídos; ordem: Alunos → Frequência → Financeiro
+- [x] Rota `/relatorios` + item "Relatórios" no menu (desktop e "Mais" no celular; só coord/sec); página com 3 abas (Frequência e Financeiro "em breve")
+- [x] Base reutilizável em `src/features/reports/`: tipos, `useReportConfig` (colunas visíveis/ordem + opções), `useReportPresets` (modelos em localStorage, sobrescreve pelo nome), `buildCsv/downloadCsv` (BOM, `;`), `ReportSheet` (folha A4 retrato/paisagem, densidade, numeração, grupos com contagem, rodapé), `ReportPreview` (reduz a folha p/ caber no celular), `ReportPrintPortal` + `report-print.css` (impressão pela própria página: app some, cabeçalho da tabela repete, `@page` A4 e paginação), `ReportColumnPicker`, `ReportOptionsPanel`, `ReportPresetsBar`, `ReportSection`
+- [x] Aba Alunos: filtros (mesmos de Inscrições via `filterStudents`, agora genérico), colunas à escolha (nº, nome, telefone, endereço, nascimento, idade, sexo, estado civil, camiseta, pastor, G12, líder, pagamento, taxa, pago, saldo, presenças; comorbidade/medicação só coord/sec), ordenação (nome/número/hierarquia), agrupamento (pastor/G12/líder), pagamento com abatimento de quitação, CSV e imprimir
+- [x] Quality gate: lint ✅ typecheck ✅ tests 135/135 ✅ (+14)
+- [x] Validado no navegador: colunas, agrupar por G12, paisagem, numeração; cópia de impressão (#report-print-root, @page A4 landscape, regra @media print carregada) e simulação visual da impressão; 390px sem rolagem lateral
+- [ ] Impressão real no papel/PDF não testada pela ferramenta (não dá pra acionar o diálogo de impressão) — usuário deve conferir o PDF
+- [ ] push/merge pendente. Próximas etapas: aba Frequência (alunos e equipe); aba Financeiro (extrato + situação de pagamentos)
