@@ -54,37 +54,45 @@ export function useReceivePayment(isOpen: boolean, editionId: string, onClose: (
     staleTime: 30_000,
   });
 
-  const { data: people, isLoading: loadingPeople } = useQuery({
-    queryKey: ['people-for-receive-payment', editionId],
-    queryFn: async () => {
-      if (!statuses || statuses.length === 0) return [];
-      const personIds = statuses.map((s) => s.person_id);
+  // Nome e telefone mudam raramente: buscados à parte e chaveados pelos ids. O status
+  // (taxa, pago, saldo, quitação) vem SEMPRE do `statuses` mais recente via useMemo —
+  // se ele ficasse dentro do queryFn, o refetch pós-salvar usaria o `statuses` antigo.
+  const personIdsKey = useMemo(
+    () => (statuses ?? []).map((s) => s.person_id).sort().join(','),
+    [statuses]
+  );
 
+  const { data: peopleBasics, isLoading: loadingPeople } = useQuery({
+    queryKey: ['people-basics-for-receive-payment', editionId, personIdsKey],
+    queryFn: async () => {
       const { data } = await supabase
         .from('people')
         .select('id, full_name, phone')
-        .in('id', personIds);
-
-      return (data ?? []).map((p) => {
-        const st = statuses.find((s) => s.person_id === p.id);
-        const row = p as { id: string; full_name: string; phone?: string | null };
-        return {
-          registration_id: st?.registration_id ?? '',
-          person_id: p.id,
-          full_name: p.full_name ?? '',
-          phone: row.phone ?? '',
-          outstanding_cents: st?.outstanding_cents ?? 0,
-          registration_fee_cents: st?.registration_fee_cents ?? 0,
-          total_paid_cents: st?.total_paid_cents ?? 0,
-          waived_cents: st?.waived_cents ?? 0,
-          settled_at: st?.settled_at ?? null,
-          status: st?.status ?? 'pending',
-        } as PersonOption;
-      });
+        .in('id', personIdsKey.split(','));
+      return (data ?? []) as { id: string; full_name: string | null; phone?: string | null }[];
     },
-    enabled: isOpen && !!statuses && statuses.length > 0,
-    staleTime: 30_000,
+    enabled: isOpen && personIdsKey.length > 0,
+    staleTime: 5 * 60_000,
   });
+
+  const people = useMemo<PersonOption[] | undefined>(() => {
+    if (!peopleBasics || !statuses) return undefined;
+    return peopleBasics.map((p) => {
+      const st = statuses.find((s) => s.person_id === p.id);
+      return {
+        registration_id: st?.registration_id ?? '',
+        person_id: p.id,
+        full_name: p.full_name ?? '',
+        phone: p.phone ?? '',
+        outstanding_cents: st?.outstanding_cents ?? 0,
+        registration_fee_cents: st?.registration_fee_cents ?? 0,
+        total_paid_cents: st?.total_paid_cents ?? 0,
+        waived_cents: st?.waived_cents ?? 0,
+        settled_at: st?.settled_at ?? null,
+        status: st?.status ?? 'pending',
+      };
+    });
+  }, [peopleBasics, statuses]);
 
   const filtered = useMemo(() => {
     if (!people) return [];
@@ -112,7 +120,6 @@ export function useReceivePayment(isOpen: boolean, editionId: string, onClose: (
       void queryClient.invalidateQueries({ queryKey: ['cash-flow', editionId] });
       void queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
       void queryClient.invalidateQueries({ queryKey: ['reg-payment-statuses', editionId] });
-      void queryClient.invalidateQueries({ queryKey: ['people-for-receive-payment', editionId] });
       void queryClient.invalidateQueries({ queryKey: ['registrations'] });
       void queryClient.invalidateQueries({ queryKey: ['students'] });
     },
@@ -169,7 +176,6 @@ export function useReceivePayment(isOpen: boolean, editionId: string, onClose: (
   // Após alterar a taxa ou concluir/desfazer a quitação: recarrega e volta para a busca
   function handleSettlementChanged() {
     void queryClient.invalidateQueries({ queryKey: ['reg-payment-statuses', editionId] });
-    void queryClient.invalidateQueries({ queryKey: ['people-for-receive-payment', editionId] });
     void queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
     void queryClient.invalidateQueries({ queryKey: ['registrations'] });
     void queryClient.invalidateQueries({ queryKey: ['students'] });
