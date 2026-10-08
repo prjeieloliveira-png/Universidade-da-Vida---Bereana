@@ -379,3 +379,11 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Quality gate: lint ✅ typecheck ✅ tests 124/124 ✅; validado na tela com `confirm` bloqueado: diálogo abre e o estorno funciona (390px)
 - [ ] push/merge pendente. Se ainda falhar para o usuário: pedir a mensagem de erro exibida no diálogo
 - Ainda usam `window.confirm`/`alert` (mesmo risco): `FeeSettlementPanel` (confirmar quitação), `LeadershipPage` (excluir líder), `PaymentsTab`, `useReceiveTeamPayment`
+- PR #20 mesclado em main, deploy ok (diálogo de estorno)
+
+## Bug: taxa editada não "ficava salva" no modal Receber Inscrição
+- Sintoma: usuário salvava o novo valor da inscrição e o campo voltava a 200,00. O valor era gravado no banco (`set_payment_fee` testado antes), mas a lista do modal era montada dentro de um `useQuery` (`people-for-receive-payment`) cujo `queryFn` usava o `statuses` capturado no render: ao invalidar, os dois queries recarregavam juntos e o de pessoas usava o `statuses` ANTIGO
+- [x] `useReceivePayment`: nome/telefone em query própria chaveada pelos ids (`people-basics-for-receive-payment`) e a lista `people` agora é um `useMemo` sobre o `statuses` mais recente (mesmo padrão do hook da equipe); removidas as invalidações da chave antiga
+- [x] Teste de regressão `useReceivePayment.test.tsx` (falha no código antigo, passa no novo). Quality gate: lint ✅ typecheck ✅ tests 125/125 ✅
+- [x] Validado na tela com aluno real pendente: salvar 150,00 → lista mostrou saldo R$ 150,00 e, ao reabrir, o campo mostrou 150,00; banco confirmou 15000; depois restaurado para o padrão (`fee_cents` NULL → R$ 200,00)
+- [ ] push/merge pendente
