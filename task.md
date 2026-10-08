@@ -371,3 +371,11 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
   - UI (390px): painel "Valor da inscrição e quitação" aparece nos modais; botões desabilitados para quem não pagou
   - Observação: o banco permite `set_payment_fee` mesmo quitado (abatimento é derivado e se ajusta); a tela bloqueia o campo e orienta desfazer antes
 - [ ] Falta: push/merge (aguardando o usuário)
+- PR #19 mesclado em main, deploy ok (taxa editável + quitação)
+
+## Financeiro: "não consigo excluir lançamentos"
+- Diagnóstico: as RPCs de estorno (`void_financial_transaction`, `void_payment`, `void_team_member_payment`) estão corretas e a exclusão funcionou nos 3 tipos na minha sessão (testado com lançamentos de R$ 0,01: manual, aluno, equipe; todos saíram do extrato). Não reproduzi a falha. Causa provável: a lixeira dependia de `window.confirm` nativo; se o navegador/webview bloqueia caixas de diálogo (ou o usuário marcou "impedir novas caixas"), `confirm` devolve false e a lixeira "não faz nada", sem erro
+- [x] Novo `VoidEntryDialog` (confirmação dentro do app, mostra o lançamento, motivo opcional, erro na própria tela) no lugar do `window.confirm`/`alert` do estorno em `FinancialPage`; `voidTransaction/voidPayment/voidTeamMemberPayment` agora lançam `Error(message)` (antes objeto do Supabase → mensagem genérica); +3 testes
+- [x] Quality gate: lint ✅ typecheck ✅ tests 124/124 ✅; validado na tela com `confirm` bloqueado: diálogo abre e o estorno funciona (390px)
+- [ ] push/merge pendente. Se ainda falhar para o usuário: pedir a mensagem de erro exibida no diálogo
+- Ainda usam `window.confirm`/`alert` (mesmo risco): `FeeSettlementPanel` (confirmar quitação), `LeadershipPage` (excluir líder), `PaymentsTab`, `useReceiveTeamPayment`

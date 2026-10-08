@@ -18,6 +18,7 @@ import { FinancialFilterBar, FlowTypeFilter } from '../components/FinancialFilte
 import { TransactionGroupedList } from '../components/TransactionGroupedList';
 import { AddTransactionModal } from '../components/AddTransactionModal';
 import { EditCashFlowEntryModal } from '../components/EditCashFlowEntryModal';
+import { VoidEntryDialog } from '../components/VoidEntryDialog';
 import { CategoryManagementModal } from '../components/CategoryManagementModal';
 import { ReceivePaymentModal } from '../components/ReceivePaymentModal';
 import { ReceiveTeamPaymentModal } from '../components/ReceiveTeamPaymentModal';
@@ -74,6 +75,7 @@ export function FinancialPage() {
   });
 
   const [editingEntry, setEditingEntry] = useState<CashFlowEntry | null>(null);
+  const [voidingEntry, setVoidingEntry] = useState<CashFlowEntry | null>(null);
 
   const editTxMutation = useMutation({
     mutationFn: ({ entry, input }: { entry: CashFlowEntry; input: EditCashFlowInput }) =>
@@ -93,8 +95,9 @@ export function FinancialPage() {
   });
 
   const voidTxMutation = useMutation({
-    mutationFn: (entry: CashFlowEntry) => voidCashFlowEntry(entry, 'Estorno manual via painel'),
-    onSuccess: (_, entry) => {
+    mutationFn: ({ entry, reason }: { entry: CashFlowEntry; reason: string }) =>
+      voidCashFlowEntry(entry, reason),
+    onSuccess: (_, { entry }) => {
       queryClient.invalidateQueries({ queryKey: ['cash-flow', editionId] });
       queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
       if (entry.source === 'team_payment') {
@@ -105,9 +108,6 @@ export function FinancialPage() {
         queryClient.invalidateQueries({ queryKey: ['reg-payment-statuses', editionId] });
         queryClient.invalidateQueries({ queryKey: ['registrations', editionId] });
       }
-    },
-    onError: (err: Error) => {
-      alert(`Erro ao estornar lançamento: ${err.message || 'Falha ao processar estorno'}`);
     },
   });
 
@@ -218,11 +218,7 @@ export function FinancialPage() {
         isLoading={isLoading}
         isVoiding={voidTxMutation.isPending}
         onEdit={setEditingEntry}
-        onVoid={(entry) => {
-          if (window.confirm(`Deseja realmente estornar este lançamento de ${entry.category}?`)) {
-            voidTxMutation.mutate(entry);
-          }
-        }}
+        onVoid={setVoidingEntry}
       />
 
       {/* Modais */}
@@ -238,6 +234,12 @@ export function FinancialPage() {
           }}
         />
       )}
+
+      <VoidEntryDialog
+        entry={voidingEntry}
+        onClose={() => setVoidingEntry(null)}
+        onConfirm={(entry, reason) => voidTxMutation.mutateAsync({ entry, reason })}
+      />
 
       <EditCashFlowEntryModal
         entry={editingEntry}

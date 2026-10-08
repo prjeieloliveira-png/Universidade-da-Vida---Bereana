@@ -201,7 +201,7 @@ export async function voidTransaction(transactionId: string, reason: string): Pr
     })
     .eq('id', transactionId);
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function updateCashFlowEntry(
@@ -274,7 +274,7 @@ export async function voidPayment(paymentId: string, reason: string): Promise<vo
     reason,
   });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 // ─── Team Member Payments ─────────────────────────────────────────────────────
@@ -323,7 +323,7 @@ export async function voidTeamMemberPayment(
     p_reason: reason,
   });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
 export async function setPaymentFee(
