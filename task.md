@@ -364,3 +364,10 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] App: `FeeSettlementPanel` (campo "Valor da inscrição", "Quitação concluída" com confirmação mostrando o abatimento, "Desfazer quitação") dentro dos modais Receber Inscrição e Receber Pagamento da Equipe; hooks/opções/types com `registration_fee_cents`, `waived_cents`, `settled_at`; `database.ts` editado à mão
 - [x] Quality gate: lint ✅ typecheck ✅ tests 121/121 ✅ (+5 do painel)
 - [ ] Aplicar SQL → testar no banco real (taxa, quitar, desfazer, resumo, limites) com registros de teste estornados → commit/push/merge. ATENÇÃO: não fazer merge antes da migração (as telas selecionam colunas novas das views)
+- [x] Migração `20261009000001` aplicada pelo usuário e TESTADA no banco real (console do navegador logado), com aluno e membro pendentes + limpeza:
+  - aluno: taxa 150 → pagamento 100 → parcial (saldo 50); pagamento acima do saldo recusado; taxa menor que o pago recusada; quitar → Paga, saldo 0, abatimento 50, meta −50 e "a receber" caiu (contagens pago/parcial/pendente atualizadas); quitar de novo recusado; desfazer → volta a parcial
+  - equipe: taxa 80 → pagamento 50 → parcial; excedente recusado; quitar → Paga, abatimento 30, meta da equipe −50; desfazer → parcial
+  - limpeza: pagamentos de teste estornados e `fee_cents`/`settled_*` voltaram a NULL; resumo do caixa idêntico ao de antes (saldo R$ 5.658,10; metas 8.600/4.600)
+  - UI (390px): painel "Valor da inscrição e quitação" aparece nos modais; botões desabilitados para quem não pagou
+  - Observação: o banco permite `set_payment_fee` mesmo quitado (abatimento é derivado e se ajusta); a tela bloqueia o campo e orienta desfazer antes
+- [ ] Falta: push/merge (aguardando o usuário)
