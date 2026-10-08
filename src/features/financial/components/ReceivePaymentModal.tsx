@@ -12,6 +12,8 @@ export interface PersonOption {
   outstanding_cents: number;
   registration_fee_cents: number;
   total_paid_cents: number;
+  waived_cents: number;
+  settled_at: string | null;
   status: string;
 }
 
@@ -44,6 +46,7 @@ export function ReceivePaymentModal({ isOpen, editionId, onClose }: ReceivePayme
     filtered,
     mutation,
     handleClose,
+    handleSettlementChanged,
     handleAmountChange,
     handleSubmit,
     handleSelectPerson,
@@ -113,6 +116,7 @@ export function ReceivePaymentModal({ isOpen, editionId, onClose }: ReceivePayme
             mutationErrorMessage={mutation.isError ? (mutation.error as Error).message : undefined}
             onBack={() => setStep('search')}
             onSubmit={handleSubmit}
+            onSettlementChanged={handleSettlementChanged}
           />
         )}
 

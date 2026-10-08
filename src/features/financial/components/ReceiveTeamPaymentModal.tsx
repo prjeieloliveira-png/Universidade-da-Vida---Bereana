@@ -11,7 +11,10 @@ export interface TeamMemberOption {
   phone: string;
   team_role_name: string;
   outstanding_cents: number;
+  registration_fee_cents: number;
   total_paid_cents: number;
+  waived_cents: number;
+  settled_at: string | null;
   status: string;
 }
 
@@ -45,6 +48,7 @@ export function ReceiveTeamPaymentModal({ isOpen, editionId, onClose }: ReceiveT
     canSubmit,
     handleSelectMember,
     handleRegisterAnother,
+    handleSettlementChanged,
   } = useReceiveTeamPayment(isOpen, editionId);
 
   if (!isOpen) return null;
@@ -103,6 +107,7 @@ export function ReceiveTeamPaymentModal({ isOpen, editionId, onClose }: ReceiveT
               notes={notes}
               onNotesChange={setNotes}
               onSwapMember={() => setStep('search')}
+              onSettlementChanged={handleSettlementChanged}
             />
           )}
 

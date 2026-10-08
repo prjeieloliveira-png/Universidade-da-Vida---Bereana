@@ -356,3 +356,18 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [ ] Commit local feito; falta push/merge (aguardando o usuário)
 - PR #17 mesclado em main, deploy ok
 - Bug reportado em produção: editar pagamento de equipe para R$ 100,01 mostrava só "Falha ao salvar a edição." — o banco recusou corretamente (taxa da equipe = R$ 100,00), mas o erro do Supabase é um objeto simples (não `Error`) e o modal caía no texto genérico. [x] `updateCashFlowEntry` agora relança `new Error(error.message)`; teste ajustado para usar objeto simples como o Supabase. lint ✅ typecheck ✅ tests 116/116 ✅. [ ] push/merge pendente
+- PR #18 mesclado em main, deploy ok. Decisão do usuário sobre "Nenhum deixar o valor fixo": ignorada a dúvida de caso; "Semana 4" deixada como está (nenhum dado alterado)
+
+## Financeiro: taxa editável por pessoa + "Quitação concluída" (abatimento)
+- Decisões do usuário: (1) taxa editável por pessoa; (2) quitação = abatimento (restante sai do "a receber", fica registrado, dá pra desfazer)
+- [x] Migração `20261009000001_editable_fee_and_settlement.sql` (a aplicar pelo usuário): colunas `fee_cents`, `settled_at/by/note` em `registrations` e `team_members`; views `v_registration_payment_status` e `v_team_member_payment_status` (taxa efetiva; status 'paid' se pagou tudo OU quitada; `outstanding`=0 quando quitada; `waived_cents` DERIVADO = taxa − pago, não gravado); `v_cash_summary` com meta = taxas efetivas − abatimentos e meta de equipe = soma das taxas dos ativos; gatilhos/RPCs de limite usam a taxa efetiva (novo `trg_prevent_team_overpayment`); RPCs `set_payment_fee`, `settle_payment_obligation` (exige pagamento parcial > 0), `unsettle_payment_obligation`; log de auditoria com novos tipos
+- [x] App: `FeeSettlementPanel` (campo "Valor da inscrição", "Quitação concluída" com confirmação mostrando o abatimento, "Desfazer quitação") dentro dos modais Receber Inscrição e Receber Pagamento da Equipe; hooks/opções/types com `registration_fee_cents`, `waived_cents`, `settled_at`; `database.ts` editado à mão
+- [x] Quality gate: lint ✅ typecheck ✅ tests 121/121 ✅ (+5 do painel)
+- [ ] Aplicar SQL → testar no banco real (taxa, quitar, desfazer, resumo, limites) com registros de teste estornados → commit/push/merge. ATENÇÃO: não fazer merge antes da migração (as telas selecionam colunas novas das views)
+- [x] Migração `20261009000001` aplicada pelo usuário e TESTADA no banco real (console do navegador logado), com aluno e membro pendentes + limpeza:
+  - aluno: taxa 150 → pagamento 100 → parcial (saldo 50); pagamento acima do saldo recusado; taxa menor que o pago recusada; quitar → Paga, saldo 0, abatimento 50, meta −50 e "a receber" caiu (contagens pago/parcial/pendente atualizadas); quitar de novo recusado; desfazer → volta a parcial
+  - equipe: taxa 80 → pagamento 50 → parcial; excedente recusado; quitar → Paga, abatimento 30, meta da equipe −50; desfazer → parcial
+  - limpeza: pagamentos de teste estornados e `fee_cents`/`settled_*` voltaram a NULL; resumo do caixa idêntico ao de antes (saldo R$ 5.658,10; metas 8.600/4.600)
+  - UI (390px): painel "Valor da inscrição e quitação" aparece nos modais; botões desabilitados para quem não pagou
+  - Observação: o banco permite `set_payment_fee` mesmo quitado (abatimento é derivado e se ajusta); a tela bloqueia o campo e orienta desfazer antes
+- [ ] Falta: push/merge (aguardando o usuário)

@@ -5,6 +5,7 @@ import type {
   PaymentRecord,
   CashFlowEntry,
   EditCashFlowInput,
+  PaymentObligationKind,
   CashCategory,
   CreateTransactionInput,
   TeamMemberPaymentStatus,
@@ -30,7 +31,7 @@ export async function fetchRegistrationPaymentStatuses(
   const { data, error } = await supabase
     .from('v_registration_payment_status')
     .select(
-      'registration_id, edition_id, person_id, registration_fee_cents, total_paid_cents, outstanding_cents, status, payment_count, last_payment_at'
+      'registration_id, edition_id, person_id, registration_fee_cents, total_paid_cents, outstanding_cents, status, payment_count, last_payment_at, waived_cents, settled_at, settled_note'
     )
     .eq('edition_id', editionId);
 
@@ -284,7 +285,7 @@ export async function fetchTeamMemberPaymentStatuses(
   const { data, error } = await supabase
     .from('v_team_member_payment_status')
     .select(
-      'team_member_id, edition_id, person_id, team_role_id, active, registration_fee_cents, total_paid_cents, outstanding_cents, status, payment_count, last_payment_at'
+      'team_member_id, edition_id, person_id, team_role_id, active, registration_fee_cents, total_paid_cents, outstanding_cents, status, payment_count, last_payment_at, waived_cents, settled_at, settled_note'
     )
     .eq('edition_id', editionId);
 
@@ -323,4 +324,41 @@ export async function voidTeamMemberPayment(
   });
 
   if (error) throw error;
+}
+
+export async function setPaymentFee(
+  kind: PaymentObligationKind,
+  id: string,
+  feeCents: number
+): Promise<void> {
+  const { error } = await supabase.rpc('set_payment_fee', {
+    p_kind: kind,
+    p_id: id,
+    p_fee_cents: feeCents,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function settlePaymentObligation(
+  kind: PaymentObligationKind,
+  id: string,
+  note?: string
+): Promise<void> {
+  const { error } = await supabase.rpc('settle_payment_obligation', {
+    p_kind: kind,
+    p_id: id,
+    p_note: note ?? undefined,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function unsettlePaymentObligation(
+  kind: PaymentObligationKind,
+  id: string
+): Promise<void> {
+  const { error } = await supabase.rpc('unsettle_payment_obligation', {
+    p_kind: kind,
+    p_id: id,
+  });
+  if (error) throw new Error(error.message);
 }

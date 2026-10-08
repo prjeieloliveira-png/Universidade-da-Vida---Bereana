@@ -1,6 +1,7 @@
 import { PAYMENT_METHOD_LABELS, type PaymentMethodKey } from '../types';
 import { formatCentsToBRL } from '@/shared/utils/currency';
 import type { TeamMemberOption } from './ReceiveTeamPaymentModal';
+import { FeeSettlementPanel } from './FeeSettlementPanel';
 
 const QUICK_AMOUNTS_CENTS = [5000, 10000];
 
@@ -15,6 +16,7 @@ interface ReceiveTeamPaymentFormStepProps {
   notes: string;
   onNotesChange: (value: string) => void;
   onSwapMember: () => void;
+  onSettlementChanged: () => void;
 }
 
 export function ReceiveTeamPaymentFormStep({
@@ -28,6 +30,7 @@ export function ReceiveTeamPaymentFormStep({
   notes,
   onNotesChange,
   onSwapMember,
+  onSettlementChanged,
 }: ReceiveTeamPaymentFormStepProps) {
   return (
     <div className="px-5 py-5 space-y-5">
@@ -51,6 +54,17 @@ export function ReceiveTeamPaymentFormStep({
           Trocar
         </button>
       </div>
+
+      <FeeSettlementPanel
+        kind="team"
+        id={selected.team_member_id}
+        personName={selected.full_name}
+        feeCents={selected.registration_fee_cents}
+        paidCents={selected.total_paid_cents}
+        waivedCents={selected.waived_cents}
+        settledAt={selected.settled_at}
+        onChanged={onSettlementChanged}
+      />
 
       {/* Amount */}
       <div>

@@ -770,6 +770,10 @@ export type Database = {
       }
       registrations: {
         Row: {
+          fee_cents: number | null
+          settled_at: string | null
+          settled_by: string | null
+          settled_note: string | null
           cell_leader: string | null
           cell_leader_id: string | null
           created_at: string | null
@@ -785,6 +789,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          fee_cents?: number | null
+          settled_at?: string | null
+          settled_by?: string | null
+          settled_note?: string | null
           cell_leader?: string | null
           cell_leader_id?: string | null
           created_at?: string | null
@@ -800,6 +808,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          fee_cents?: number | null
+          settled_at?: string | null
+          settled_by?: string | null
+          settled_note?: string | null
           cell_leader?: string | null
           cell_leader_id?: string | null
           created_at?: string | null
@@ -1101,6 +1113,10 @@ export type Database = {
       }
       team_members: {
         Row: {
+          fee_cents: number | null
+          settled_at: string | null
+          settled_by: string | null
+          settled_note: string | null
           active: boolean
           created_at: string
           edition_id: string
@@ -1111,6 +1127,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          fee_cents?: number | null
+          settled_at?: string | null
+          settled_by?: string | null
+          settled_note?: string | null
           active?: boolean
           created_at?: string
           edition_id: string
@@ -1121,6 +1141,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          fee_cents?: number | null
+          settled_at?: string | null
+          settled_by?: string | null
+          settled_note?: string | null
           active?: boolean
           created_at?: string
           edition_id?: string
@@ -1450,6 +1474,9 @@ export type Database = {
       }
       v_registration_payment_status: {
         Row: {
+          settled_at: string | null
+          settled_note: string | null
+          waived_cents: number | null
           edition_id: string | null
           last_payment_at: string | null
           outstanding_cents: number | null
@@ -1568,6 +1595,9 @@ export type Database = {
       }
       v_team_member_payment_status: {
         Row: {
+          settled_at: string | null
+          settled_note: string | null
+          waived_cents: number | null
           active: boolean | null
           edition_id: string | null
           last_payment_at: string | null
@@ -1676,6 +1706,18 @@ export type Database = {
           p_team_member_id: string
         }
         Returns: string
+      }
+      set_payment_fee: {
+        Args: { p_fee_cents: number; p_id: string; p_kind: string }
+        Returns: undefined
+      }
+      settle_payment_obligation: {
+        Args: { p_id: string; p_kind: string; p_note?: string }
+        Returns: undefined
+      }
+      unsettle_payment_obligation: {
+        Args: { p_id: string; p_kind: string }
+        Returns: undefined
       }
       sync_attendances_rpc: {
         Args: { p_edition_id: string; p_items: Json }

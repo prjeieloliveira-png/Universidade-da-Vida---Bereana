@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react';
 import { PAYMENT_METHOD_LABELS, type PaymentMethodKey } from '../types';
 import { formatCentsToBRL } from '@/shared/utils/currency';
 import type { PersonOption } from './ReceivePaymentModal';
+import { FeeSettlementPanel } from './FeeSettlementPanel';
 
 const METHODS: PaymentMethodKey[] = ['pix', 'debit', 'credit', 'cash'];
 
@@ -21,6 +22,7 @@ interface ReceivePaymentFormStepProps {
   mutationErrorMessage?: string;
   onBack: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  onSettlementChanged: () => void;
 }
 
 export function ReceivePaymentFormStep({
@@ -39,6 +41,7 @@ export function ReceivePaymentFormStep({
   mutationErrorMessage,
   onBack,
   onSubmit,
+  onSettlementChanged,
 }: ReceivePaymentFormStepProps) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col flex-1 overflow-hidden">
@@ -69,6 +72,17 @@ export function ReceivePaymentFormStep({
             </div>
           </div>
         </div>
+
+        <FeeSettlementPanel
+          kind="registration"
+          id={selected.registration_id}
+          personName={selected.full_name}
+          feeCents={selected.registration_fee_cents}
+          paidCents={selected.total_paid_cents}
+          waivedCents={selected.waived_cents}
+          settledAt={selected.settled_at}
+          onChanged={onSettlementChanged}
+        />
 
         {/* Valor */}
         <div>
