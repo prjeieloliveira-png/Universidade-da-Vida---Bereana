@@ -11,6 +11,7 @@ interface TeamCardProps {
   onEditMember: (member: TeamMemberWithDetails) => void;
   onMoveMember: (member: TeamMemberWithDetails) => void;
   onToggleActiveMember: (member: TeamMemberWithDetails) => void;
+  onToggleCourtesyMember?: (member: TeamMemberWithDetails) => void;
   onDeleteMember?: (member: TeamMemberWithDetails) => void;
   onEditRole?: (role: TeamRoleRow) => void;
   onDeleteRole?: (role: TeamRoleRow) => void;
@@ -24,6 +25,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   onEditMember,
   onMoveMember,
   onToggleActiveMember,
+  onToggleCourtesyMember,
   onDeleteMember,
   onEditRole,
   onDeleteRole,
@@ -157,6 +159,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 onEdit={onEditMember}
                 onMove={onMoveMember}
                 onToggleActive={onToggleActiveMember}
+                onToggleCourtesy={onToggleCourtesyMember}
                 onDelete={onDeleteMember}
               />
             ))

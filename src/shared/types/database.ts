@@ -1121,6 +1121,7 @@ export type Database = {
           created_at: string
           edition_id: string
           id: string
+          is_courtesy: boolean
           notes: string | null
           person_id: string
           team_role_id: string
@@ -1135,6 +1136,7 @@ export type Database = {
           created_at?: string
           edition_id: string
           id?: string
+          is_courtesy?: boolean
           notes?: string | null
           person_id: string
           team_role_id: string
@@ -1149,6 +1151,7 @@ export type Database = {
           created_at?: string
           edition_id?: string
           id?: string
+          is_courtesy?: boolean
           notes?: string | null
           person_id?: string
           team_role_id?: string
@@ -1310,6 +1313,7 @@ export type Database = {
           team_paid_count: number | null
           team_partial_count: number | null
           team_pending_count: number | null
+          team_courtesy_count: number | null
           total_in_cents: number | null
           total_manual_in_cents: number | null
           total_manual_out_cents: number | null
@@ -1609,6 +1613,7 @@ export type Database = {
           team_member_id: string | null
           team_role_id: string | null
           total_paid_cents: number | null
+          is_courtesy: boolean | null
         }
         Relationships: [
           {
@@ -1717,6 +1722,10 @@ export type Database = {
       }
       unsettle_payment_obligation: {
         Args: { p_id: string; p_kind: string }
+        Returns: undefined
+      }
+      set_team_member_courtesy: {
+        Args: { p_team_member_id: string; p_is_courtesy: boolean }
         Returns: undefined
       }
       sync_attendances_rpc: {

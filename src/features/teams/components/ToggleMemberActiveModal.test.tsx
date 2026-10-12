@@ -15,6 +15,8 @@ const activeMember: TeamMemberWithDetails = {
   person: { id: 'p-1', fullName: 'Carlos Silva', phone: '11987654321' },
   teamRole: { id: 'role-1', name: 'Equipe de Celebração', sortOrder: 9 },
   attendance: { totalCalled: 3, attended: 3, percentage: 100, fraction: '3/3' },
+  isCourtesy: false,
+  payment: { status: 'paid', isCourtesy: false, registrationFeeCents: 15000, totalPaidCents: 15000, outstandingCents: 0, paymentCount: 1 },
 };
 
 const inactiveMember: TeamMemberWithDetails = {

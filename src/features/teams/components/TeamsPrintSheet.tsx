@@ -130,6 +130,11 @@ export const TeamsPrintSheet: React.FC<TeamsPrintSheetProps> = ({
                         </td>
                         <td className="py-1.5 px-3 font-semibold text-slate-900">
                           {member.person.fullName}
+                          {member.isCourtesy && (
+                            <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase bg-amber-100 text-amber-800 not-italic border border-amber-300">
+                              Cortesia
+                            </span>
+                          )}
                           {!member.active && (
                             <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded font-extrabold uppercase bg-slate-200 text-slate-600 not-italic">
                               Inativo

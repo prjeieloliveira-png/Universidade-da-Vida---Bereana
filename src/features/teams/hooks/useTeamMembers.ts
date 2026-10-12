@@ -7,26 +7,7 @@ import type {
   UpdateTeamMemberInput,
 } from '../types/teams';
 
-interface RawMemberData {
-  id: string;
-  edition_id: string;
-  team_role_id: string;
-  person_id: string;
-  active: boolean;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  people: {
-    id: string;
-    full_name: string;
-    phone: string;
-  } | null;
-  team_roles: {
-    id: string;
-    name: string;
-    sort_order: number;
-  } | null;
-}
+import { fetchTeamMembersWithDetails } from '../api/fetchTeamMembers';
 
 export function useTeamMembers(editionId: string | undefined) {
   const queryClient = useQueryClient();
@@ -35,80 +16,7 @@ export function useTeamMembers(editionId: string | undefined) {
     queryKey: ['team-members', editionId],
     queryFn: async () => {
       if (!editionId) return [];
-
-      // 1. Buscar membros com relacionamentos em people e team_roles (sem select(*))
-      const { data: rawMembers, error: membersError } = await supabase
-        .from('team_members')
-        .select(
-          `
-          id, edition_id, team_role_id, person_id, active, notes, created_at, updated_at,
-          people!team_members_person_id_fkey(id, full_name, phone),
-          team_roles!team_members_team_role_id_fkey(id, name, sort_order)
-        `
-        )
-        .eq('edition_id', editionId)
-        .order('created_at', { ascending: true });
-
-      if (membersError) throw membersError;
-
-      // 2. Buscar dados agregados de presença na view
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from('v_team_member_attendance')
-        .select(
-          'team_member_id, total_called_meetings, attended_meetings, attendance_percentage, attendance_fraction'
-        )
-        .eq('edition_id', editionId);
-
-      if (attendanceError) throw attendanceError;
-
-      const attendanceMap = new Map<
-        string,
-        { totalCalled: number; attended: number; percentage: number; fraction: string }
-      >();
-
-      (attendanceData ?? []).forEach((att) => {
-        if (att.team_member_id) {
-          attendanceMap.set(att.team_member_id, {
-            totalCalled: att.total_called_meetings ?? 0,
-            attended: att.attended_meetings ?? 0,
-            percentage: att.attendance_percentage ?? 0,
-            fraction: att.attendance_fraction ?? '0/0',
-          });
-        }
-      });
-
-      const members = ((rawMembers ?? []) as unknown as RawMemberData[]).map((row) => {
-        const att = attendanceMap.get(row.id) ?? {
-          totalCalled: 0,
-          attended: 0,
-          percentage: 0,
-          fraction: '0/0',
-        };
-
-        return {
-          id: row.id,
-          editionId: row.edition_id,
-          teamRoleId: row.team_role_id,
-          personId: row.person_id,
-          active: row.active,
-          notes: row.notes,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-          person: {
-            id: row.people?.id ?? row.person_id,
-            fullName: row.people?.full_name ?? 'Sem nome',
-            phone: row.people?.phone ?? '',
-          },
-          teamRole: {
-            id: row.team_roles?.id ?? row.team_role_id,
-            name: row.team_roles?.name ?? 'Equipe',
-            sortOrder: row.team_roles?.sort_order ?? 999,
-          },
-          attendance: att,
-        };
-      });
-
-      return members;
+      return fetchTeamMembersWithDetails(editionId);
     },
     enabled: !!editionId,
     staleTime: 30_000,
@@ -155,6 +63,7 @@ export function useTeamMembers(editionId: string | undefined) {
           person_id: targetPersonId,
           notes: input.notes?.trim() || null,
           active: true,
+          is_courtesy: input.isCourtesy ?? false,
         })
         .select('id')
         .single();
@@ -171,6 +80,8 @@ export function useTeamMembers(editionId: string | undefined) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['team-members', editionId] });
       void queryClient.invalidateQueries({ queryKey: ['team-attendance-summary', editionId] });
+      void queryClient.invalidateQueries({ queryKey: ['team-member-payment-statuses', editionId] });
+      void queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
     },
   });
 
@@ -200,20 +111,55 @@ export function useTeamMembers(editionId: string | undefined) {
       if (personError) throw personError;
 
       // Atualizar dados do membro na equipe
+      const updatePayload: {
+        team_role_id: string;
+        notes: string | null;
+        active: boolean;
+        updated_at: string;
+        is_courtesy?: boolean;
+      } = {
+        team_role_id: input.teamRoleId,
+        notes: input.notes?.trim() || null,
+        active: input.active ?? true,
+        updated_at: new Date().toISOString(),
+      };
+      if (input.isCourtesy !== undefined) {
+        updatePayload.is_courtesy = input.isCourtesy;
+      }
+
       const { error: memberError } = await supabase
         .from('team_members')
-        .update({
-          team_role_id: input.teamRoleId,
-          notes: input.notes?.trim() || null,
-          active: input.active ?? true,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', input.id);
 
       if (memberError) throw memberError;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['team-members', editionId] });
+      void queryClient.invalidateQueries({ queryKey: ['team-member-payment-statuses', editionId] });
+      void queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
+    },
+  });
+
+  const toggleCourtesyMutation = useMutation({
+    mutationFn: async ({ memberId, isCourtesy }: { memberId: string; isCourtesy: boolean }) => {
+      const { error } = await supabase.rpc('set_team_member_courtesy', {
+        p_team_member_id: memberId,
+        p_is_courtesy: isCourtesy,
+      });
+      if (error) {
+        // Fallback direto caso a RPC ainda não esteja disponível no backend
+        const { error: directError } = await supabase
+          .from('team_members')
+          .update({ is_courtesy: isCourtesy, updated_at: new Date().toISOString() })
+          .eq('id', memberId);
+        if (directError) throw error;
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['team-members', editionId] });
+      void queryClient.invalidateQueries({ queryKey: ['team-member-payment-statuses', editionId] });
+      void queryClient.invalidateQueries({ queryKey: ['cash-summary', editionId] });
     },
   });
 
@@ -291,6 +237,8 @@ export function useTeamMembers(editionId: string | undefined) {
     isUpdating: updateMemberMutation.isPending,
     toggleActive: toggleActiveMutation.mutateAsync,
     isTogglingActive: toggleActiveMutation.isPending,
+    toggleCourtesy: toggleCourtesyMutation.mutateAsync,
+    isTogglingCourtesy: toggleCourtesyMutation.isPending,
     moveTeam: moveTeamMutation.mutateAsync,
     isMoving: moveTeamMutation.isPending,
     deleteMember: deleteMemberMutation.mutateAsync,
@@ -298,19 +246,4 @@ export function useTeamMembers(editionId: string | undefined) {
   };
 }
 
-/**
- * Função utilitária para busca debounced de pessoas por telefone
- */
-export async function searchPersonByPhone(phoneDigits: string) {
-  const digits = unmaskPhone(phoneDigits);
-  if (digits.length < 8) return null;
-
-  const { data, error } = await supabase
-    .from('people')
-    .select('id, full_name, phone')
-    .ilike('phone', `%${digits}%`)
-    .limit(1);
-
-  if (error || !data || data.length === 0) return null;
-  return data[0];
-}
+export { searchPersonByPhone } from '../utils/personSearch';

@@ -9,12 +9,24 @@ export type TeamMeetingAttendanceRow =
 export type TeamMemberAttendanceViewRow =
   Database['public']['Views']['v_team_member_attendance']['Row'];
 
+export type TeamMemberPaymentStatusKind = 'paid' | 'partial' | 'pending' | 'courtesy';
+
+export interface TeamMemberPaymentInfo {
+  status: TeamMemberPaymentStatusKind;
+  isCourtesy: boolean;
+  registrationFeeCents: number;
+  totalPaidCents: number;
+  outstandingCents: number;
+  paymentCount: number;
+}
+
 export interface TeamMemberWithDetails {
   id: string;
   editionId: string;
   teamRoleId: string;
   personId: string;
   active: boolean;
+  isCourtesy: boolean;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -34,6 +46,7 @@ export interface TeamMemberWithDetails {
     percentage: number;
     fraction: string;
   };
+  payment: TeamMemberPaymentInfo;
 }
 
 export interface TeamWithMembers {
@@ -78,6 +91,7 @@ export interface CreateTeamMemberInput {
   teamRoleId: string;
   notes?: string;
   personId?: string;
+  isCourtesy?: boolean;
 }
 
 export interface UpdateTeamMemberInput {
@@ -87,6 +101,7 @@ export interface UpdateTeamMemberInput {
   teamRoleId: string;
   notes?: string;
   active?: boolean;
+  isCourtesy?: boolean;
 }
 
 export interface CreateTeamMeetingInput {

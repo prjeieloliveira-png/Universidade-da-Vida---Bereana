@@ -15,6 +15,8 @@ const mockInactiveMember: TeamMemberWithDetails = {
   person: { id: 'p-1', fullName: 'Jeiel Oliveira Santos Junior', phone: '86988127676' },
   teamRole: { id: 'role-1', name: 'Presidente', sortOrder: 1 },
   attendance: { totalCalled: 0, attended: 0, percentage: 0, fraction: '0/0' },
+  isCourtesy: false,
+  payment: { status: 'pending', isCourtesy: false, registrationFeeCents: 15000, totalPaidCents: 0, outstandingCents: 15000, paymentCount: 0 },
 };
 
 describe('DeleteTeamMemberModal', () => {

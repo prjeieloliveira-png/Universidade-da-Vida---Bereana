@@ -1,14 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, AlertCircle } from 'lucide-react';
+import { X, Loader2, AlertCircle, Gift } from 'lucide-react';
 import { maskPhone, unmaskPhone, isValidBrazilianPhone } from '@/shared/utils/phone';
 import { usePersonLookup } from '../hooks/usePersonLookup';
 import { PersonSuggestionBanner } from './PersonSuggestionBanner';
-import type {
-  TeamRoleRow,
-  TeamMemberWithDetails,
-  CreateTeamMemberInput,
-  UpdateTeamMemberInput,
-} from '../types/teams';
+import type { TeamRoleRow, TeamMemberWithDetails, CreateTeamMemberInput, UpdateTeamMemberInput } from '../types/teams';
 
 interface TeamMemberModalProps {
   isOpen: boolean;
@@ -21,41 +16,34 @@ interface TeamMemberModalProps {
 }
 
 export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
-  isOpen,
-  onClose,
-  roles,
-  initialMember,
-  defaultRoleId,
-  onSaveCreate,
-  onSaveUpdate,
+  isOpen, onClose, roles, initialMember, defaultRoleId, onSaveCreate, onSaveUpdate,
 }) => {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [teamRoleId, setTeamRoleId] = useState('');
   const [notes, setNotes] = useState('');
+  const [isCourtesy, setIsCourtesy] = useState(false);
   const [personId, setPersonId] = useState<string | undefined>(undefined);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { matchedPerson, isSearchingPhone, clearMatchedPerson } = usePersonLookup(
-    phone,
-    !initialMember && isOpen
-  );
+  const { matchedPerson, isSearchingPhone, clearMatchedPerson } = usePersonLookup(phone, !initialMember && isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
-
     if (initialMember) {
       setFullName(initialMember.person.fullName);
       setPhone(maskPhone(initialMember.person.phone));
       setTeamRoleId(initialMember.teamRoleId);
       setNotes(initialMember.notes || '');
+      setIsCourtesy(Boolean(initialMember.isCourtesy));
       setPersonId(initialMember.personId);
     } else {
       setFullName('');
       setPhone('');
       setTeamRoleId(defaultRoleId || roles[0]?.id || '');
       setNotes('');
+      setIsCourtesy(false);
       setPersonId(undefined);
     }
     setErrorMsg(null);
@@ -63,9 +51,7 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhone(maskPhone(e.target.value));
-  };
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => setPhone(maskPhone(e.target.value));
 
   const handleApplyMatchedPerson = () => {
     if (matchedPerson) {
@@ -78,22 +64,10 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-
     const trimmedName = fullName.trim();
-    if (!trimmedName) {
-      setErrorMsg('O nome do membro é obrigatório.');
-      return;
-    }
-
-    if (!isValidBrazilianPhone(phone)) {
-      setErrorMsg('Informe um telefone brasileiro válido com DDD (10 ou 11 dígitos).');
-      return;
-    }
-
-    if (!teamRoleId) {
-      setErrorMsg('Selecione uma equipe.');
-      return;
-    }
+    if (!trimmedName) return setErrorMsg('O nome do membro é obrigatório.');
+    if (!isValidBrazilianPhone(phone)) return setErrorMsg('Informe um telefone brasileiro válido com DDD (10 ou 11 dígitos).');
+    if (!teamRoleId) return setErrorMsg('Selecione uma equipe.');
 
     setIsSubmitting(true);
     try {
@@ -102,6 +76,7 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
         phone: unmaskPhone(phone),
         teamRoleId,
         notes: notes.trim() || undefined,
+        isCourtesy,
       };
       if (initialMember) {
         await onSaveUpdate({ ...payload, id: initialMember.id });
@@ -124,9 +99,7 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
             <h3 className="text-base sm:text-lg font-black text-slate-900">
               {initialMember ? 'Editar Membro' : 'Novo Membro da Equipe'}
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Preencha os dados do integrante para a equipe de serviço
-            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Preencha os dados do integrante para a equipe de serviço</p>
           </div>
           <button
             type="button"
@@ -138,7 +111,6 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto">
           {errorMsg && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-2 text-xs text-rose-700">
@@ -147,7 +119,6 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
             </div>
           )}
 
-          {/* Telefone primeiro para sugestão inteligente */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="member-phone">
               Telefone (WhatsApp) *
@@ -168,17 +139,11 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Banner de sugestão inteligente quando o telefone já existe em people */}
             {matchedPerson && (
-              <PersonSuggestionBanner
-                fullName={matchedPerson.full_name}
-                onApply={handleApplyMatchedPerson}
-              />
+              <PersonSuggestionBanner fullName={matchedPerson.full_name} onApply={handleApplyMatchedPerson} />
             )}
           </div>
 
-          {/* Nome */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="member-name">
               Nome Completo *
@@ -194,7 +159,6 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
             />
           </div>
 
-          {/* Equipe / Cargo */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="member-role">
               Equipe / Função *
@@ -207,20 +171,15 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
               className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#58bc75] focus:bg-white transition-all"
             >
               {roles.length === 0 ? (
-                <option value="" disabled>
-                  Carregando equipes...
-                </option>
+                <option value="" disabled>Carregando equipes...</option>
               ) : (
                 roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.sort_order}. {r.name}
-                  </option>
+                  <option key={r.id} value={r.id}>{r.sort_order}. {r.name}</option>
                 ))
               )}
             </select>
           </div>
 
-          {/* Observações */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="member-notes">
               Observações (opcional)
@@ -235,7 +194,29 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
             />
           </div>
 
-          {/* Footer Actions */}
+          {/* Toggle Cortesia */}
+          <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl flex items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <Gift className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-amber-950">Membro de Cortesia</p>
+                <p className="text-[11px] text-amber-800/80 leading-snug">
+                  Isento de taxa. Excluído do cálculo financeiro e metas.
+                </p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                id="member-courtesy"
+                checked={isCourtesy}
+                onChange={(e) => setIsCourtesy(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
+            </label>
+          </div>
+
           <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
             <button
               type="button"
@@ -245,7 +226,6 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
             >
               Cancelar
             </button>
-
             <button
               type="submit"
               disabled={isSubmitting}
@@ -260,3 +240,4 @@ export const TeamMemberModal: React.FC<TeamMemberModalProps> = ({
     </div>
   );
 };
+

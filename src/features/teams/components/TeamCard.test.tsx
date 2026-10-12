@@ -24,6 +24,8 @@ const mockMembers: TeamMemberWithDetails[] = [
     person: { id: 'p-1', fullName: 'Pastor Jeiel', phone: '11987654321' },
     teamRole: { id: 'role-1', name: 'Presidente', sortOrder: 1 },
     attendance: { totalCalled: 4, attended: 4, percentage: 100, fraction: '4/4' },
+    isCourtesy: false,
+    payment: { status: 'paid', isCourtesy: false, registrationFeeCents: 15000, totalPaidCents: 15000, outstandingCents: 0, paymentCount: 1 },
   },
   {
     id: 'm-2',
@@ -37,6 +39,8 @@ const mockMembers: TeamMemberWithDetails[] = [
     person: { id: 'p-2', fullName: 'Membro Inativo', phone: '11911112222' },
     teamRole: { id: 'role-1', name: 'Presidente', sortOrder: 1 },
     attendance: { totalCalled: 2, attended: 1, percentage: 50, fraction: '1/2' },
+    isCourtesy: false,
+    payment: { status: 'pending', isCourtesy: false, registrationFeeCents: 15000, totalPaidCents: 0, outstandingCents: 15000, paymentCount: 0 },
   },
 ];
 

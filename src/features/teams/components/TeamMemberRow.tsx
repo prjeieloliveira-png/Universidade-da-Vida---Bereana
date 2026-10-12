@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   MessageCircle,
   Phone,
@@ -7,6 +6,9 @@ import {
   UserX,
   UserCheck,
   Trash2,
+  CheckCircle2,
+  Clock,
+  Gift,
 } from 'lucide-react';
 import { formatPhone, getWhatsAppLink, getTelLink } from '@/shared/utils/phone';
 import { AttendanceBadge } from '@/shared/components/ui/AttendanceBadge';
@@ -17,6 +19,7 @@ interface TeamMemberRowProps {
   onEdit: (member: TeamMemberWithDetails) => void;
   onMove: (member: TeamMemberWithDetails) => void;
   onToggleActive: (member: TeamMemberWithDetails) => void;
+  onToggleCourtesy?: (member: TeamMemberWithDetails) => void;
   onDelete?: (member: TeamMemberWithDetails) => void;
 }
 
@@ -25,6 +28,7 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
   onEdit,
   onMove,
   onToggleActive,
+  onToggleCourtesy,
   onDelete,
 }) => {
   const waLink = getWhatsAppLink(member.person.phone);
@@ -58,6 +62,45 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
             percentage={member.attendance.percentage}
             size="sm"
           />
+
+          {/* Badge de Pagamento */}
+          {member.payment?.status === 'courtesy' || member.isCourtesy ? (
+            <span
+              data-testid="badge-courtesy"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-purple-50 text-purple-700 border border-purple-200/80 shadow-2xs"
+              title="Membro de Cortesia (isento de taxa)"
+            >
+              <Gift className="w-3 h-3 text-purple-600" />
+              Cortesia
+            </span>
+          ) : member.payment?.status === 'paid' ? (
+            <span
+              data-testid="badge-paid"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs"
+              title="Pagamento Quitado"
+            >
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              Pago
+            </span>
+          ) : member.payment?.status === 'partial' ? (
+            <span
+              data-testid="badge-partial"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-50 text-amber-700 border border-amber-200/80 shadow-2xs"
+              title="Pagamento Parcial"
+            >
+              <Clock className="w-3 h-3 text-amber-600" />
+              Parcial
+            </span>
+          ) : (
+            <span
+              data-testid="badge-pending"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs"
+              title="Pagamento Pendente"
+            >
+              <Clock className="w-3 h-3 text-amber-600" />
+              Pendente
+            </span>
+          )}
         </div>
 
         {/* Phone & notes */}
@@ -123,6 +166,27 @@ export const TeamMemberRow: React.FC<TeamMemberRowProps> = ({
         >
           <ArrowRightLeft className="w-4 h-4" />
         </button>
+
+        {/* Toggle Courtesy Button */}
+        {onToggleCourtesy && (
+          <button
+            type="button"
+            onClick={() => onToggleCourtesy(member)}
+            title={
+              member.isCourtesy
+                ? 'Remover cortesia (cobrar taxa no financeiro)'
+                : 'Marcar como cortesia (isentar do financeiro)'
+            }
+            className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+              member.isCourtesy
+                ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                : 'hover:bg-purple-50 text-slate-400 hover:text-purple-600'
+            }`}
+            aria-label={member.isCourtesy ? 'Remover cortesia' : 'Marcar como cortesia'}
+          >
+            <Gift className="w-4 h-4" />
+          </button>
+        )}
 
         {/* Toggle Active Button */}
         <button
