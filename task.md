@@ -397,4 +397,11 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] Quality gate: lint ✅ typecheck ✅ tests 135/135 ✅ (+14)
 - [x] Validado no navegador: colunas, agrupar por G12, paisagem, numeração; cópia de impressão (#report-print-root, @page A4 landscape, regra @media print carregada) e simulação visual da impressão; 390px sem rolagem lateral
 - [ ] Impressão real no papel/PDF não testada pela ferramenta (não dá pra acionar o diálogo de impressão) — usuário deve conferir o PDF
-- [ ] push/merge pendente. Próximas etapas: aba Frequência (alunos e equipe); aba Financeiro (extrato + situação de pagamentos)
+- [x] PR #22 mesclado em main, deploy ok
+
+## Correção — alteração de nome de aluno criava novo aluno duplicado
+- [x] Causa raiz: `saveStudentToSupabase` chamava a RPC legada `sync_students_from_local` (desenhada para importação inicial e sem suporte a IDs), identificando pessoas apenas por `(full_name, birth_date)`. Ao alterar o nome, inseria uma nova pessoa e nova inscrição duplicada.
+- [x] `registrationsApi.ts`: refatorado para utilizar a RPC canônica `upsert_student_registration`, passando `p_person_id` e `p_registration_id` (quando UUIDs válidos). O banco agora executa `UPDATE people WHERE id = v_person_id` e `UPDATE registrations WHERE id = v_registration_id`, atualizando o registro existente sem criar duplicatas.
+- [x] `useRegistrations.ts`: propaga `personId` e `id` retornados para o Zustand store e TanStack Query cache.
+- [x] `registrationsApi.test.ts`: testes unitários adicionados cobrindo preservação de IDs em alunos existentes e novos cadastros.
+- [x] Quality gate: lint ✅ typecheck ✅ tests 137/137 ✅

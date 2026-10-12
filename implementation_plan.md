@@ -1,51 +1,41 @@
-# Plano: página dedicada de Relatórios (3 abas, personalizáveis, prontos para A4)
+# Plano de Implementação: Correção da Edição de Alunos (Evitar Duplicados)
 
-## Estrutura
-Nova rota `/relatorios` (item "Relatórios" no menu) com 3 abas:
-1. **Frequência** (alunos e equipe)
-2. **Financeiro**
-3. **Alunos** (relação com líderes)
+## Diagnóstico do Problema (Causa Raiz)
 
-Cada aba tem o mesmo esqueleto, para ficar fácil de aprender:
-**[Filtros] → [Campos/colunas] → [Opções de página] → [Pré-visualização A4] → [Imprimir / Exportar CSV]**
+Quando o usuário altera o nome de um aluno na tela de Inscrições:
+1. O modal de edição chama `onSave(formData)`, que invoca `saveStudentToSupabase(targetEditionId, student)`.
+2. Em `src/features/registrations/api/registrationsApi.ts`, a função estava chamando a RPC `sync_students_from_local`:
+   - Essa RPC foi projetada para importação em lote e **não recebe nem considera `person_id` nem `registration_id`**.
+   - Ela tenta casar a pessoa unicamente por `(full_name, birth_date)`.
+   - Ao alterar o nome de "João Silva" para "João Pedro Silva", o banco entende que se trata de uma pessoa nova e executa um `INSERT INTO people` e um novo `INSERT INTO registrations`.
+   - Como resultado, o aluno original permanece intocado e uma nova inscrição duplicada é criada.
 
-## O que dá para personalizar (comum às 3 abas)
-- **Colunas:** marcar/desmarcar o que aparece e reordenar.
-- **Filtros:** específicos de cada relatório (abaixo), com resumo dos filtros ativos impresso no cabeçalho.
-- **Ordenação** (ex.: A-Z, por líder, por data) e **agrupamento** com cabeçalho e subtotal (ex.: por G12, por equipe, por categoria).
-- **Papel:** A4 retrato ou paisagem (a tabela se ajusta), densidade (compacta/normal) e numeração das linhas.
-- **Cabeçalho:** logo, título e subtítulo editáveis, data de emissão, quem emitiu e campo opcional de observação/assinatura no rodapé.
-- **Modelos salvos** (opcional): guardar a configuração com um nome e reaproveitar.
+## Solução Proposta
 
-## Aba 1 — Frequência
-- **Alunos:** colunas escolhidas entre nº, nome, telefone, pastor, G12, líder, pagamento, S1–S9, total, %, faltas, justificativas. Filtros: semanas (uma, várias ou todas), situação (presente / falta confirmada / sem registro), mínimo de faltas, faltas seguidas, pastor/G12/líder, pagamento, sexo, idade. Em branco = sem registro; "F" = falta confirmada.
-- **Equipe:** membros × reuniões. Filtros: equipes, período/reuniões, situação (presente/falta/sem registro/não convocada), só ativos.
-- Opcional nas duas: resumo no topo (totais e % por semana/reunião) e quem registrou cada marcação.
+Existe no banco a RPC canônica **`upsert_student_registration`** (criada na migração `20260926000022_registrations_sync_and_permissions.sql` e devidamente tipada em `database.ts`), que aceita:
+- `p_person_id` (UUID da pessoa existente)
+- `p_registration_id` (UUID da inscrição existente)
+- `p_edition_id`
+- Dados pessoais (`p_full_name`, `p_birth_date`, `p_gender`, `p_marital_status`, `p_phone`, `p_address`, `p_photo_url`)
+- Dados de inscrição e liderança (`p_shirt_size`, `p_pastor_name`, `p_g12_leader`, `p_cell_leader`, `p_status`)
+- Ficha de saúde (`p_has_condition`, `p_condition_description`, `p_medication_schedule`)
 
-## Aba 2 — Financeiro
-- **Extrato personalizável:** período, tipo (entrada/saída), origem (inscrição, equipe, manual), categoria, forma de pagamento, pessoa, quem registrou, só editados. Colunas à escolha (data, descrição, categoria, forma, valor, quem registrou, editado). Agrupar por dia, categoria ou forma de pagamento, com subtotais e **resumo no topo** (entradas, saídas, saldo).
-- **Situação de pagamentos** (modo à parte): por aluno/membro — taxa, pago, saldo, abatimento (quitação), status. Filtros: status, equipe/G12/pastor.
-- Valores sempre exatos (centavos) e formatados em R$.
+Quando `p_person_id` é fornecido, a RPC executa um `UPDATE people WHERE id = v_person_id;` e um `UPDATE registrations WHERE id = v_registration_id;`.
+Isso atualiza o aluno existente no mesmo registro e **não cria duplicatas**.
 
-## Aba 3 — Alunos
-- **Relação de alunos** com colunas à escolha: nº, nome, telefone, endereço, data de nascimento/idade, sexo, estado civil, camiseta, **pastor, G12, líder**, pagamento (status/valor), frequência (total). Filtros: os mesmos de Inscrições (sexo, idade, estado civil, camiseta, forma de pagamento, pagamento, pastor, G12, líder). Agrupar por pastor, G12 ou líder, com contagem por grupo.
-- **Saúde/comorbidade:** coluna disponível **somente para coordenação e secretaria** (regra do projeto).
+## Arquivos Envolvidos
 
-## Impressão A4
-- Impressão pela própria página (estilo de impressão com `@page A4`, quebra de página que não corta linha, cabeçalho da tabela repetido em cada folha, rodapé com paginação), sem janela pop-up (que alguns navegadores bloqueiam). Pré-visualização na tela já no formato da folha.
+1. **`src/features/registrations/api/registrationsApi.ts`**:
+   - Refatorar `saveStudentToSupabase` para chamar a RPC `upsert_student_registration` com tipagem estrita do Supabase.
+   - Enviar `p_person_id` e `p_registration_id` (se forem UUIDs válidos).
+   - Retornar `{ personId, registrationId, success }`.
 
-## Dados e banco
-- Usa as views e tabelas que já existem (`v_edition_attendance_matrix`, `v_attendance_log`, `v_team_attendance_log`, `v_cash_flow`, `v_cash_summary`, status de pagamento, inscrições). **Não precisa de migração.**
-- Modelos salvos: guardados no navegador de cada usuário (sem tabela nova), a menos que você queira compartilhá-los entre usuários (aí precisa de tabela).
+2. **`src/features/registrations/hooks/useRegistrations.ts`**:
+   - Ajustar o retorno da mutação para associar `personId` e `id` retornados pela RPC, garantindo atualização reativa e consistente no store e no TanStack Query.
 
-## Entrega em 3 etapas (cada uma com testes, validação em 390px e em A4)
-1. Base (rota, abas, filtros, seletor de colunas, folha A4, CSV) + **aba Alunos**
-2. **Aba Frequência** (alunos e equipe)
-3. **Aba Financeiro** (extrato + situação de pagamentos)
+3. **Testes Unitários (`registrationsApi.test.ts`)**:
+   - Adicionar testes cobrindo `saveStudentToSupabase` para garantir que `p_person_id` e `p_registration_id` são passados corretamente e que novas alterações mantêm o mesmo ID.
 
-## Decisões suas
-1. **Quem acessa:** sugiro coordenação e secretaria na página inteira. Líder de rede veria só a frequência e a lista de alunos da própria rede (etapa posterior). Concorda?
-2. **Modelos salvos:** incluir já (no navegador de cada um) ou deixar para depois?
-3. **Prioridade:** começo por Alunos (mais simples, valida a base), depois Frequência e Financeiro. Ou prefere outra ordem?
-
-Aguardando aprovação.
+4. **Quality Gate**:
+   - Executar `npm run lint && npm run typecheck && npm run test`.
+   - Validar visualmente e funcionalmente a alteração de nome de um aluno no navegador.

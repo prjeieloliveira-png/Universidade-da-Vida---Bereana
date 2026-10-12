@@ -26,10 +26,16 @@ export function useRegistrations({ editionId }: UseRegistrationsProps) {
     mutationFn: async (student: StudentRecord) => {
       const result = await saveStudentToSupabase(targetEditionId, student);
 
+      const savedStudent: StudentRecord = {
+        ...student,
+        id: result.registrationId || student.id,
+        personId: result.personId || student.personId,
+      };
+
       if (!student.id) {
-        addStudent(student);
+        addStudent(savedStudent);
       } else {
-        updateStudent(student);
+        updateStudent(savedStudent);
       }
 
       return result;

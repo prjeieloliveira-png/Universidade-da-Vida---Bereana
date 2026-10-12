@@ -172,34 +172,64 @@ export async function fetchStudentsFromSupabase(
   });
 }
 
+export interface SaveStudentResult {
+  personId: string;
+  registrationId: string;
+  success: boolean;
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 /**
- * Persiste um único aluno de forma atômica no Supabase (people + registrations)
+ * Persiste um único aluno de forma atômica no Supabase (people + registrations + health_records).
+ * Ao receber personId e registrationId válidos, atualiza a pessoa e inscrição existentes
+ * em vez de criar novos registros duplicados.
  */
 export async function saveStudentToSupabase(
   editionId: string | undefined,
   student: StudentRecord
-): Promise<SyncRpcResult> {
+): Promise<SaveStudentResult> {
   const targetEditionId = editionId || DEFAULT_EDITION_ID;
-  const payload = [formatStudentForSync(student)];
 
-  const { data, error } = await (
-    supabase as unknown as {
-      rpc: (
-        fn: string,
-        args: { p_edition_id: string; p_data: typeof payload }
-      ) => Promise<{ data: unknown; error: unknown }>;
-    }
-  ).rpc('sync_students_from_local', {
+  let birthDate = student.birthDate?.trim();
+  if (!birthDate || birthDate === '' || isNaN(Date.parse(birthDate))) {
+    birthDate = '2000-01-01';
+  }
+
+  const validPersonId = student.personId && UUID_REGEX.test(student.personId) ? student.personId : undefined;
+  const validRegistrationId = student.id && UUID_REGEX.test(student.id) ? student.id : undefined;
+
+  const { data, error } = await supabase.rpc('upsert_student_registration', {
     p_edition_id: targetEditionId,
-    p_data: payload,
+    p_full_name: student.name.trim(),
+    p_birth_date: birthDate,
+    p_gender: student.gender || 'Feminino',
+    p_marital_status: student.maritalStatus || 'Solteiro',
+    p_phone: student.phone && student.phone !== '—' ? student.phone.trim() : '—',
+    p_address: student.address && student.address !== '—' ? student.address.trim() : undefined,
+    p_photo_url: student.photoUrl || undefined,
+    p_shirt_size: student.shirtSize && student.shirtSize !== '—' ? student.shirtSize : undefined,
+    p_pastor_name: student.pastor && student.pastor !== 'ALL' ? student.pastor : undefined,
+    p_g12_leader: student.g12 && student.g12 !== 'ALL' ? student.g12 : undefined,
+    p_cell_leader: student.leader && student.leader !== 'ALL' ? student.leader : undefined,
+    p_has_condition: Boolean(student.comorbidity && student.comorbidity !== 'Não'),
+    p_condition_description: student.comorbidity && student.comorbidity !== 'Não' ? student.comorbidity : undefined,
+    p_medication_schedule: student.medSchedule && student.medSchedule !== 'Não' ? student.medSchedule : undefined,
+    p_person_id: validPersonId,
+    p_registration_id: validRegistrationId,
   });
 
   if (error) {
     console.error('Erro ao salvar aluno no Supabase:', error);
-    throw error as Error;
+    throw error;
   }
 
-  return (data as SyncRpcResult) || { synced: 1, skipped: 0 };
+  const res = (data as { person_id?: string; registration_id?: string; success?: boolean }) || {};
+  return {
+    personId: res.person_id || student.personId,
+    registrationId: res.registration_id || student.id,
+    success: res.success ?? true,
+  };
 }
 
 export interface DeleteRegistrationResult {
