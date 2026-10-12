@@ -74,20 +74,33 @@ export function RegistrationAdvancedFiltersDrawer({
           </select>
         </div>
 
-        {/* Faixa Etária */}
+        {/* Idade Personalizada */}
         <div className="space-y-1">
-          <label className="text-slate-500 font-medium">Faixa Etária</label>
-          <select
-            value={filters.ageRange}
-            onChange={(e) => onChange('ageRange', e.target.value as RegistrationFilterState['ageRange'])}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#58bc75] text-slate-800"
-          >
-            <option value="ALL">Todas as idades</option>
-            <option value="under18">Menores (&lt; 18 anos)</option>
-            <option value="18-29">Jovens (18 a 29 anos)</option>
-            <option value="30-49">Adultos (30 a 49 anos)</option>
-            <option value="50+">50 anos ou mais</option>
-          </select>
+          <label className="text-slate-500 font-medium">Idade (anos)</label>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <input
+                type="number"
+                min="0"
+                max="120"
+                placeholder="Idade mín."
+                value={filters.minAge}
+                onChange={(e) => onChange('minAge', e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#58bc75] text-slate-800 text-sm"
+              />
+            </div>
+            <div>
+              <input
+                type="number"
+                min="0"
+                max="120"
+                placeholder="Idade máx."
+                value={filters.maxAge}
+                onChange={(e) => onChange('maxAge', e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#58bc75] text-slate-800 text-sm"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Estado Civil */}

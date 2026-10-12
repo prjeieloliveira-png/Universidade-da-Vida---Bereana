@@ -14,15 +14,21 @@ interface StudentFiltersPanelProps {
   onReset: () => void;
 }
 
-const AGE_LABELS: Record<string, string> = { under18: '<18', '18-29': '18–29', '30-49': '30–49', '50+': '50+' };
-
 export function describeStudentFilters(filters: RegistrationFilterState): string {
   const parts: string[] = [];
   if (filters.searchQuery.trim()) parts.push(`Busca "${filters.searchQuery.trim()}"`);
   if (filters.status !== 'ALL') parts.push(`Pagamento: ${filters.status === 'Pago' ? 'pagos' : 'pendentes'}`);
   if (filters.paymentMethod !== 'ALL') parts.push(`Forma: ${filters.paymentMethod}`);
   if (filters.gender !== 'ALL') parts.push(`Sexo: ${filters.gender}`);
-  if (filters.ageRange !== 'ALL') parts.push(`Idade: ${AGE_LABELS[filters.ageRange] ?? filters.ageRange}`);
+  if (filters.minAge !== '' || filters.maxAge !== '') {
+    const ageText =
+      filters.minAge !== '' && filters.maxAge !== ''
+        ? `${filters.minAge} a ${filters.maxAge} anos`
+        : filters.minAge !== ''
+        ? `≥ ${filters.minAge} anos`
+        : `≤ ${filters.maxAge} anos`;
+    parts.push(`Idade: ${ageText}`);
+  }
   if (filters.maritalStatus !== 'ALL') parts.push(`Estado civil: ${filters.maritalStatus}`);
   if (filters.shirtSize !== 'ALL') parts.push(`Camiseta: ${filters.shirtSize}`);
   if (filters.comorbidity !== 'ALL') {
@@ -38,11 +44,38 @@ export function StudentFiltersPanel({ students, filters, onChange, onReset }: St
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const activeChips = useMemo(() => {
-    const keys = (Object.keys(initialRegistrationFilterState) as (keyof RegistrationFilterState)[]).filter(
-      (k) => k !== 'searchQuery' && filters[k] !== initialRegistrationFilterState[k]
-    );
-    return keys.map((k) => ({ key: k, text: String(filters[k]) }));
+    const chips: { key: keyof RegistrationFilterState; text: string }[] = [];
+    if (filters.status !== 'ALL') chips.push({ key: 'status', text: `Pagamento: ${filters.status}` });
+    if (filters.paymentMethod !== 'ALL') chips.push({ key: 'paymentMethod', text: `Forma: ${filters.paymentMethod}` });
+    if (filters.gender !== 'ALL') chips.push({ key: 'gender', text: `Sexo: ${filters.gender}` });
+    if (filters.minAge !== '' || filters.maxAge !== '') {
+      const ageText =
+        filters.minAge !== '' && filters.maxAge !== ''
+          ? `Idade: ${filters.minAge} a ${filters.maxAge} anos`
+          : filters.minAge !== ''
+          ? `Idade: ≥ ${filters.minAge} anos`
+          : `Idade: ≤ ${filters.maxAge} anos`;
+      chips.push({ key: 'minAge', text: ageText });
+    }
+    if (filters.maritalStatus !== 'ALL') chips.push({ key: 'maritalStatus', text: `Est. civil: ${filters.maritalStatus}` });
+    if (filters.shirtSize !== 'ALL') chips.push({ key: 'shirtSize', text: `Camiseta: ${filters.shirtSize}` });
+    if (filters.comorbidity !== 'ALL') {
+      chips.push({ key: 'comorbidity', text: `Saúde: ${filters.comorbidity === 'SIM' ? 'Com restrição' : 'Sem restrição'}` });
+    }
+    if (filters.pastor !== 'ALL') chips.push({ key: 'pastor', text: `Pastor: ${filters.pastor}` });
+    if (filters.g12 !== 'ALL') chips.push({ key: 'g12', text: `G12: ${filters.g12}` });
+    if (filters.leader !== 'ALL') chips.push({ key: 'leader', text: `Líder: ${filters.leader}` });
+    return chips;
   }, [filters]);
+
+  const handleRemoveChip = (key: keyof RegistrationFilterState) => {
+    if (key === 'minAge' || key === 'maxAge') {
+      onChange('minAge', '');
+      onChange('maxAge', '');
+    } else {
+      onChange(key, initialRegistrationFilterState[key]);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -92,7 +125,7 @@ export function StudentFiltersPanel({ students, filters, onChange, onReset }: St
               {chip.text}
               <button
                 type="button"
-                onClick={() => onChange(chip.key, initialRegistrationFilterState[chip.key])}
+                onClick={() => handleRemoveChip(chip.key)}
                 aria-label={`Remover filtro ${chip.text}`}
                 className="hover:text-rose-600 cursor-pointer"
               >

@@ -405,3 +405,16 @@ A sessão paralela de segurança (RLS) usou o número 20260926000030 (`lockdown_
 - [x] `useRegistrations.ts`: propaga `personId` e `id` retornados para o Zustand store e TanStack Query cache.
 - [x] `registrationsApi.test.ts`: testes unitários adicionados cobrindo preservação de IDs em alunos existentes e novos cadastros.
 - [x] Quality gate: lint ✅ typecheck ✅ tests 137/137 ✅
+
+## Filtro de idade personalizável (idade inicial e final)
+- [x] `RegistrationFilterState` e `initialRegistrationFilterState`: substituído `ageRange` fixo (`<18`, `18-29`, `30-49`, `50+`) por `minAge: string; maxAge: string;`.
+- [x] `studentFilter.ts`: atualizado `filterStudents` para aplicar filtros inclusivos de idade mínima e máxima (`s.age >= min` e `s.age <= max`) de forma segura.
+- [x] `RegistrationFilterBar.tsx`: substituído o dropdown fixo por seletor inline numérico compacto `Idade: [ Mín ] a [ Máx ]`, chips de filtros ativos formatados (`18 a 30 anos`, `≥ 18 anos`, `≤ 30 anos`) e limpeza reativa.
+- [x] Subcomponentes extraídos para respeito aos limites de linhas: `RegistrationFilterChips.tsx` e `RegistrationPrintMenu.tsx`.
+- [x] `RegistrationAdvancedFiltersDrawer.tsx`: campos numéricos para `Idade mín.` e `Idade máx.`.
+- [x] `RegistrationReportModal.tsx`: resumo de filtros no PDF de inscrições reflete o intervalo de idade customizado.
+- [x] `StudentFiltersPanel.tsx`: painel de relatórios de alunos exibe chip e descrição com a faixa etária personalizada.
+- [x] `AttendancePage.tsx`: contagem de filtros, chips ativos e descrição integrados com `minAge`/`maxAge` e reutilizando `RegistrationFilterChips`.
+- [x] Testes unitários em `studentFilter.test.ts` cobrindo combinações de `minAge`, `maxAge`, limites e ausência de filtro (144/144 testes passando).
+- [x] Quality gate: lint ✅ typecheck ✅ tests 144/144 ✅
+- [x] Validação visual mobile (390px) no browser integrado ✅

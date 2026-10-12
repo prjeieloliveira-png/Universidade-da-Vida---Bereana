@@ -1,7 +1,9 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, SlidersHorizontal, FileDown, Printer, ChevronDown, FileText, ListChecks, ArrowDownAZ, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Search, SlidersHorizontal, FileDown, ArrowDownAZ, X } from 'lucide-react';
 import { StudentRecord, RegistrationFilterState, initialRegistrationFilterState } from '../types';
 import { RegistrationAdvancedFiltersDrawer } from './RegistrationAdvancedFiltersDrawer';
+import { RegistrationPrintMenu } from './RegistrationPrintMenu';
+import { RegistrationFilterChips } from './RegistrationFilterChips';
 
 interface RegistrationFilterBarProps {
   students: StudentRecord[];
@@ -36,25 +38,12 @@ export function RegistrationFilterBar({
   pendingCount,
 }: RegistrationFilterBarProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
-  const printMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isPrintMenuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (printMenuRef.current && !printMenuRef.current.contains(e.target as Node)) {
-        setIsPrintMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isPrintMenuOpen]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.paymentMethod !== 'ALL') count++;
     if (filters.gender !== 'ALL') count++;
-    if (filters.ageRange !== 'ALL') count++;
+    if (filters.minAge !== '' || filters.maxAge !== '') count++;
     if (filters.maritalStatus !== 'ALL') count++;
     if (filters.shirtSize !== 'ALL') count++;
     if (filters.comorbidity !== 'ALL') count++;
@@ -67,9 +56,16 @@ export function RegistrationFilterBar({
   const activeChips = useMemo(() => {
     const list: { key: keyof RegistrationFilterState; label: string; value: string }[] = [];
     if (filters.gender !== 'ALL') list.push({ key: 'gender', label: 'Sexo', value: filters.gender });
-    if (filters.ageRange !== 'ALL') {
-      const val = filters.ageRange === 'under18' ? '<18' : filters.ageRange;
-      list.push({ key: 'ageRange', label: 'Idade', value: val });
+    if (filters.minAge !== '' || filters.maxAge !== '') {
+      let val = '';
+      if (filters.minAge !== '' && filters.maxAge !== '') {
+        val = `${filters.minAge} a ${filters.maxAge} anos`;
+      } else if (filters.minAge !== '') {
+        val = `≥ ${filters.minAge} anos`;
+      } else {
+        val = `≤ ${filters.maxAge} anos`;
+      }
+      list.push({ key: 'minAge', label: 'Idade', value: val });
     }
     if (filters.maritalStatus !== 'ALL') list.push({ key: 'maritalStatus', label: 'Est. Civil', value: filters.maritalStatus });
     if (filters.paymentMethod !== 'ALL') list.push({ key: 'paymentMethod', label: 'Pagamento', value: filters.paymentMethod });
@@ -82,6 +78,15 @@ export function RegistrationFilterBar({
     }
     return list;
   }, [filters]);
+
+  const handleRemoveChip = (key: keyof RegistrationFilterState) => {
+    if (key === 'minAge' || key === 'maxAge') {
+      onFilterChange('minAge', '');
+      onFilterChange('maxAge', '');
+    } else {
+      onFilterChange(key, initialRegistrationFilterState[key]);
+    }
+  };
 
   return (
     <div className="bg-white border border-slate-200/80 rounded-[20px] px-4 py-3 shadow-xs space-y-2.5">
@@ -183,52 +188,10 @@ export function RegistrationFilterBar({
             <span className="hidden sm:inline">Exportar PDF</span>
           </button>
 
-          <div className="relative" ref={printMenuRef}>
-            <button
-              onClick={() => setIsPrintMenuOpen((v) => !v)}
-              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                isPrintMenuOpen
-                  ? 'bg-[#163242] text-white border-[#163242]'
-                  : 'bg-[#163242]/10 hover:bg-[#163242]/20 text-[#163242] border-[#163242]/20'
-              }`}
-              title="Imprimir fichas dos alunos filtrados"
-            >
-              <Printer className={`w-3.5 h-3.5 ${isPrintMenuOpen ? 'text-[#58bc75]' : 'text-[#163242]'}`} />
-              <span className="hidden sm:inline">Imprimir Fichas</span>
-              <ChevronDown className={`w-3 h-3 transition-transform ${isPrintMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isPrintMenuOpen && (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-64 bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
-                <button
-                  onClick={() => {
-                    setIsPrintMenuOpen(false);
-                    onPrintAllDetailed();
-                  }}
-                  className="w-full flex items-start gap-2.5 px-3.5 py-3 hover:bg-slate-50 transition-colors cursor-pointer text-left border-b border-slate-100"
-                >
-                  <FileText className="w-4 h-4 text-[#163242] shrink-0 mt-0.5" />
-                  <span>
-                    <span className="block text-xs font-bold text-slate-800">Ficha Completa</span>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">Uma página por aluno, com todos os dados</span>
-                  </span>
-                </button>
-                <button
-                  onClick={() => {
-                    setIsPrintMenuOpen(false);
-                    onPrintAllSummary();
-                  }}
-                  className="w-full flex items-start gap-2.5 px-3.5 py-3 hover:bg-slate-50 transition-colors cursor-pointer text-left"
-                >
-                  <ListChecks className="w-4 h-4 text-[#163242] shrink-0 mt-0.5" />
-                  <span>
-                    <span className="block text-xs font-bold text-slate-800">Lista Resumida</span>
-                    <span className="block text-[11px] text-slate-400 mt-0.5">Nome, G12, líder, pagamento e frequência</span>
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
+          <RegistrationPrintMenu
+            onPrintAllDetailed={onPrintAllDetailed}
+            onPrintAllSummary={onPrintAllSummary}
+          />
         </div>
       </div>
 
@@ -247,18 +210,31 @@ export function RegistrationFilterBar({
           <option value="Masculino">Masculino</option>
         </select>
 
-        {/* Faixa etária */}
-        <select
-          value={filters.ageRange}
-          onChange={(e) => onFilterChange('ageRange', e.target.value as RegistrationFilterState['ageRange'])}
-          className={selectCls}
-        >
-          <option value="ALL">Idade</option>
-          <option value="under18">{'< 18 anos'}</option>
-          <option value="18-29">18 – 29</option>
-          <option value="30-49">30 – 49</option>
-          <option value="50+">50+</option>
-        </select>
+        {/* Idade personalizada: De X a Y */}
+        <div className="flex items-center gap-1 h-8 px-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-medium text-slate-700 shrink-0 focus-within:ring-2 focus-within:ring-[#58bc75] focus-within:bg-white focus-within:border-[#58bc75]">
+          <span className="text-slate-400">Idade:</span>
+          <input
+            type="number"
+            min="0"
+            max="120"
+            placeholder="Mín"
+            value={filters.minAge}
+            onChange={(e) => onFilterChange('minAge', e.target.value)}
+            className="w-10 h-6 text-center text-[11px] font-semibold bg-white border border-slate-200 rounded px-0.5 focus:outline-none focus:border-[#58bc75]"
+            title="Idade mínima"
+          />
+          <span className="text-slate-400">a</span>
+          <input
+            type="number"
+            min="0"
+            max="120"
+            placeholder="Máx"
+            value={filters.maxAge}
+            onChange={(e) => onFilterChange('maxAge', e.target.value)}
+            className="w-10 h-6 text-center text-[11px] font-semibold bg-white border border-slate-200 rounded px-0.5 focus:outline-none focus:border-[#58bc75]"
+            title="Idade máxima"
+          />
+        </div>
 
         {/* Estado Civil */}
         <select
@@ -302,7 +278,8 @@ export function RegistrationFilterBar({
 
         {/* Limpar filtros rápidos — só aparece quando há algo ativo */}
         {(filters.gender !== 'ALL' ||
-          filters.ageRange !== 'ALL' ||
+          filters.minAge !== '' ||
+          filters.maxAge !== '' ||
           filters.maritalStatus !== 'ALL' ||
           filters.shirtSize !== 'ALL' ||
           filters.paymentMethod !== 'ALL') && (
@@ -317,32 +294,11 @@ export function RegistrationFilterBar({
       </div>
 
       {/* ── Chips de filtros ativos (dos filtros avançados) ── */}
-      {activeChips.length > 0 && (
-        <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-100">
-          <span className="text-[11px] font-semibold text-slate-400">Ativos:</span>
-          {activeChips.map((chip) => (
-            <span
-              key={chip.key}
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#163242]/8 text-[#163242] text-[11px] font-medium"
-            >
-              <span className="text-slate-400 font-normal">{chip.label}:</span>
-              <strong>{chip.value}</strong>
-              <button
-                onClick={() => onFilterChange(chip.key, initialRegistrationFilterState[chip.key])}
-                className="hover:text-rose-600 transition-colors cursor-pointer ml-0.5"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-          <button
-            onClick={onResetFilters}
-            className="text-[11px] font-semibold text-rose-500 hover:text-rose-700 hover:underline cursor-pointer ml-1"
-          >
-            Limpar tudo
-          </button>
-        </div>
-      )}
+      <RegistrationFilterChips
+        chips={activeChips}
+        onRemoveChip={handleRemoveChip}
+        onResetAll={onResetFilters}
+      />
 
       {/* ── Drawer de filtros avançados ── */}
       {isDrawerOpen && (

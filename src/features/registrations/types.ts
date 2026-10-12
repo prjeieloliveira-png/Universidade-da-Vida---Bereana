@@ -36,7 +36,8 @@ export interface RegistrationFilterState {
   status: 'ALL' | 'Pago' | 'Pendente';
   paymentMethod: string;
   gender: string;
-  ageRange: 'ALL' | 'under18' | '18-29' | '30-49' | '50+';
+  minAge: string;
+  maxAge: string;
   maritalStatus: string;
   shirtSize: string;
   comorbidity: 'ALL' | 'SIM' | 'NAO';
@@ -50,7 +51,8 @@ export const initialRegistrationFilterState: RegistrationFilterState = {
   status: 'ALL',
   paymentMethod: 'ALL',
   gender: 'ALL',
-  ageRange: 'ALL',
+  minAge: '',
+  maxAge: '',
   maritalStatus: 'ALL',
   shirtSize: 'ALL',
   comorbidity: 'ALL',

@@ -13,6 +13,7 @@ import { AttendanceConfirmModal } from '../components/AttendanceConfirmModal';
 import { useAttendanceSync } from '../hooks/useAttendanceSync';
 import { fetchAbsenceCounts, fetchAttendanceLog } from '../api/attendanceApi';
 import { RegistrationAdvancedFiltersDrawer } from '@/features/registrations/components/RegistrationAdvancedFiltersDrawer';
+import { RegistrationFilterChips } from '@/features/registrations/components/RegistrationFilterChips';
 import { filterStudents } from '@/features/registrations/utils/studentFilter';
 import {
   StudentRecord,
@@ -21,7 +22,7 @@ import {
 } from '@/features/registrations/types';
 import { sortByName } from '@/shared/utils/sortByName';
 import { WeekNumber, WeekKey } from '../types';
-import { Search, FileSpreadsheet, Smartphone, ArrowDownAZ, SlidersHorizontal, X } from 'lucide-react';
+import { Search, FileSpreadsheet, Smartphone, ArrowDownAZ, SlidersHorizontal } from 'lucide-react';
 
 export function AttendancePage() {
   const { students } = useStudentStore();
@@ -106,12 +107,20 @@ export function AttendancePage() {
 
   const handleResetFilters = () => setFilters(initialRegistrationFilterState);
 
+  const handleRemoveChip = (key: keyof RegistrationFilterState) => {
+    if (key === 'minAge' || key === 'maxAge') {
+      setFilters((prev) => ({ ...prev, minAge: '', maxAge: '' }));
+    } else {
+      handleFilterChange(key, initialRegistrationFilterState[key]);
+    }
+  };
+
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.status !== 'ALL') count++;
     if (filters.paymentMethod !== 'ALL') count++;
     if (filters.gender !== 'ALL') count++;
-    if (filters.ageRange !== 'ALL') count++;
+    if (filters.minAge !== '' || filters.maxAge !== '') count++;
     if (filters.maritalStatus !== 'ALL') count++;
     if (filters.shirtSize !== 'ALL') count++;
     if (filters.comorbidity !== 'ALL') count++;
@@ -125,9 +134,16 @@ export function AttendancePage() {
     const list: { key: keyof RegistrationFilterState; label: string; value: string }[] = [];
     if (filters.status !== 'ALL') list.push({ key: 'status', label: 'Pagamento', value: filters.status });
     if (filters.gender !== 'ALL') list.push({ key: 'gender', label: 'Sexo', value: filters.gender });
-    if (filters.ageRange !== 'ALL') {
-      const val = filters.ageRange === 'under18' ? '<18' : filters.ageRange;
-      list.push({ key: 'ageRange', label: 'Idade', value: val });
+    if (filters.minAge !== '' || filters.maxAge !== '') {
+      let val = '';
+      if (filters.minAge !== '' && filters.maxAge !== '') {
+        val = `${filters.minAge} a ${filters.maxAge} anos`;
+      } else if (filters.minAge !== '') {
+        val = `≥ ${filters.minAge} anos`;
+      } else {
+        val = `≤ ${filters.maxAge} anos`;
+      }
+      list.push({ key: 'minAge', label: 'Idade', value: val });
     }
     if (filters.maritalStatus !== 'ALL') list.push({ key: 'maritalStatus', label: 'Est. Civil', value: filters.maritalStatus });
     if (filters.paymentMethod !== 'ALL') list.push({ key: 'paymentMethod', label: 'Forma Pgto', value: filters.paymentMethod });
@@ -191,7 +207,15 @@ export function AttendancePage() {
     if (filters.status !== 'ALL') parts.push(`Pagamento: ${filters.status}`);
     if (filters.paymentMethod !== 'ALL') parts.push(`Forma Pgto: ${filters.paymentMethod}`);
     if (filters.gender !== 'ALL') parts.push(`Sexo: ${filters.gender}`);
-    if (filters.ageRange !== 'ALL') parts.push(`Idade: ${filters.ageRange}`);
+    if (filters.minAge !== '' || filters.maxAge !== '') {
+      if (filters.minAge !== '' && filters.maxAge !== '') {
+        parts.push(`Idade: ${filters.minAge} a ${filters.maxAge} anos`);
+      } else if (filters.minAge !== '') {
+        parts.push(`Idade: ≥ ${filters.minAge} anos`);
+      } else {
+        parts.push(`Idade: ≤ ${filters.maxAge} anos`);
+      }
+    }
     if (filters.maritalStatus !== 'ALL') parts.push(`Est. Civil: ${filters.maritalStatus}`);
     if (filters.shirtSize !== 'ALL') parts.push(`Camiseta: ${filters.shirtSize}`);
     if (filters.comorbidity !== 'ALL') {
@@ -384,32 +408,11 @@ export function AttendancePage() {
         </div>
 
         {/* Chips de filtros avançados ativos */}
-        {activeChips.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-100">
-            <span className="text-[11px] font-semibold text-slate-400">Ativos:</span>
-            {activeChips.map((chip) => (
-              <span
-                key={chip.key}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#163242]/8 text-[#163242] text-[11px] font-medium"
-              >
-                <span className="text-slate-400 font-normal">{chip.label}:</span>
-                <strong>{chip.value}</strong>
-                <button
-                  onClick={() => handleFilterChange(chip.key, initialRegistrationFilterState[chip.key])}
-                  className="hover:text-rose-600 transition-colors cursor-pointer ml-0.5"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            <button
-              onClick={handleResetFilters}
-              className="text-[11px] font-semibold text-rose-500 hover:text-rose-700 hover:underline cursor-pointer ml-1"
-            >
-              Limpar tudo
-            </button>
-          </div>
-        )}
+        <RegistrationFilterChips
+          chips={activeChips}
+          onRemoveChip={handleRemoveChip}
+          onResetAll={handleResetFilters}
+        />
 
         {isFiltersDrawerOpen && (
           <RegistrationAdvancedFiltersDrawer

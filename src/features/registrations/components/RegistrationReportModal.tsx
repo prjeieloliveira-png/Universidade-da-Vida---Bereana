@@ -30,11 +30,15 @@ export function RegistrationReportModal({
     if (filters.status !== 'ALL') tags.push(`Status: ${filters.status}`);
     if (filters.paymentMethod !== 'ALL') tags.push(`Pagamento: ${filters.paymentMethod}`);
     if (filters.gender !== 'ALL') tags.push(`Sexo: ${filters.gender}`);
-    if (filters.ageRange !== 'ALL') {
-      const label =
-        filters.ageRange === 'under18' ? '< 18 anos' :
-        filters.ageRange === '18-29' ? '18 a 29 anos' :
-        filters.ageRange === '30-49' ? '30 a 49 anos' : '50+ anos';
+    if (filters.minAge !== '' || filters.maxAge !== '') {
+      let label = '';
+      if (filters.minAge !== '' && filters.maxAge !== '') {
+        label = `${filters.minAge} a ${filters.maxAge} anos`;
+      } else if (filters.minAge !== '') {
+        label = `a partir de ${filters.minAge} anos`;
+      } else {
+        label = `até ${filters.maxAge} anos`;
+      }
       tags.push(`Idade: ${label}`);
     }
     if (filters.maritalStatus !== 'ALL') tags.push(`Est. Civil: ${filters.maritalStatus}`);

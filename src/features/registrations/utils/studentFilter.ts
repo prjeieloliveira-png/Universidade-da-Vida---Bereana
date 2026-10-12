@@ -27,12 +27,14 @@ export function filterStudents<T extends StudentRecord>(
     // 4. Gender
     if (filters.gender !== 'ALL' && s.gender !== filters.gender) return false;
 
-    // 5. Age Range
-    if (filters.ageRange !== 'ALL') {
-      if (filters.ageRange === 'under18' && s.age >= 18) return false;
-      if (filters.ageRange === '18-29' && (s.age < 18 || s.age > 29)) return false;
-      if (filters.ageRange === '30-49' && (s.age < 30 || s.age > 49)) return false;
-      if (filters.ageRange === '50+' && s.age < 50) return false;
+    // 5. Custom Age (minAge e maxAge)
+    if (filters.minAge && filters.minAge.trim() !== '') {
+      const min = parseInt(filters.minAge, 10);
+      if (!isNaN(min) && s.age < min) return false;
+    }
+    if (filters.maxAge && filters.maxAge.trim() !== '') {
+      const max = parseInt(filters.maxAge, 10);
+      if (!isNaN(max) && s.age > max) return false;
     }
 
     // 6. Marital Status
