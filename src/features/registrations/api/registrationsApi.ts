@@ -1,5 +1,6 @@
 import { supabase } from '@/shared/lib/supabase';
 import { fetchAttendanceMatrixFromSupabase } from '@/features/attendance/api/attendanceApi';
+import { calculateAge } from '@/shared/utils/date';
 import type { StudentRecord } from '../types';
 
 export const DEFAULT_EDITION_ID = '33333333-3333-3333-3333-333333333333';
@@ -7,22 +8,6 @@ export const DEFAULT_EDITION_ID = '33333333-3333-3333-3333-333333333333';
 export interface SyncRpcResult {
   synced: number;
   skipped: number;
-}
-
-function calculateAge(birthDateStr: string | null): number {
-  if (!birthDateStr) return 0;
-  const parts = birthDateStr.split('-');
-  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return 0;
-  const birthYear = parseInt(parts[0], 10);
-  const birthMonth = parseInt(parts[1], 10) - 1;
-  const birthDay = parseInt(parts[2], 10);
-  const today = new Date(2026, 8, 20);
-  let age = today.getFullYear() - birthYear;
-  const m = today.getMonth() - birthMonth;
-  if (m < 0 || (m === 0 && today.getDate() < birthDay)) {
-    age--;
-  }
-  return Math.max(0, age);
 }
 
 /**

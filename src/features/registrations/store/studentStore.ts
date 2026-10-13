@@ -2,24 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { studentsList } from '../data/mockStudents';
 import { useCohortStore } from '@/features/cohorts/store/cohortStore';
+import { calculateAge } from '@/shared/utils/date';
 import type { StudentRecord } from '../types';
 import type { WeekNumber, WeekKey } from '@/features/attendance/types';
-
-function calculateAge(birthDateStr: string): number {
-  if (!birthDateStr) return 0;
-  const parts = birthDateStr.split('-');
-  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return 0;
-  const birthYear = parseInt(parts[0], 10);
-  const birthMonth = parseInt(parts[1], 10) - 1;
-  const birthDay = parseInt(parts[2], 10);
-  const today = new Date(2026, 8, 20); // 20/09/2026 reference date
-  let age = today.getFullYear() - birthYear;
-  const m = today.getMonth() - birthMonth;
-  if (m < 0 || (m === 0 && today.getDate() < birthDay)) {
-    age--;
-  }
-  return Math.max(0, age);
-}
 
 const ATTENDANCE_QUEUE_KEY = 'bereana_attendance_queue_v2';
 
