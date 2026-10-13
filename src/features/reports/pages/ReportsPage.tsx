@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { useUserRole } from '@/shared/hooks/useUserRole';
 import { StudentsReportTab } from '../components/StudentsReportTab';
+import { TeamsReportTab } from '../components/TeamsReportTab';
 
-type TabId = 'alunos' | 'frequencia' | 'financeiro';
+type TabId = 'alunos' | 'equipes' | 'frequencia' | 'financeiro';
 
 const TABS: { id: TabId; label: string; ready: boolean }[] = [
   { id: 'alunos', label: 'Alunos', ready: true },
+  { id: 'equipes', label: 'Equipes', ready: true },
   { id: 'frequencia', label: 'Frequência', ready: false },
   { id: 'financeiro', label: 'Financeiro', ready: false },
 ];
@@ -67,6 +69,7 @@ export function ReportsPage() {
       </div>
 
       {tab === 'alunos' && <StudentsReportTab />}
+      {tab === 'equipes' && <TeamsReportTab />}
     </div>
   );
 }

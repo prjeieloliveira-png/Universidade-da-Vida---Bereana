@@ -20,7 +20,10 @@ ALTER TABLE financial_edit_log ADD CONSTRAINT financial_edit_log_entity_check
                     'registration_fee', 'team_fee', 'registration_settlement',
                     'team_settlement', 'team_courtesy'));
 
--- 3. Atualizar view v_team_member_payment_status
+-- 3. Atualizar views v_team_member_payment_status e v_cash_summary
+DROP VIEW IF EXISTS v_cash_summary CASCADE;
+DROP VIEW IF EXISTS v_team_member_payment_status CASCADE;
+
 CREATE OR REPLACE VIEW v_team_member_payment_status AS
 SELECT
   b.team_member_id,
@@ -70,8 +73,11 @@ FROM (
   GROUP BY tm.id, tm.edition_id, tm.person_id, tm.team_role_id, tm.active, tm.is_courtesy, tm.fee_cents, tm.settled_at, tm.settled_note
 ) b;
 ALTER VIEW v_team_member_payment_status SET (security_invoker = true);
+REVOKE ALL ON v_team_member_payment_status FROM anon;
+GRANT SELECT ON v_team_member_payment_status TO authenticated;
 
 -- 4. Atualizar view v_cash_summary (excluindo cortesias da meta e pendências)
+DROP VIEW IF EXISTS v_cash_summary CASCADE;
 CREATE OR REPLACE VIEW v_cash_summary AS
 SELECT
   e.id AS edition_id,
@@ -106,14 +112,14 @@ SELECT
   COALESCE(team_stats.team_paid_count, 0)                   AS team_paid_count,
   COALESCE(team_stats.team_partial_count, 0)                AS team_partial_count,
   COALESCE(team_stats.team_pending_count, 0)                AS team_pending_count,
-  COALESCE(team_stats.team_courtesy_count, 0)               AS team_courtesy_count,
   COALESCE(team_stats.team_goal_cents, 0)                   AS total_team_goal_cents,
   COALESCE(team_pay.total_team_paid_cents, 0)               AS total_team_paid_cents,
   GREATEST(
     COALESCE(team_stats.team_goal_cents, 0)
     - COALESCE(team_pay.total_team_paid_cents, 0),
     0
-  )                                                         AS total_team_receivable_cents
+  )                                                         AS total_team_receivable_cents,
+  COALESCE(team_stats.team_courtesy_count, 0)               AS team_courtesy_count
 
 FROM editions e
 
@@ -175,6 +181,8 @@ LEFT JOIN LATERAL (
 ) team_pay ON true;
 
 ALTER VIEW v_cash_summary SET (security_invoker = true);
+REVOKE ALL ON v_cash_summary FROM anon;
+GRANT SELECT ON v_cash_summary TO authenticated;
 
 -- 5. RPC para alternar cortesia de membro da equipe
 CREATE OR REPLACE FUNCTION set_team_member_courtesy(p_team_member_id uuid, p_is_courtesy boolean)
