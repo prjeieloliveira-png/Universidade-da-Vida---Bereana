@@ -3,13 +3,15 @@ import { ArrowUpRight, Users } from 'lucide-react';
 interface TeamAvatarsCardProps {
   totalRegistered?: number;
   maxCapacity?: number;
+  totalTeamMembers?: number;
   onViewTeams?: () => void;
   onViewRegistrations?: () => void;
 }
 
 export function TeamAvatarsCard({
-  totalRegistered = 53,
+  totalRegistered = 52,
   maxCapacity = 70,
+  totalTeamMembers = 25,
   onViewTeams,
   onViewRegistrations,
 }: TeamAvatarsCardProps) {
@@ -20,6 +22,7 @@ export function TeamAvatarsCard({
     { name: 'Caleb', bg: 'bg-emerald-700 text-white', label: 'CL' },
   ];
 
+  const extraVolunteers = Math.max(0, totalTeamMembers - sampleVolunteers.length);
   const occupancyRate = Math.round((totalRegistered / maxCapacity) * 100);
 
   return (
@@ -62,7 +65,9 @@ export function TeamAvatarsCard({
             <h4 className="text-xs font-bold text-slate-800 tracking-tight">
               Equipes de Serviço
             </h4>
-            <p className="text-[11px] text-slate-400">Voluntários escalados</p>
+            <p className="text-[11px] text-slate-400">
+              {totalTeamMembers} voluntários escalados
+            </p>
           </div>
 
           <button
@@ -95,7 +100,7 @@ export function TeamAvatarsCard({
             className="w-9 h-9 rounded-full bg-[#0d7647] text-white border-2 border-white flex items-center justify-center font-black text-xs shadow-2xs hover:scale-105 transition-transform cursor-pointer"
             title="Ver todos os voluntários"
           >
-            +9
+            +{extraVolunteers}
           </button>
         </div>
       </div>

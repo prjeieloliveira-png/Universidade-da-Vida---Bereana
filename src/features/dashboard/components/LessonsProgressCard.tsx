@@ -7,9 +7,10 @@ import { LESSON_WEEKS, type LessonWeekInfo } from '@/features/attendance/types';
 
 interface LessonsProgressCardProps {
   onStartAttendance?: () => void;
+  totalLessons?: number;
 }
 
-export function LessonsProgressCard({ onStartAttendance }: LessonsProgressCardProps) {
+export function LessonsProgressCard({ onStartAttendance, totalLessons = 4 }: LessonsProgressCardProps) {
   const { students } = useStudentStore();
   const { activeCohortId } = useCohortStore();
   const { lessons } = useLessonStore();
@@ -20,17 +21,21 @@ export function LessonsProgressCard({ onStartAttendance }: LessonsProgressCardPr
     return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
   }, [students, activeCohortId]);
 
+  const activeLessons = useMemo(() => {
+    return lessons.slice(0, Math.max(1, totalLessons));
+  }, [lessons, totalLessons]);
+
   const totalStudents = cohortStudents.length;
-  const currentWeek: LessonWeekInfo = lessons.find((l) => l.number === 3) ?? lessons[0] ?? LESSON_WEEKS[0] ?? {
+  const currentWeek: LessonWeekInfo = activeLessons.find((l) => l.number === 3) ?? activeLessons[0] ?? LESSON_WEEKS[0] ?? {
     number: 3, key: 's3', title: 'Semana 3', theme: 'Cura Interior e Perdão', dateStr: '21 de Março',
   };
 
-  // Cálculo dinâmico das 9 semanas reais a partir dos alunos da turma
+  // Cálculo dinâmico das semanas reais da edição a partir dos alunos da turma
   const weeklyData = useMemo(() => {
     let peakWeekNumber = -1;
     let highestPercent = -1;
 
-    const items = lessons.map((lesson) => {
+    const items = activeLessons.map((lesson) => {
       const presentCount = cohortStudents.filter((s) => Boolean(s[lesson.key])).length;
       const percent = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
       const hasOccurred = presentCount > 0;
@@ -48,7 +53,7 @@ export function LessonsProgressCard({ onStartAttendance }: LessonsProgressCardPr
       const badge = isPeak ? `${w.percent}%` : undefined;
       return { ...w, isPeak, badge };
     });
-  }, [cohortStudents, totalStudents, lessons]);
+  }, [cohortStudents, totalStudents, activeLessons]);
 
   const completedWeeks = weeklyData.filter((w) => w.hasOccurred);
   const averagePresence = completedWeeks.length > 0
@@ -71,7 +76,7 @@ export function LessonsProgressCard({ onStartAttendance }: LessonsProgressCardPr
               {viewMode === 'aulas'
                 ? hoveredItem
                   ? `${hoveredItem.label}: ${hoveredItem.percent}% (${hoveredItem.presentCount}/${totalStudents} presentes)`
-                  : 'Presença real das 9 semanas'
+                  : `Presença real das ${activeLessons.length} semanas`
                 : `Média de ${averagePresence}% nas aulas concluídas`}
             </p>
           </div>
@@ -125,8 +130,11 @@ export function LessonsProgressCard({ onStartAttendance }: LessonsProgressCardPr
               <span>0</span>
             </div>
 
-            {/* As 9 Barras Semanais com Hover Interativo */}
-            <div className="flex-1 grid grid-cols-9 gap-1 sm:gap-2 h-full items-end">
+            {/* Barras Semanais com Hover Interativo */}
+            <div
+              className="flex-1 grid gap-2 sm:gap-4 h-full items-end"
+              style={{ gridTemplateColumns: `repeat(${activeLessons.length}, minmax(0, 1fr))` }}
+            >
               {weeklyData.map((item) => {
                 const isHovered = hoveredWeek === item.number;
                 const showBadge = isHovered || (item.isPeak && hoveredWeek === null);

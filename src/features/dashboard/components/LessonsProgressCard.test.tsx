@@ -3,13 +3,22 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { LessonsProgressCard } from './LessonsProgressCard';
 
 describe('LessonsProgressCard Component', () => {
-  it('renderiza o cabeçalho e todas as 9 semanas do curso', () => {
+  it('renderiza o cabeçalho e todas as 4 semanas do curso por padrão', () => {
     render(<LessonsProgressCard />);
 
     expect(screen.getByText('Taxa de Frequência')).toBeInTheDocument();
-    expect(screen.getByText('Presença real das 9 semanas')).toBeInTheDocument();
+    expect(screen.getByText('Presença real das 4 semanas')).toBeInTheDocument();
 
-    // Valida que as 9 semanas S1..S9 estão presentes
+    // Valida que as 4 semanas S1..S4 estão presentes
+    for (let w = 1; w <= 4; w++) {
+      expect(screen.getAllByText(`S${w}`).length).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('renderiza 9 semanas quando totalLessons=9 for informado', () => {
+    render(<LessonsProgressCard totalLessons={9} />);
+
+    expect(screen.getByText('Presença real das 9 semanas')).toBeInTheDocument();
     for (let w = 1; w <= 9; w++) {
       expect(screen.getAllByText(`S${w}`).length).toBeGreaterThanOrEqual(1);
     }

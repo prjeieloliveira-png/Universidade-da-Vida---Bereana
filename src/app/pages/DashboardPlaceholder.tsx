@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Calendar, CheckSquare } from 'lucide-react';
 import { useStudentStore } from '@/features/registrations/store/studentStore';
+import { useHydrateStudents } from '@/features/registrations/hooks/useHydrateStudents';
 import { useCohortStore } from '@/features/cohorts/store/cohortStore';
 import { useActiveEdition } from '@/shared/hooks/useActiveEdition';
 import { useUserRole } from '@/shared/hooks/useUserRole';
-import { fetchCashSummary } from '@/features/financial/data/financialData';
+import { fetchCashSummary, fetchPayments } from '@/features/financial/data/financialData';
+import { formatCentsToBRL } from '@/shared/utils/currency';
 import { FinancialSummaryCard } from '@/features/dashboard/components/FinancialSummaryCard';
 import { LessonsProgressCard } from '@/features/dashboard/components/LessonsProgressCard';
 import { CashflowSparklineCard } from '@/features/dashboard/components/CashflowSparklineCard';
@@ -15,7 +17,6 @@ import { TeamAvatarsCard } from '@/features/dashboard/components/TeamAvatarsCard
 
 export function DashboardPlaceholder() {
   const navigate = useNavigate();
-  const { students } = useStudentStore();
   const { activeCohortId, getActiveCohort } = useCohortStore();
   const activeCohort = getActiveCohort();
   const { fullName } = useUserRole();
@@ -24,9 +25,20 @@ export function DashboardPlaceholder() {
   const { data: activeEdition } = useActiveEdition();
   const editionId = activeEdition?.id ?? '';
 
+  // 1. Hidrata os alunos reais do Supabase na store global
+  useHydrateStudents(editionId);
+  const { students } = useStudentStore();
+
   const { data: cashSummary } = useQuery({
     queryKey: ['cash-summary', editionId],
     queryFn: () => fetchCashSummary(editionId),
+    enabled: !!editionId,
+    staleTime: 30_000,
+  });
+
+  const { data: recentPayments } = useQuery({
+    queryKey: ['recent-payments', editionId],
+    queryFn: () => fetchPayments(editionId),
     enabled: !!editionId,
     staleTime: 30_000,
   });
@@ -35,7 +47,7 @@ export function DashboardPlaceholder() {
     return students.filter((s) => (s.cohortId || 'turma-01') === activeCohortId);
   }, [students, activeCohortId]);
 
-  // Dynamic calculations based on cohort students
+  // Cálculos dinâmicos a partir dos alunos da turma
   const metrics = useMemo(() => {
     const total = cohortStudents.length;
     const paid = cohortStudents.filter((s) => s.status === 'Pago').length;
@@ -45,18 +57,6 @@ export function DashboardPlaceholder() {
     const pendingCents = pending * feeCents;
     const paymentRate = total > 0 ? Math.round((paid / total) * 100) : 0;
 
-    // Recent participants
-    const recent: ParticipantItem[] = cohortStudents.slice(0, 5).map((s) => ({
-      id: s.id,
-      name: s.name,
-      network: `${s.pastor} • ${s.g12}`,
-      statusLabel: s.status === 'Pago' ? 'Confirmado' : 'Pendente',
-      statusVariant: s.status === 'Pago' ? 'success' : 'warning',
-      amountFormatted: `R$ ${(feeCents / 100).toFixed(2).replace('.', ',')}`,
-      dateStr: 'Hoje',
-      timeStr: '10:30',
-    }));
-
     return {
       total,
       paid,
@@ -64,9 +64,40 @@ export function DashboardPlaceholder() {
       collectedCents,
       pendingCents,
       paymentRate,
-      recent,
     };
   }, [cohortStudents, activeCohort]);
+
+  // Histórico de movimentações reais (pagamentos confirmados)
+  const recentParticipants: ParticipantItem[] = useMemo(() => {
+    if (recentPayments && recentPayments.length > 0) {
+      return recentPayments.slice(0, 5).map((p) => {
+        const d = p.payment_date ? new Date(p.payment_date) : new Date();
+        const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        return {
+          id: p.id,
+          name: p.person_name,
+          network: `Pagamento • ${p.payment_method}`,
+          statusLabel: 'Confirmado',
+          statusVariant: 'success',
+          amountFormatted: formatCentsToBRL(p.amount_cents),
+          dateStr,
+          timeStr,
+        };
+      });
+    }
+
+    return cohortStudents.slice(0, 5).map((s) => ({
+      id: s.id,
+      name: s.name,
+      network: `${s.pastor} • ${s.g12}`,
+      statusLabel: s.status === 'Pago' ? 'Confirmado' : 'Pendente',
+      statusVariant: s.status === 'Pago' ? 'success' : 'warning',
+      amountFormatted: formatCentsToBRL(s.amountCents || 20000),
+      dateStr: 'Inscrição',
+      timeStr: s.status,
+    }));
+  }, [recentPayments, cohortStudents]);
 
   // Indicadores consolidados do financeiro (Supabase ou fallback)
   const hasRemoteCash = cashSummary && (cashSummary.total_in_cents > 0 || cashSummary.total_registrations > 0);
@@ -79,6 +110,8 @@ export function DashboardPlaceholder() {
   const partialCount = hasRemoteCash ? cashSummary.partial_count : 0;
   const pendingCount = hasRemoteCash ? cashSummary.pending_count : metrics.pending;
   const totalRegistrations = hasRemoteCash ? cashSummary.total_registrations : metrics.total;
+  const netBalanceCents = hasRemoteCash ? cashSummary.net_balance_cents : metrics.collectedCents;
+  const totalTeamMembers = hasRemoteCash ? cashSummary.total_team_members : 25;
 
   return (
     <div className="space-y-6">
@@ -134,7 +167,7 @@ export function DashboardPlaceholder() {
             pendingCount={pendingCount}
             totalRegistrations={totalRegistrations}
             totalRegistrationGoalCents={hasRemoteCash ? cashSummary.total_registration_goal_cents : undefined}
-            totalTeamMembers={hasRemoteCash ? cashSummary.total_team_members : 0}
+            totalTeamMembers={totalTeamMembers}
             teamPaidCount={hasRemoteCash ? cashSummary.team_paid_count : 0}
             teamPartialCount={hasRemoteCash ? cashSummary.team_partial_count : 0}
             teamPendingCount={hasRemoteCash ? cashSummary.team_pending_count : 0}
@@ -145,10 +178,10 @@ export function DashboardPlaceholder() {
           />
         </div>
 
-
         {/* Column 2: Engagement Rate / Weekly Attendance Bar Chart */}
         <div className="xl:col-span-5 flex flex-col">
           <LessonsProgressCard
+            totalLessons={activeEdition?.total_lessons || 4}
             onStartAttendance={() => navigate('/chamada')}
           />
         </div>
@@ -156,14 +189,15 @@ export function DashboardPlaceholder() {
         {/* Column 3: Total Balance Sparkline & Team */}
         <div className="xl:col-span-3 flex flex-col gap-5 md:col-span-2 xl:col-span-3">
           <CashflowSparklineCard
-            totalBalanceCents={totalCollectedCents}
+            totalBalanceCents={netBalanceCents}
             onOpenFinancial={() => navigate('/financeiro')}
             onAddPayment={() => navigate('/financeiro')}
           />
 
           <TeamAvatarsCard
-            totalRegistered={metrics.total}
+            totalRegistered={totalRegistrations}
             maxCapacity={activeCohort.targetStudents || 70}
+            totalTeamMembers={totalTeamMembers}
             onViewTeams={() => navigate('/equipes')}
             onViewRegistrations={() => navigate('/inscricoes')}
           />
@@ -173,8 +207,8 @@ export function DashboardPlaceholder() {
       {/* Quixotic Row 2: Recent Payment / Registration History Table */}
       <div className="w-full">
         <RecentRegistrationsCard
-          participants={metrics.recent}
-          onViewAll={() => navigate('/inscricoes')}
+          participants={recentParticipants}
+          onViewAll={() => navigate('/financeiro')}
         />
       </div>
     </div>
