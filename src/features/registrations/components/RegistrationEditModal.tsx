@@ -38,7 +38,12 @@ export function RegistrationEditModal({
     e.preventDefault();
     setErrorMessage(null);
     try {
-      await onSave(formData);
+      const sanitized: StudentRecord = {
+        ...formData,
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+      };
+      await onSave(sanitized);
       setSuccessNotice(true);
       setTimeout(() => {
         setSuccessNotice(false);

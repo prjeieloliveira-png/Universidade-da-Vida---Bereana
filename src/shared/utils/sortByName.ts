@@ -4,5 +4,9 @@
  * (Inscrições, Chamada, Porta, Liderança, Equipes, Usuários).
  */
 export function sortByName<T>(items: T[], getName: (item: T) => string): T[] {
-  return [...items].sort((a, b) => getName(a).localeCompare(getName(b), 'pt-BR', { sensitivity: 'base' }));
+  return [...items].sort((a, b) => {
+    const nameA = (getName(a) || '').trim();
+    const nameB = (getName(b) || '').trim();
+    return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+  });
 }

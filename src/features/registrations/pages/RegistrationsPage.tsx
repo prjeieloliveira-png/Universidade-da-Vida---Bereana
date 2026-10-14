@@ -89,7 +89,7 @@ export function RegistrationsPage() {
 
   // Unified Filter State
   const [filters, setFilters] = useState<RegistrationFilterState>(initialRegistrationFilterState);
-  const [sortAlphabetically, setSortAlphabetically] = useState(false);
+  const [sortAlphabetically, setSortAlphabetically] = useState(true);
 
   const handleFilterChange = useCallback(
     <K extends keyof RegistrationFilterState>(key: K, value: RegistrationFilterState[K]) => {
